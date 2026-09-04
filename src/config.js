@@ -30,8 +30,10 @@ export const OPEN_BROWSER = (process.env.OPEN_BROWSER ?? 'true') !== 'false';
 
 /** Thiết lập mặc định — người dùng đổi trên giao diện, lưu ở data/settings.json. */
 const DEFAULT_SETTINGS = Object.freeze({
-  /** Có lưu tin nhắn NHÓM không (mặc định tắt — cùng quyết định với CRM đợt 1). */
-  includeGroups: false,
+  /** Có lưu tin nhắn NHÓM không — BẬT mặc định (người dùng chốt 05/09/2026: nhóm là điểm quan trọng nhất). */
+  includeGroups: true,
+  /** Số tin mới nhất lấy cho MỖI nhóm khi nhập lịch sử nhóm (Zalo có thể trả ít hơn). */
+  groupHistoryCount: 300,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
   syncOldOnConnect: true,
   /** Hội thoại có tin cuối là của KHÁCH và đã quá số giờ này ⇒ đánh dấu "quá hạn trả lời". */

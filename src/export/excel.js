@@ -73,8 +73,8 @@ export async function exportExcel({ db, selection, from, to, outDir, accountsByI
       outbound: s?.outbound ?? 0,
       first: formatVn(s?.first_at),
       last: formatVn(s?.last_at),
-      lastBy: c.last_message_outbound === 1 ? 'Mình' : 'Khách',
-      waiting: c.last_message_outbound === 0
+      lastBy: c.last_message_outbound === 1 ? 'Mình' : (c.is_group ? (c.last_message_sender || 'Thành viên') : 'Khách'),
+      waiting: c.is_group ? '— (nhóm)' : c.last_message_outbound === 0
         ? (wh >= waitingHours ? `CÓ — quá ${Math.floor(wh)}h` : 'Có')
         : 'Không',
       preview: c.last_message_preview || '',
@@ -104,7 +104,7 @@ export async function exportExcel({ db, selection, from, to, outDir, accountsByI
     for (const m of db.iterateMessages(c.account_id, c.thread_id, from, to)) {
       ws.addRow({
         time: formatVn(m.event_time),
-        dir: m.is_outbound ? 'Mình' : 'Khách',
+        dir: m.is_outbound ? 'Mình' : (c.is_group ? 'Thành viên' : 'Khách'),
         sender: m.sender_name || (m.is_outbound ? 'Tôi' : c.name || m.sender_id || ''),
         type: TYPE_LABEL_VI[m.type] ?? m.type,
         text: m.text ?? '',

@@ -60,6 +60,7 @@ export class ZaloManager extends EventEmitter {
     this.live = new Map();      // accountId → { api, startedAt }
     this.qr = new Map();        // key → trạng thái đăng nhập QR đang chờ
     this.profiles = new ProfileResolver(log);
+    this.imports = new Map();   // accountId → tiến độ nhập lịch sử nhóm
   }
 
   // ── Phiên đã lưu ──────────────────────────────────────────────────────────────
@@ -250,7 +251,12 @@ export class ZaloManager extends EventEmitter {
     l.on('connected', () => {
       this.log.info(`Listener ${id} đã kết nối.`);
       this.setStatus(id, 'connected');
-      if (this.getSettings().syncOldOnConnect) setTimeout(() => this.requestOld(id), 2500);
+      const settings = this.getSettings();
+      if (settings.syncOldOnConnect) setTimeout(() => this.requestOld(id), 2500);
+      // Lần đầu bật nhóm: tự nhập lịch sử nhóm MỘT LẦN (có nghỉ giữa các nhóm để không dồn request).
+      if (settings.includeGroups && !this.db.getAccount(id)?.groups_imported_at) {
+        setTimeout(() => { void this.importGroupHistory(id, { count: Number(settings.groupHistoryCount ?? 300), reason: 'auto' }); }, 6000);
+      }
     });
 
     // zca-js tự nối lại với retryOnClose — 'disconnected' chỉ là tạm thời; 'closed' mới là chết hẳn.
@@ -296,6 +302,76 @@ export class ZaloManager extends EventEmitter {
       return { ok: false, error: err?.message ?? String(err) };
     }
   }
+
+  /**
+   * Nhập lịch sử NHÓM: Zalo có API `getGroupChatHistory(groupId, count)` trả về `count` tin mới nhất của một nhóm
+   * (1-1 KHÔNG có API tương đương). Chạy nền, tuần tự từng nhóm, nghỉ ~1,2 giây giữa các nhóm — người dùng có thể
+   * ở hàng chục nhóm, bắn dồn dập là hành vi bất thường với Zalo. Tin trùng bị chống trùng theo msgId nên chạy lại
+   * bao nhiêu lần cũng an toàn.
+   */
+  async importGroupHistory(id, { count = 300, reason = 'manual' } = {}) {
+    const live = this.live.get(id);
+    if (!live) return { ok: false, error: 'Tài khoản chưa kết nối.' };
+    const current = this.imports.get(id);
+    if (current?.running) return { ok: true, running: true, ...current };
+
+    const job = { running: true, startedAt: Date.now(), total: 0, done: 0, messages: 0, newMessages: 0, error: null, reason };
+    this.imports.set(id, job);
+    this.emit('progress', { accountId: id, ...job });
+
+    void (async () => {
+      try {
+        const all = await live.api.getAllGroups();
+        const ids = Object.keys(all?.gridVerMap ?? {});
+        job.total = ids.length;
+        this.log.info(`Nhập lịch sử nhóm (${reason}) cho ${id}: ${ids.length} nhóm, tối đa ${count} tin/nhóm.`);
+
+        // Lấy tên nhóm theo lô 50 để không gọi getGroupInfo cho từng nhóm.
+        for (let i = 0; i < ids.length; i += 50) {
+          const chunk = ids.slice(i, i + 50);
+          try {
+            const info = await live.api.getGroupInfo(chunk);
+            for (const gid of chunk) {
+              const g = info?.gridInfoMap?.[gid];
+              if (g) this.profiles.groups.set(gid, { name: g.name ?? null, avatar: g.fullAvt ?? g.avt ?? null });
+            }
+          } catch (err) { this.log.warn(`Không lấy được tên lô nhóm: ${err?.message ?? err}`); }
+          await sleep(600);
+        }
+
+        for (const gid of ids) {
+          if (!this.live.has(id)) { job.error = 'Mất kết nối giữa chừng.'; break; }
+          try {
+            const h = await live.api.getGroupChatHistory(gid, count);
+            const msgs = Array.isArray(h?.groupMsgs) ? h.groupMsgs : [];
+            const before = this.db.getConversation(id, gid)?.message_count ?? 0;
+            for (const msg of msgs) await this.ingest(id, msg, 'history');
+            const after = this.db.getConversation(id, gid)?.message_count ?? 0;
+            job.messages += msgs.length;
+            job.newMessages += Math.max(0, after - before);
+          } catch (err) {
+            this.log.warn(`Không lấy được lịch sử nhóm ${gid}: ${err?.message ?? err}`);
+          }
+          job.done++;
+          this.emit('progress', { accountId: id, ...job });
+          await sleep(1200);
+        }
+        if (!job.error) this.db.setGroupsImportedAt(id);
+        this.log.info(`Nhập lịch sử nhóm xong: ${job.done}/${job.total} nhóm, ${job.messages} tin đọc được, ${job.newMessages} tin mới lưu.`);
+      } catch (err) {
+        job.error = err?.message ?? String(err);
+        this.log.error(`Nhập lịch sử nhóm thất bại: ${job.error}`);
+      } finally {
+        job.running = false;
+        job.finishedAt = Date.now();
+        this.emit('progress', { accountId: id, ...job });
+      }
+    })();
+
+    return { ok: true, running: true, ...job };
+  }
+
+  getImportStatus(id) { return this.imports.get(id) ?? null; }
 
   async syncContacts(id) {
     const live = this.live.get(id);

@@ -42,6 +42,18 @@ function mapType(msgType, content) {
   return 'text';
 }
 
+/** Mã biểu cảm dạng chữ của Zalo → emoji, để người đọc (và Claude) không thấy "/-strong". */
+const ZALO_EMOTICONS = {
+  '/-strong': '👍', '/-heart': '❤️', '/-ok': '👌', '/-thumb': '👍', '/-beer': '🍺', '/-rose': '🌹',
+  ':-)': '🙂', ':-(': '🙁', ':-((': '😢', ':-D': '😀', ':-P': '😛', ':-h': '😊', ':-*': '😘', ':-?': '🤔',
+  ':-|': '😐', ';-)': '😉', ':-$': '🤑', ':)': '🙂', ':(': '🙁', ':D': '😀', ':P': '😛', ';)': '😉', ':3': '😊',
+};
+const EMOTICON_RE = new RegExp(Object.keys(ZALO_EMOTICONS).sort((a, b) => b.length - a.length).map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+export function humanizeEmoticons(text) {
+  if (typeof text !== 'string' || !text) return text;
+  return text.replace(EMOTICON_RE, (m) => ZALO_EMOTICONS[m] ?? m);
+}
+
 function str(v) {
   return v === undefined || v === null ? null : String(v);
 }
@@ -67,7 +79,7 @@ export function normalizeMessage(msg) {
   const attachments = [];
 
   if (typeof content === 'string') {
-    text = content;
+    text = humanizeEmoticons(content);
   } else if (content && typeof content === 'object') {
     type = mapType(data?.msgType, content);
     const href = content.href ?? content.url ?? null;

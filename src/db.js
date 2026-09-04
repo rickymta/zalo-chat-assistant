@@ -100,6 +100,14 @@ export function openDb(dbPath) {
   db.pragma('busy_timeout = 5000');
   db.exec(SCHEMA);
 
+  // Cột thêm sau bản đầu — thêm có điều kiện để CSDL cũ nâng cấp êm.
+  const ensureColumn = (table, column, ddl) => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  };
+  ensureColumn('conversations', 'last_message_sender', 'TEXT');   // tên người gửi tin cuối (hữu ích với NHÓM)
+  ensureColumn('accounts', 'groups_imported_at', 'INTEGER');        // đã nhập lịch sử nhóm lần đầu chưa
+
   const st = {
     upsertAccount: db.prepare(`
       INSERT INTO accounts (id, display_name, avatar_url, phone, status, last_error, created_at, updated_at)
@@ -130,10 +138,10 @@ export function openDb(dbPath) {
     upsertConversation: db.prepare(`
       INSERT INTO conversations
         (account_id, thread_id, is_group, name, avatar_url, phone, first_message_at, last_message_at,
-         last_message_preview, last_message_outbound, message_count, inbound_count, outbound_count)
+         last_message_preview, last_message_outbound, last_message_sender, message_count, inbound_count, outbound_count)
       VALUES
         (@account_id, @thread_id, @is_group, @name, @avatar_url, @phone, @event_time, @event_time,
-         @preview, @is_outbound, 1, @inbound, @outbound)
+         @preview, @is_outbound, @sender, 1, @inbound, @outbound)
       ON CONFLICT(account_id, thread_id) DO UPDATE SET
         name       = COALESCE(excluded.name, conversations.name),
         avatar_url = COALESCE(excluded.avatar_url, conversations.avatar_url),
@@ -144,6 +152,8 @@ export function openDb(dbPath) {
                                     THEN excluded.last_message_preview ELSE conversations.last_message_preview END,
         last_message_outbound = CASE WHEN excluded.last_message_at >= conversations.last_message_at
                                      THEN excluded.last_message_outbound ELSE conversations.last_message_outbound END,
+        last_message_sender = CASE WHEN excluded.last_message_at >= conversations.last_message_at
+                                   THEN excluded.last_message_sender ELSE conversations.last_message_sender END,
         message_count  = conversations.message_count + 1,
         inbound_count  = conversations.inbound_count + excluded.inbound_count,
         outbound_count = conversations.outbound_count + excluded.outbound_count`),
@@ -198,6 +208,7 @@ export function openDb(dbPath) {
       event_time: row.event_time,
       preview: row.preview ?? null,
       is_outbound: row.is_outbound ? 1 : 0,
+      sender: row.sender_name ?? null,
       inbound: row.is_outbound ? 0 : 1,
       outbound: row.is_outbound ? 1 : 0,
     });
@@ -212,8 +223,10 @@ export function openDb(dbPath) {
       where.push(`c.account_id IN (${p.accountIds.map((_, i) => `@acc${i}`).join(',')})`);
       p.accountIds.forEach((id, i) => { params[`acc${i}`] = id; });
     }
-    if (!p.includeGroups) where.push('c.is_group = 0');
-    if (p.onlyWaiting) where.push('c.last_message_outbound = 0');
+    if (p.onlyGroups) where.push('c.is_group = 1');
+    else if (!p.includeGroups) where.push('c.is_group = 0');
+    // "Đang chờ trả lời" chỉ có nghĩa với hội thoại 1-1 — trong nhóm không phải tin nào cũng cần mình trả lời.
+    if (p.onlyWaiting) where.push('c.last_message_outbound = 0 AND c.is_group = 0');
     if (p.q) {
       where.push(`(c.name LIKE @q OR c.phone LIKE @q OR c.thread_id LIKE @q OR c.last_message_preview LIKE @q)`);
       params.q = `%${p.q}%`;
@@ -250,6 +263,7 @@ export function openDb(dbPath) {
     getAccount(id) { return st.getAccount.get(id); },
     listAccounts() { return st.listAccounts.all(); },
     deleteAccount(id) { st.deleteAccount.run(id); },
+    setGroupsImportedAt(id, ts = Date.now()) { db.prepare('UPDATE accounts SET groups_imported_at = ? WHERE id = ?').run(ts, id); },
     /** Chỉ ghi khi msgId mới LỚN HƠN msgId đã lưu (tin cũ đồng bộ về không được kéo lùi con trỏ). */
     bumpLastMsgId(id, isGroup, msgId) {
       const acc = st.getAccount.get(id);
@@ -333,7 +347,7 @@ export function openDb(dbPath) {
       startOfToday.setHours(0, 0, 0, 0);
       const conv = db.prepare(`
         SELECT COUNT(*) AS conversations,
-               SUM(CASE WHEN last_message_outbound = 0 THEN 1 ELSE 0 END) AS waiting,
+               SUM(CASE WHEN last_message_outbound = 0 AND is_group = 0 THEN 1 ELSE 0 END) AS waiting,
                SUM(CASE WHEN is_group = 1 THEN 1 ELSE 0 END) AS groups,
                MAX(last_message_at) AS last_message_at
         FROM conversations WHERE ${accWhere}`).get(params);

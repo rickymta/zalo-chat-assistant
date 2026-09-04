@@ -71,3 +71,28 @@ Quy tắc trình bày phiếu:
 ```
 
 Mọi con số trong báo cáo phải đếm được từ gói; không ước lượng ngoài dữ liệu.
+
+## D. Phiếu NHÓM chat (một khối cho mỗi nhóm, đặt sau phần B)
+
+```
+## [Nhóm] Khách hàng Nguyễn Văn A — Implant — hoi-thoai/012-khach-hang-nguyen-van-a-implant.md
+Loại nhóm: nhóm khách hàng (khách + vợ + tư vấn viên + BS. Bình). Khoảng đã đọc: 29/08 → 04/09/2026 · 86 tin.
+
+**Chủ đề đã bàn**
+1. Lịch cấy Implant răng 36 — chốt 06/09 9h tại Nghĩa Dũng (BS. Bình chốt 02/09 15:10).
+2. Khách hỏi chi phí ghép xương phát sinh (03/09 20:41) — chưa ai trả lời.
+3. Vợ khách hỏi ăn uống trước phẫu thuật (04/09 07:30) — BS. Bình đã trả lời 08:05.
+
+**Quyết định / chốt:** lịch 06/09 9h; thanh toán đợt 1 đã xong (khách gửi ảnh chuyển khoản 01/09, chưa đọc được nội dung).
+**Việc cần làm:** [MÌNH] gửi hướng dẫn trước phẫu thuật — hứa 02/09, chưa thấy gửi · [BS. Bình] xem lại phim CT — đã xong 03/09.
+**Câu hỏi hướng tới mình chưa trả lời:** "chi phí ghép xương bao nhiêu" (03/09 20:41, chờ 14 giờ) → P1.
+**Rủi ro / phàn nàn:** không.
+**Thông tin cần lưu:** SĐT vợ khách 09xx… (tin 30/08 10:12).
+
+**Đề xuất phản hồi (dán vào nhóm):**
+Anh A ơi, về chi phí ghép xương em xin lỗi vì trả lời muộn ạ. Phần này phụ thuộc lượng xương cần ghép sau khi bác sĩ xem phim, nên em sẽ xin bác sĩ Bình con số cụ thể và nhắn riêng cho anh trong sáng nay. Hướng dẫn trước phẫu thuật em cũng gửi ngay sau đây để anh và chị chuẩn bị nhé.
+
+**Ghi chú cho tư vấn viên:** [CẦN XÁC NHẬN: chi phí ghép xương theo phim]; gửi hướng dẫn tiền phẫu đã hứa từ 02/09; ảnh chuyển khoản chưa xem được.
+```
+
+Nhóm không có việc của mình và không có câu hỏi hướng tới mình thì chỉ giữ phần **Chủ đề đã bàn** + **Quyết định** (tối đa 6 dòng).

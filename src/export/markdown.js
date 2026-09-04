@@ -31,8 +31,9 @@ function renderAttachments(list) {
 }
 
 function renderMessage(m, conv) {
-  const who = m.is_outbound ? 'MÌNH' : 'KHÁCH';
-  const name = m.sender_name && m.sender_name !== conv.name && !m.is_outbound ? ` (${m.sender_name})` : '';
+  // 1-1: KHÁCH / MÌNH. Nhóm: THÀNH VIÊN (Tên) / MÌNH — trong nhóm người gửi đổi liên tục, tên là bắt buộc.
+  const who = m.is_outbound ? 'MÌNH' : (conv.is_group ? 'THÀNH VIÊN' : 'KHÁCH');
+  const name = !m.is_outbound && m.sender_name && (conv.is_group || m.sender_name !== conv.name) ? ` (${m.sender_name})` : '';
   const parts = [];
   if (m.recalled) parts.push('_(tin này đã bị thu hồi)_');
   if (m.quote_text) parts.push(`> trả lời: ${m.quote_text.replace(/\r?\n/g, ' ').slice(0, 200)}`);
@@ -76,7 +77,7 @@ export async function exportMarkdown({
     const fileName = `${idx}-${slugify(c.name || c.thread_id)}.md`;
     const account = accountsById[c.account_id];
     const wh = waitingHoursOf(c, now);
-    const waiting = c.last_message_outbound === 0;
+    const waiting = c.last_message_outbound === 0 && !c.is_group;
     if (waiting) waitingCount++;
 
     const lines = [];
@@ -86,13 +87,18 @@ export async function exportMarkdown({
     lines.push(`- SĐT khách: ${c.phone || 'không có'}`);
     lines.push(`- Tài khoản Zalo của mình: ${account?.display_name || c.account_id}${account?.phone ? ` (${account.phone})` : ''}`);
     lines.push(`- Khoảng thời gian trong gói: ${formatVn(stats?.first_at)} → ${formatVn(stats?.last_at)}`);
-    lines.push(`- Số tin trong gói: ${stats?.total ?? 0} (khách ${stats?.inbound ?? 0} / mình ${stats?.outbound ?? 0}) · Tổng đã lưu: ${c.message_count}`);
-    lines.push(`- Tin cuối: ${formatVn(c.last_message_at)} do ${c.last_message_outbound === 1 ? 'MÌNH' : 'KHÁCH'} gửi`);
-    lines.push(
-      waiting
-        ? `- **Trạng thái: ĐANG CHỜ TRẢ LỜI** (khách nhắn cuối, đã ${wh.toFixed(1)} giờ${wh >= waitingHours ? ' — QUÁ HẠN' : ''})`
-        : '- Trạng thái: Đã trả lời (tin cuối là của mình)',
-    );
+    const other = c.is_group ? 'thành viên' : 'khách';
+    lines.push(`- Số tin trong gói: ${stats?.total ?? 0} (${other} ${stats?.inbound ?? 0} / mình ${stats?.outbound ?? 0}) · Tổng đã lưu: ${c.message_count}`);
+    lines.push(`- Tin cuối: ${formatVn(c.last_message_at)} do ${c.last_message_outbound === 1 ? 'MÌNH' : (c.is_group ? `THÀNH VIÊN ${c.last_message_sender || ''}`.trim() : 'KHÁCH')} gửi`);
+    if (c.is_group) {
+      lines.push(`- Trạng thái: NHÓM CHAT — không áp dụng "chờ trả lời"; tin cuối do ${c.last_message_outbound === 1 ? 'MÌNH' : (c.last_message_sender || 'thành viên')} gửi`);
+    } else {
+      lines.push(
+        waiting
+          ? `- **Trạng thái: ĐANG CHỜ TRẢ LỜI** (khách nhắn cuối, đã ${wh.toFixed(1)} giờ${wh >= waitingHours ? ' — QUÁ HẠN' : ''})`
+          : '- Trạng thái: Đã trả lời (tin cuối là của mình)',
+      );
+    }
     if (c.note) lines.push(`- Ghi chú: ${c.note}`);
     lines.push('');
     lines.push('## Tin nhắn (cũ → mới)');
@@ -117,8 +123,8 @@ export async function exportMarkdown({
       idx, file: `hoi-thoai/${fileName}`, name: c.name || '(chưa rõ tên)', kind: c.is_group ? 'Nhóm' : '1-1',
       phone: c.phone || '', account: account?.display_name || c.account_id, total: stats?.total ?? 0,
       inbound: stats?.inbound ?? 0, outbound: stats?.outbound ?? 0, last: formatVn(c.last_message_at),
-      lastBy: c.last_message_outbound === 1 ? 'Mình' : 'Khách',
-      waiting: waiting ? (wh >= waitingHours ? `CÓ (quá ${Math.floor(wh)}h)` : 'Có') : 'Không',
+      lastBy: c.last_message_outbound === 1 ? 'Mình' : (c.is_group ? (c.last_message_sender || 'Thành viên') : 'Khách'),
+      waiting: c.is_group ? '— (nhóm)' : waiting ? (wh >= waitingHours ? `CÓ (quá ${Math.floor(wh)}h)` : 'Có') : 'Không',
       preview: c.last_message_preview || '', thread: c.thread_id,
     });
   });
@@ -131,7 +137,7 @@ export async function exportMarkdown({
   idx.push(`Tạo lúc: ${formatVn(now)} · ${selection.length} hội thoại · ${totalMessages} tin · **${waitingCount} hội thoại đang chờ trả lời**`);
   idx.push(`Phạm vi thời gian: ${from ? formatVn(from) : 'từ đầu'} → ${to ? formatVn(to) : 'đến nay'}`);
   idx.push('');
-  idx.push('Mở file trong cột "File" để đọc toàn bộ tin nhắn của hội thoại đó. Cột "Chờ trả lời" = tin cuối do KHÁCH gửi.');
+  idx.push('Mở file trong cột "File" để đọc toàn bộ tin nhắn của hội thoại đó. Cột "Chờ trả lời" = tin cuối do KHÁCH gửi (chỉ với 1-1; nhóm ghi "— (nhóm)").');
   idx.push('');
   idx.push('| # | Hội thoại | Loại | SĐT | Tin | Khách | Mình | Tin cuối | Ai nhắn cuối | Chờ trả lời | Nội dung tin cuối | File |');
   idx.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
@@ -173,6 +179,8 @@ export async function exportMarkdown({
   readme.push('## Quy ước trong file hội thoại');
   readme.push('');
   readme.push('- `KHÁCH` = người đối thoại gửi; `MÌNH` = chủ tài khoản Zalo (tư vấn viên) gửi — kể cả gửi từ điện thoại.');
+  readme.push('- Trong NHÓM chat: `THÀNH VIÊN (Tên)` = một thành viên gửi; `MÌNH` = chủ tài khoản. Nhóm KHÔNG áp dụng "đang chờ trả lời" — hãy tổng hợp theo chủ đề, việc cần làm và câu hỏi hướng tới mình (xem huong-dan/02).');
+  readme.push('- Lịch sử NHÓM có thể gồm tin cũ hơn ngày cài ứng dụng (Zalo cho lấy vài trăm tin gần nhất mỗi nhóm); hội thoại 1-1 thì không.');
   readme.push('- Thời gian theo giờ Việt Nam, định dạng `dd/MM/yyyy HH:mm:ss`.');
   readme.push('- Ảnh/tệp/sticker chỉ có LIÊN KẾT (không tải về). Liên kết Zalo có thể hết hạn; nội dung ảnh KHÔNG đọc được từ gói này.');
   readme.push('- "ĐANG CHỜ TRẢ LỜI" = tin cuối cùng là của KHÁCH. "QUÁ HẠN" = đã quá số giờ cấu hình trong ứng dụng.');

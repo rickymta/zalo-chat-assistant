@@ -41,6 +41,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   manager.on('message', (d) => broadcast('message', d));
   manager.on('status', (d) => broadcast('status', d));
   manager.on('qr', (d) => broadcast('qr', d));
+  manager.on('progress', (d) => broadcast('progress', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   const withinAllowed = (p) => {
@@ -60,6 +61,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       id: a.id, displayName: a.display_name, avatarUrl: a.avatar_url, phone: a.phone,
       status: manager.isLive(a.id) ? (a.status === 'reconnecting' ? 'reconnecting' : 'connected') : a.status,
       lastError: a.last_error, hasSession: !!manager.readSession(a.id),
+      groupsImportedAt: a.groups_imported_at ?? null,
+      importJob: manager.getImportStatus(a.id),
     }));
     return {
       accounts,
@@ -97,6 +100,12 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const r = manager.requestOld(req.params.id);
     return r.ok ? r : reply.code(400).send(r);
   });
+  app.post('/api/accounts/:id/import-groups', async (req, reply) => {
+    const count = Number(req.body?.count ?? settings.load().groupHistoryCount ?? 300);
+    const r = await manager.importGroupHistory(req.params.id, { count: Math.min(Math.max(count, 20), 2000) });
+    return r.ok ? r : reply.code(400).send(r);
+  });
+  app.get('/api/accounts/:id/import-groups/status', async (req) => manager.getImportStatus(req.params.id) ?? { running: false });
   app.post('/api/accounts/:id/sync-contacts', async (req, reply) => {
     const r = await manager.syncContacts(req.params.id);
     return r.ok ? r : reply.code(400).send(r);
@@ -117,6 +126,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       accountIds: q.accountId ? [q.accountId] : undefined,
       q: q.q || undefined,
       onlyWaiting: q.waiting === 'true',
+      onlyGroups: q.groups === 'true',
       includeGroups,
       from: q.from ? Number(q.from) : undefined,
       to: q.to ? Number(q.to) : undefined,
@@ -145,6 +155,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       to: body.to ? Number(body.to) : null,
       includeGroups: body.includeGroups === undefined ? !!s.includeGroups : !!body.includeGroups,
       onlyWaiting: !!body.onlyWaiting,
+      onlyGroups: !!body.onlyGroups,
+      fullHistory: !!body.fullHistory,
       threadIds: Array.isArray(body.threadIds) && body.threadIds.length ? body.threadIds : undefined,
       includeJsonl: !!body.includeJsonl,
     };
@@ -173,6 +185,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     if (typeof body.includeGroups === 'boolean') patch.includeGroups = body.includeGroups;
     if (typeof body.syncOldOnConnect === 'boolean') patch.syncOldOnConnect = body.syncOldOnConnect;
     if (Number.isFinite(Number(body.waitingHours))) patch.waitingHours = Math.max(0, Number(body.waitingHours));
+    if (Number.isFinite(Number(body.groupHistoryCount))) patch.groupHistoryCount = Math.min(Math.max(Number(body.groupHistoryCount), 20), 2000);
     const saved = settings.save(patch);
     if (typeof body.autoStart === 'boolean') platform.setAutoStart(body.autoStart);
     return { ...saved, autoStart: platform.getAutoStart() };

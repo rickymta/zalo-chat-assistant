@@ -102,6 +102,8 @@
   .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); margin-top: 6px; }
   .tag.late { background: var(--bad-soft); color: var(--bad); }
   .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.grp { background: var(--primary-soft); color: var(--primary); }
+  .progress { font-size: 14px; color: var(--primary); margin-top: 4px; }
   .empty { padding: 44px 20px; text-align: center; color: var(--muted); }
   .empty .big { font-size: 40px; margin-bottom: 8px; }
 
@@ -250,6 +252,7 @@
             <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
             <button class="chip active" data-filter="all">Tất cả</button>
             <button class="chip" data-filter="waiting">Đang chờ trả lời</button>
+            <button class="chip" data-filter="groups">Nhóm</button>
           </div>
           <div class="scroll conv-list" id="convList"></div>
           <div class="foot" id="convFoot"></div>
@@ -268,7 +271,8 @@
         <h2>1. Chọn dữ liệu</h2>
         <p class="desc">Mỗi lựa chọn tạo một thư mục riêng, mỗi hội thoại là một file.</p>
         <div class="choices" id="choices">
-          <div class="choice active" data-choice="waiting"><div class="ico">⏳</div><div><b>Khách đang chờ trả lời <span class="rec">Khuyên dùng</span></b><span>Toàn bộ lịch sử của những hội thoại mà khách nhắn cuối cùng</span></div></div>
+          <div class="choice active" data-choice="waiting"><div class="ico">⏳</div><div><b>Khách đang chờ trả lời <span class="rec">Khuyên dùng</span></b><span>Toàn bộ lịch sử của những hội thoại 1-1 mà khách nhắn cuối cùng</span></div></div>
+          <div class="choice" data-choice="groups"><div class="ico">👥</div><div><b>Nhóm chat</b><span>Tin nhắn trong các nhóm 7 ngày gần nhất — để Claude tóm tắt chủ đề, việc cần làm</span></div></div>
           <div class="choice" data-choice="today"><div class="ico">📅</div><div><b>Hôm nay</b><span>Hội thoại có tin nhắn trong hôm nay</span></div></div>
           <div class="choice" data-choice="week"><div class="ico">🗓</div><div><b>7 ngày gần nhất</b><span>Hội thoại có tin trong 7 ngày qua</span></div></div>
           <div class="choice" data-choice="all"><div class="ico">🗂</div><div><b>Tất cả</b><span>Mọi hội thoại đã lưu — gói có thể rất lớn</span></div></div>
@@ -327,7 +331,8 @@
       <div class="card">
         <h2>Tuỳ chọn</h2>
         <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Mặc định chỉ lưu hội thoại 1-1 với khách.</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng tự nhập lịch sử gần đây của mọi nhóm (chạy nền, vài phút nếu nhiều nhóm).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b><span>Zalo chỉ cho lấy phần gần nhất; càng nhiều càng lâu.</span></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
         <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
         <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
         <div class="row" style="margin-top:14px; justify-content:flex-end"><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
@@ -443,7 +448,7 @@
     $('#tWaiting').textContent = num(s.waiting);
     $('#tToday').textContent = num(s.today);
     $('#tConv').textContent = num(s.conversations);
-    $('#tMsgs').textContent = s.messages ? `· ${num(s.messages)} tin` : '';
+    $('#tMsgs').textContent = [s.groups ? `· ${num(s.groups)} nhóm` : '', s.messages ? `· ${num(s.messages)} tin` : ''].join(' ');
     const list = visibleAccounts();
     const live = list.filter((a) => a.status === 'connected');
     const bad = list.filter((a) => a.status === 'need_relogin');
@@ -455,7 +460,8 @@
     } else if (bad.length) {
       b.innerHTML = `<div class="banner bad"><div class="ico">⚠️</div><div><b>Mất kết nối với Zalo của ${esc(bad[0].displayName || '')}</b><div class="sub">Thường do đã mở Zalo Web ở nơi khác hoặc phiên hết hạn. Quét mã QR để kết nối lại — tin nhắn trong lúc mất kết nối sẽ không được lưu.</div></div><div class="actions"><button class="primary xl" data-act="qr">Quét mã QR</button></div></div>`;
     } else if (live.length) {
-      b.innerHTML = `<div class="banner ok"><div class="ico">✅</div><div><b>Đang kết nối với Zalo của ${esc(live.map((a) => a.displayName || a.id).join(', '))}</b><div class="sub">Tin nhắn mới đang được lưu tự động. ${s.last_message_at ? `Tin gần nhất: ${fmtRel(s.last_message_at)}.` : 'Chưa nhận được tin nào — hãy thử nhắn một tin từ điện thoại để kiểm tra.'}</div></div></div>`;
+      const job = live.map((a) => a.importJob).find((j) => j && j.running);
+      b.innerHTML = `<div class="banner ok"><div class="ico">✅</div><div><b>Đang kết nối với Zalo của ${esc(live.map((a) => a.displayName || a.id).join(', '))}</b><div class="sub">Tin nhắn mới đang được lưu tự động. ${s.last_message_at ? `Tin gần nhất: ${fmtRel(s.last_message_at)}.` : 'Chưa nhận được tin nào — hãy thử nhắn một tin từ điện thoại để kiểm tra.'}</div>${job ? `<div class="progress">⏳ Đang nhập lịch sử nhóm: ${job.done}/${job.total} nhóm, ${num(job.newMessages)} tin mới…</div>` : ''}</div></div>`;
     } else {
       const paused = list[0];
       b.innerHTML = `<div class="banner warn"><div class="ico">⏸</div><div><b>${paused.status === 'connecting' || paused.status === 'reconnecting' ? 'Đang kết nối…' : 'Đã tạm dừng — tin nhắn mới không được lưu'}</b><div class="sub">Bấm Kết nối để tiếp tục lưu tin nhắn.</div></div><div class="actions">${paused.hasSession ? `<button class="primary xl" data-act="start" data-id="${esc(paused.id)}">Kết nối</button>` : `<button class="primary xl" data-act="qr">Quét mã QR</button>`}</div></div>`;
@@ -477,8 +483,10 @@
   function convItem(c) {
     const waiting = c.last_message_outbound === 0;
     const key = `${c.account_id}|${c.thread_id}`;
-    const w = waiting ? waitingLabel(c) : null;
-    return `<div class="conv ${state.selected === key ? 'active' : ''}" data-key="${esc(key)}">${avatarHtml(c.avatar_url, c.name)}<div class="body"><div class="top"><span class="nm">${esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id)}</span><span class="tm">${fmtRel(c.last_message_at)}</span></div><div class="pv">${c.last_message_outbound ? '<span class="faint">Mình:</span> ' : ''}${esc(c.last_message_preview || '')}</div>${w ? `<span class="tag ${w.cls}">${w.text}</span>` : '<span class="tag ok">Đã trả lời</span>'}</div></div>`;
+    const w = waiting && !c.is_group ? waitingLabel(c) : null;
+    const who = c.last_message_outbound ? 'Mình' : (c.is_group ? (c.last_message_sender || '') : '');
+    const tag = c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? `<span class="tag ${w.cls}">${w.text}</span>` : '<span class="tag ok">Đã trả lời</span>');
+    return `<div class="conv ${state.selected === key ? 'active' : ''}" data-key="${esc(key)}">${avatarHtml(c.avatar_url, c.name)}<div class="body"><div class="top"><span class="nm">${esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id)}</span><span class="tm">${fmtRel(c.last_message_at)}</span></div><div class="pv">${who ? `<span class="faint">${esc(who)}:</span> ` : ''}${esc(c.last_message_preview || '')}</div>${tag}</div></div>`;
   }
   document.addEventListener('click', (e) => {
     const it = e.target.closest('.conv'); if (!it) return;
@@ -490,9 +498,10 @@
   $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); loadConversations(); });
   let loadTimer;
   async function loadConversations() {
-    const p = new URLSearchParams({ limit: 400 });
+    const p = new URLSearchParams({ limit: 400, includeGroups: 'true' });
     if (state.q) p.set('q', state.q);
     if (state.filter === 'waiting') p.set('waiting', 'true');
+    if (state.filter === 'groups') p.set('groups', 'true');
     const r = await api('/api/conversations?' + p.toString());
     state.convs = r.rows;
     $('#convList').innerHTML = r.rows.length ? r.rows.map(convItem).join('') : `<div class="empty"><div class="big">📭</div>${state.q || state.filter !== 'all' ? 'Không có hội thoại nào khớp.' : 'Chưa có hội thoại nào. Khi có tin nhắn mới, hội thoại sẽ xuất hiện ở đây.'}</div>`;
@@ -506,7 +515,9 @@
     const r = await api(`/api/conversations/${encodeURIComponent(accountId)}/${encodeURIComponent(threadId)}/messages?limit=400`);
     const c = r.conversation || {};
     $('#chatName').textContent = c.name || threadId;
-    $('#chatMeta').textContent = `${c.is_group ? 'Nhóm' : 'Khách'}${c.phone ? ' · ' + c.phone : ''} · ${num(c.message_count)} tin (khách ${num(c.inbound_count)}, mình ${num(c.outbound_count)})`;
+    $('#chatMeta').textContent = c.is_group
+      ? `Nhóm chat · ${num(c.message_count)} tin (thành viên ${num(c.inbound_count)}, mình ${num(c.outbound_count)})`
+      : `Khách${c.phone ? ' · ' + c.phone : ''} · ${num(c.message_count)} tin (khách ${num(c.inbound_count)}, mình ${num(c.outbound_count)})`;
     $('#chatAvatar').outerHTML = avatarHtml(c.avatar_url, c.name).replace('class="avatar', 'id="chatAvatar" class="avatar');
     $('#chatExportBtn').hidden = false;
     const box = $('#msgs');
@@ -536,6 +547,7 @@
     if ($('#optAccount').value) p.accountIds = [$('#optAccount').value];
     const now = Date.now();
     if (state.choice === 'waiting') { p.onlyWaiting = true; }
+    else if (state.choice === 'groups') { p.onlyGroups = true; p.includeGroups = true; p.from = now - 7 * 86400e3; }
     else if (state.choice === 'today') p.from = vnDayStart(todayVn());
     else if (state.choice === 'week') p.from = now - 7 * 86400e3;
     else if (state.choice === 'range') { if ($('#exFrom').value) p.from = vnDayStart($('#exFrom').value); if ($('#exTo').value) p.to = vnDayStart($('#exTo').value) + 86400e3; }
@@ -579,11 +591,12 @@
       const [cls, label] = STATUS[a.status] || ['', a.status];
       const needQr = a.status === 'need_relogin' || a.status === 'logged_out' || (a.status === 'disconnected' && !a.hasSession);
       return `<div class="acc-row" data-id="${esc(a.id)}">${avatarHtml(a.avatarUrl, a.displayName, 'lg')}<div class="who"><b>${esc(a.displayName || a.id)}</b><span class="muted">${esc(a.phone || '')}</span><br><span class="pill ${cls}">${label}</span>${a.lastError && cls === 'bad' ? `<div class="small" style="color:var(--bad)">${esc(a.lastError).slice(0, 140)}</div>` : ''}</div>
+        ${a.importJob ? `<div class="progress" style="flex-basis:100%">${a.importJob.running ? `⏳ Đang nhập lịch sử nhóm: ${a.importJob.done}/${a.importJob.total} nhóm, ${num(a.importJob.newMessages)} tin mới…` : a.importJob.error ? `⚠️ Nhập lịch sử nhóm dừng: ${esc(a.importJob.error)}` : `✅ Đã nhập lịch sử ${a.importJob.done} nhóm, ${num(a.importJob.newMessages)} tin mới (${fmtTime(a.importJob.finishedAt)})`}</div>` : (a.groupsImportedAt ? `<div class="small faint" style="flex-basis:100%">Lịch sử nhóm đã nhập lần đầu lúc ${fmtTime(a.groupsImportedAt)}</div>` : '')}
         <div class="btns">
           ${needQr ? '<button class="primary" data-act="relogin">Quét mã QR</button>' : ''}
           ${a.status === 'disconnected' && a.hasSession ? '<button class="primary" data-act="start">Kết nối</button>' : ''}
           ${['connected', 'reconnecting', 'connecting'].includes(a.status) ? '<button data-act="stop">Tạm dừng</button>' : ''}
-          ${a.status === 'connected' ? '<button data-act="sync-contacts" title="Lấy tên và số điện thoại từ danh bạ Zalo">Đồng bộ danh bạ</button><button data-act="sync-old" title="Xin Zalo gửi lại tin đã bỏ lỡ">Lấy tin bỏ lỡ</button>' : ''}
+          ${a.status === 'connected' ? `<button data-act="import-groups" title="Lấy lại vài trăm tin gần nhất của MỖI nhóm" ${a.importJob?.running ? 'disabled' : ''}>👥 Nhập lịch sử nhóm</button><button data-act="sync-contacts" title="Lấy tên và số điện thoại từ danh bạ Zalo">Đồng bộ danh bạ</button><button data-act="sync-old" title="Xin Zalo gửi lại tin đã bỏ lỡ">Lấy tin bỏ lỡ</button>` : ''}
           <button class="danger" data-act="logout">Đăng xuất</button>
         </div></div>`;
     }).join('') : '<p class="muted">Chưa có tài khoản nào. Bấm "Đăng nhập tài khoản" để quét mã QR.</p>';
@@ -591,6 +604,7 @@
     $('#setGroups').checked = !!s.includeGroups;
     $('#setSyncOld').checked = s.syncOldOnConnect !== false;
     $('#setWaitingHours').value = s.waitingHours ?? 2;
+    $('#setGroupCount').value = s.groupHistoryCount ?? 300;
     const supportsAuto = state.platform && state.platform.autoStart !== null && state.platform.autoStart !== undefined;
     $('#setAutoStartRow').hidden = !supportsAuto;
     if (supportsAuto) $('#setAutoStart').checked = !!state.platform.autoStart;
@@ -608,6 +622,7 @@
       const r = await api(`/api/accounts/${encodeURIComponent(id)}/${act}`, { method: 'POST' });
       if (act === 'sync-contacts') toast(`Đã đồng bộ ${num(r.count)} bạn bè từ danh bạ.`);
       if (act === 'sync-old') toast('Đã yêu cầu Zalo gửi lại tin bỏ lỡ — chờ vài giây.');
+      if (act === 'import-groups') toast(`Bắt đầu nhập lịch sử nhóm (${num(r.total || 0)} nhóm) — chạy nền, xem tiến độ tại đây.`);
       if (act === 'stop') toast('Đã tạm dừng. Tin nhắn mới sẽ không được lưu cho tới khi kết nối lại.');
       await refreshState();
     } catch (err) { toast(err.message); } finally { btn.disabled = false; }
@@ -615,7 +630,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value) };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value) };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body });
       toast('Đã lưu tuỳ chọn.'); await refreshState();
@@ -656,6 +671,7 @@
     const es = new EventSource('/api/events');
     es.addEventListener('message', scheduleReload);
     es.addEventListener('status', scheduleReload);
+    es.addEventListener('progress', scheduleReload);
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, 3000); };
   }

@@ -43,7 +43,10 @@ liên kết.
 Quy ước:
 
 - **KHÁCH** = người đối thoại gửi. **MÌNH** = tư vấn viên (chủ tài khoản Zalo) gửi, kể cả gửi từ điện thoại.
-- Trong **nhóm** chat, sau nhãn KHÁCH có tên người gửi trong ngoặc: `KHÁCH (Trần B):`.
+- Trong **nhóm** chat, nhãn là `THÀNH VIÊN (Tên người gửi):` — tên là bắt buộc vì người gửi đổi liên tục; `MÌNH` vẫn là
+  chủ tài khoản. Đầu file nhóm ghi `Trạng thái: NHÓM CHAT — không áp dụng "chờ trả lời"`.
+- **Lịch sử nhóm có thể cũ hơn ngày cài ứng dụng**: Zalo cho lấy vài trăm tin gần nhất của mỗi nhóm khi nhập lịch sử;
+  hội thoại 1-1 thì không có cơ chế này.
 - Thời gian theo giờ Việt Nam, `dd/MM/yyyy HH:mm:ss`.
 - Tin nhiều dòng được thụt vào 2 khoảng trắng ở các dòng sau.
 - `> trả lời: …` = tin này trả lời (quote) một tin trước đó.

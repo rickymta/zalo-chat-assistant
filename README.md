@@ -26,8 +26,12 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
 
 ### Những điều phải biết
 
-- **Chỉ có tin từ lúc cài ứng dụng** (cộng phần tin Zalo gửi bù khi nối lại sau lúc tắt máy). Tin nhắn cũ hơn không
-  lấy được — Zalo không có API lịch sử cho tài khoản cá nhân.
+- **Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng** (cộng phần tin Zalo gửi bù khi nối lại sau lúc tắt máy). Tin cũ
+  hơn không lấy được — Zalo không có API lịch sử 1-1 cho tài khoản cá nhân.
+- **Nhóm chat thì có lịch sử**: lần đầu kết nối, ứng dụng tự nhập vài trăm tin gần nhất của **mỗi** nhóm (mặc định
+  300, đổi ở Cài đặt), chạy nền, nghỉ ~1 giây giữa các nhóm. Bấm *Cài đặt → Nhập lịch sử nhóm* để lấy lại bất cứ lúc
+  nào. Nhóm KHÔNG áp dụng "đang chờ trả lời" — Claude tổng hợp nhóm theo chủ đề, việc cần làm và câu hỏi hướng tới mình
+  (`cowork/02-quy-trinh-tong-hop.md` mục 7).
 - **Đừng mở Zalo Web (chat.zalo.me) trên trình duyệt** cùng lúc: một số chỉ chạy được một phiên web, mở ở chỗ khác là
   ứng dụng rớt kết nối và hiện *Cần đăng nhập lại*. Zalo trên **điện thoại** dùng bình thường.
 - **Tài khoản có thể bị Zalo khoá** vì đây là giao thức không chính thức. Dùng số công ty cấp, không dùng số cá nhân
@@ -44,7 +48,7 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
 ```
 electron/main.js     Vỏ ứng dụng macOS (cửa sổ, menu, chạy nền, tự mở khi bật máy) → gọi src/app.js
 src/app.js           Lõi: mở SQLite, khởi động máy chủ HTTP cục bộ (127.0.0.1), khôi phục phiên Zalo
-src/zalo/manager.js  Đăng nhập QR / khôi phục phiên / listener zca-js / ghi tin (selfListen: true)
+src/zalo/manager.js  Đăng nhập QR / khôi phục phiên / listener zca-js / ghi tin (selfListen: true) / nhập lịch sử nhóm (getGroupChatHistory)
 src/zalo/normalize.js  Chuẩn hoá tin zca-js → dòng SQLite (bảng msgType giống CRM)
 src/db.js            SQLite (WAL): accounts, conversations, messages (chống trùng theo msgId), contacts, exports
 src/export/          markdown.js (gói cho Cowork, mỗi hội thoại 1 file) · excel.js (streaming, 1 sheet/hội thoại)

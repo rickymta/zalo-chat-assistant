@@ -56,3 +56,27 @@ Trong cùng mức, xếp theo thời gian chờ giảm dần (chờ lâu hơn l�
 - [ ] Không có thông tin của khách khác lọt vào phiếu.
 - [ ] Mỗi đề xuất dán được thẳng vào Zalo: không markdown, không tiêu đề, tiếng Việt có dấu.
 - [ ] Đã ghi `[CẦN XÁC NHẬN: …]` ở mọi chỗ cần người quyết.
+
+## 7. Hội thoại NHÓM — tổng hợp theo chủ đề, không theo "chờ trả lời"
+
+Trong nhóm, tin cuối là của người khác không có nghĩa mình phải trả lời. Thay vì trạng thái chờ, rút các mục sau
+(cho khoảng thời gian người dùng yêu cầu; mặc định 7 ngày gần nhất hoặc toàn bộ file nếu ngắn hơn):
+
+| Mục | Cách xác định |
+|---|---|
+| **Nhóm này là gì** | Suy từ tên nhóm và nội dung: nhóm khách hàng (một khách + người nhà + tư vấn viên/bác sĩ), nhóm nội bộ (nhân viên, cơ sở), nhóm đối tác/nhà cung cấp, nhóm cộng đồng. Không chắc thì ghi "không rõ" |
+| **Chủ đề đã bàn** | 3–7 chủ đề, mỗi chủ đề 1–2 câu, kèm mốc thời gian và người nêu |
+| **Quyết định / chốt** | Những gì đã được thống nhất (lịch, giá, phương án), ai chốt, lúc nào |
+| **Việc cần làm** | Việc được giao hoặc hứa: ai làm, hạn (nếu có), đã xong chưa (nhìn tin sau). **Tách riêng việc của MÌNH** |
+| **Câu hỏi hướng tới mình chưa được trả lời** | Tin gọi tên/nhắc tới chủ tài khoản, hỏi trực tiếp, hoặc câu hỏi thuộc phạm vi tư vấn viên (giá, lịch, dịch vụ) mà chưa ai trong nhóm trả lời |
+| **Rủi ro / phàn nàn** | Khách kể triệu chứng, không hài lòng, tranh luận, thông tin sai cần đính chính |
+| **Thông tin cần lưu** | Số điện thoại, địa chỉ, lịch hẹn, tên bác sĩ, mã ưu đãi… xuất hiện trong nhóm |
+
+Bỏ qua nhiễu: sticker, "ok", "cảm ơn", chào hỏi, ảnh không có chú thích (ghi số lượng ảnh là đủ).
+
+**Ưu tiên cho nhóm:** có câu hỏi hướng tới mình chưa trả lời quá 4 giờ, hoặc khách kể đau/khiếu nại trong nhóm ⇒ **P1**;
+có việc của mình chưa làm ⇒ **P2**; còn lại chỉ tóm tắt, không cần đề xuất phản hồi.
+
+**Đề xuất phản hồi trong nhóm** (chỉ khi có câu hỏi hướng tới mình): viết ngắn hơn 1-1, gọi tên người hỏi ở đầu
+("Chị Lan ơi, …"), tránh nói chuyện riêng của một khách trước nhiều người (số tiền, bệnh sử) — đề nghị nhắn riêng khi
+cần; mọi quy tắc ở file 03 vẫn áp dụng.

@@ -46,5 +46,22 @@ customers.forEach(([uid, name, phone], i) => {
     });
   });
 });
+// Một NHÓM chat mẫu: khách + người nhà + tư vấn viên.
+const groupMsgs = [
+  ['u1', 'Nguyễn Văn An', 'Bác sĩ ơi lịch cấy Implant của em là thứ 7 tuần này đúng không ạ?'],
+  ['me', null, 'Dạ đúng rồi anh An, 9h sáng thứ 7 tại Nghĩa Dũng ạ. Trước hôm đó anh ăn sáng nhẹ nhé.'],
+  ['u2', 'Vợ anh An', 'Em hỏi thêm là có cần kiêng gì trước khi cấy không ạ?'],
+  ['u1', 'Nguyễn Văn An', 'À với cả chi phí ghép xương phát sinh là bao nhiêu em nhỉ?'],
+];
+groupMsgs.forEach(([who, name, text], j) => {
+  const t = now - 3 * 3600000 + j * 900000;
+  db.insertMessage({
+    account_id: acc, thread_id: 'g-5001', is_group: true, zalo_msg_id: String(msgId++), cli_msg_id: null,
+    is_outbound: who === 'me' ? 1 : 0, sender_id: who === 'me' ? acc : who, sender_name: who === 'me' ? 'Tư vấn viên Demo' : name,
+    type: 'text', text, attachments_json: null, quote_text: null, event_time: t, source: 'demo', raw_json: null, created_at: now,
+    conv_name: 'Khách hàng Nguyễn Văn An — Implant', conv_avatar: null, conv_phone: null,
+    preview: previewOf({ type: 'text', text, attachments: [] }),
+  });
+});
 console.log(`Đã gieo dữ liệu mẫu vào ${DATA_DIR}:`, db.stats());
 db.close();

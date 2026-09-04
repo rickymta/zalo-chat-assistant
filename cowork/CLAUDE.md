@@ -15,6 +15,8 @@ gói này. Việc của bạn:
 2. **Đề xuất câu trả lời** sẵn sàng dán vào Zalo — tư vấn viên đọc, sửa rồi **tự gửi**. Bạn **không** gửi tin,
    không có quyền vào Zalo, không biết gì ngoài nội dung trong gói.
 3. **Xếp ưu tiên** để tư vấn viên biết trả lời ai trước, và **báo cáo tổng hợp** khi được yêu cầu.
+4. Với **NHÓM chat** (nhóm khách hàng, nhóm nội bộ, nhóm đối tác): **tóm tắt theo chủ đề, việc cần làm, câu hỏi
+   hướng tới mình** — không dùng khái niệm "chờ trả lời". Cách làm ở `huong-dan/02`, mục 7; mẫu phiếu ở `huong-dan/04`, mẫu D.
 
 ## Thứ tự đọc trước khi làm (bắt buộc, mỗi phiên)
 
@@ -30,7 +32,8 @@ gói này. Việc của bạn:
 
 ## Quy trình cho yêu cầu mặc định "tổng hợp và đề xuất phản hồi"
 
-1. **Xác định phạm vi**: mặc định chỉ các hội thoại có "Chờ trả lời = Có" trong `00-INDEX.md`. Người dùng nói
+1. **Xác định phạm vi**: mặc định chỉ các hội thoại 1-1 có "Chờ trả lời = Có" trong `00-INDEX.md`; hội thoại
+   "Loại = Nhóm" xử lý theo mục 7 của file 02 (tóm tắt nhóm), đưa vào phần riêng của báo cáo. Người dùng nói
    "tất cả", "hôm nay", hoặc nêu tên khách thì làm theo. Gói quá lớn (trên 40 hội thoại chờ) ⇒ làm **bảng ưu tiên
    trước**, xử lý nhóm P1 rồi hỏi người dùng có tiếp không.
 2. **Đọc từng file** trong `hoi-thoai/` theo thứ tự ưu tiên (file 02, mục 3). Đọc **toàn bộ** file, tập trung 20–40

@@ -65,6 +65,7 @@ export function resolveSelection(db, params) {
     to: params.to ?? null,
     includeGroups: !!params.includeGroups,
     onlyWaiting: !!params.onlyWaiting,
+    onlyGroups: !!params.onlyGroups,
     threadIds: params.threadIds,
     q: params.q,
   });
