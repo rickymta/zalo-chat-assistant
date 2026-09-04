@@ -1,0 +1,81 @@
+{
+  "name": "zalo-chat-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Đăng nhập Zalo cá nhân bằng QR, lưu tin nhắn vào SQLite, xuất gói Markdown/Excel để Claude Cowork tổng hợp và đề xuất phản hồi",
+  "type": "module",
+  "main": "electron/main.js",
+  "author": "MedDental",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/ensure-native.js node && node src/index.js",
+    "export": "node scripts/ensure-native.js node && node src/cli-export.js",
+    "seed:demo": "node scripts/ensure-native.js node && node src/dev-seed.js",
+    "app": "node scripts/ensure-native.js electron && electron .",
+    "icon": "bash scripts/make-icon.sh",
+    "dist": "node scripts/ensure-native.js electron && electron-builder --mac dmg",
+    "dist:all": "node scripts/ensure-native.js electron && electron-builder --mac dmg --arm64 --x64"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.0.0",
+    "exceljs": "^4.4.0",
+    "fastify": "^5.2.0",
+    "qrcode": "^1.5.4",
+    "zca-js": "^2.1.2"
+  },
+  "build": {
+    "appId": "vn.meddental.zalo-chat-assistant",
+    "productName": "Zalo Chat Assistant",
+    "copyright": "MedDental",
+    "asar": true,
+    "npmRebuild": false,
+    "files": [
+      "src/**/*",
+      "electron/**/*",
+      "cowork/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3"
+  }
+}
