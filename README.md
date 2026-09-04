@@ -28,9 +28,13 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
 
 - **Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng** (cộng phần tin Zalo gửi bù khi nối lại sau lúc tắt máy). Tin cũ
   hơn không lấy được — Zalo không có API lịch sử 1-1 cho tài khoản cá nhân.
-- **Nhóm chat thì có lịch sử**: lần đầu kết nối, ứng dụng tự nhập vài trăm tin gần nhất của **mỗi** nhóm (mặc định
-  300, đổi ở Cài đặt), chạy nền, nghỉ ~1 giây giữa các nhóm. Bấm *Cài đặt → Nhập lịch sử nhóm* để lấy lại bất cứ lúc
-  nào. Nhóm KHÔNG áp dụng "đang chờ trả lời" — Claude tổng hợp nhóm theo chủ đề, việc cần làm và câu hỏi hướng tới mình
+- **Nhóm chat có thể có lịch sử — tuỳ Zalo cấp**: lần đầu kết nối, ứng dụng hỏi Zalo vài trăm tin gần nhất của
+  **mỗi** nhóm (mặc định 300, đổi ở Cài đặt) qua endpoint `group_cloud_message/api/cm/getrecentv2` (endpoint cũ
+  `/api/group/history` của zca-js 2.1.2 đã bị Zalo bỏ — trả 404; xem `src/zalo/groupHistory.js`). ⚠️ Với tài khoản thử
+  05/09/2026, Zalo trả `isFiltered=1` và **0 tin cho cả 65 nhóm** — máy chủ có tin nhưng không cấp cho phiên web. Khi đó
+  ứng dụng ghi rõ ở Cài đặt và chỉ lưu tin nhóm **từ lúc kết nối trở đi**. Tự động chỉ thử lại sau 24 giờ; bấm
+  *Cài đặt → Nhập lịch sử nhóm* để thử tay. Script chẩn đoán: `scripts/probe-group-history.mjs`,
+  `scripts/probe-cm-variants.mjs` (cần `SESSION_FILE`). Nhóm KHÔNG áp dụng "đang chờ trả lời" — Claude tổng hợp nhóm theo chủ đề, việc cần làm và câu hỏi hướng tới mình
   (`cowork/02-quy-trinh-tong-hop.md` mục 7).
 - **Đừng mở Zalo Web (chat.zalo.me) trên trình duyệt** cùng lúc: một số chỉ chạy được một phiên web, mở ở chỗ khác là
   ứng dụng rớt kết nối và hiện *Cần đăng nhập lại*. Zalo trên **điện thoại** dùng bình thường.
