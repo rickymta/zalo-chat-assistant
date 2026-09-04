@@ -106,7 +106,8 @@ export function openDb(dbPath) {
     if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
   };
   ensureColumn('conversations', 'last_message_sender', 'TEXT');   // tên người gửi tin cuối (hữu ích với NHÓM)
-  ensureColumn('accounts', 'groups_imported_at', 'INTEGER');        // đã nhập lịch sử nhóm lần đầu chưa
+  ensureColumn('accounts', 'groups_imported_at', 'INTEGER');        // đã nhập lịch sử nhóm lần đầu chưa (chỉ ghi khi đọc được tin)
+  ensureColumn('accounts', 'groups_import_attempt_at', 'INTEGER'); // lần THỬ gần nhất — tự động chỉ thử lại sau 24 giờ
 
   const st = {
     upsertAccount: db.prepare(`
@@ -263,6 +264,7 @@ export function openDb(dbPath) {
     getAccount(id) { return st.getAccount.get(id); },
     listAccounts() { return st.listAccounts.all(); },
     deleteAccount(id) { st.deleteAccount.run(id); },
+    setGroupsImportAttemptAt(id, ts = Date.now()) { db.prepare('UPDATE accounts SET groups_import_attempt_at = ? WHERE id = ?').run(ts, id); },
     setGroupsImportedAt(id, ts = Date.now()) { db.prepare('UPDATE accounts SET groups_imported_at = ? WHERE id = ?').run(ts, id); },
     /** Chỉ ghi khi msgId mới LỚN HƠN msgId đã lưu (tin cũ đồng bộ về không được kéo lùi con trỏ). */
     bumpLastMsgId(id, isGroup, msgId) {

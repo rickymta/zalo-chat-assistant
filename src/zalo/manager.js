@@ -19,6 +19,7 @@ import { Zalo, ThreadType } from 'zca-js';
 import QRCode from 'qrcode';
 import { normalizeMessage, previewOf } from './normalize.js';
 import { ProfileResolver } from './profiles.js';
+import { installGroupHistoryV2 } from './groupHistory.js';
 
 const ZALO_OPTIONS = { selfListen: true, checkUpdate: false, logging: false };
 const PNG_BASE64_PREFIX = 'iVBORw0KGgo';
@@ -254,7 +255,9 @@ export class ZaloManager extends EventEmitter {
       const settings = this.getSettings();
       if (settings.syncOldOnConnect) setTimeout(() => this.requestOld(id), 2500);
       // Lần đầu bật nhóm: tự nhập lịch sử nhóm MỘT LẦN (có nghỉ giữa các nhóm để không dồn request).
-      if (settings.includeGroups && !this.db.getAccount(id)?.groups_imported_at) {
+      const acc = this.db.getAccount(id);
+      const lastTry = Number(acc?.groups_import_attempt_at ?? 0);
+      if (settings.includeGroups && !acc?.groups_imported_at && Date.now() - lastTry > 24 * 3600e3) {
         setTimeout(() => { void this.importGroupHistory(id, { count: Number(settings.groupHistoryCount ?? 300), reason: 'auto' }); }, 6000);
       }
     });
@@ -315,7 +318,8 @@ export class ZaloManager extends EventEmitter {
     const current = this.imports.get(id);
     if (current?.running) return { ok: true, running: true, ...current };
 
-    const job = { running: true, startedAt: Date.now(), total: 0, done: 0, messages: 0, newMessages: 0, error: null, reason };
+    const job = { running: true, startedAt: Date.now(), total: 0, done: 0, messages: 0, newMessages: 0, filtered: 0, error: null, reason };
+    this.db.setGroupsImportAttemptAt(id);
     this.imports.set(id, job);
     this.emit('progress', { accountId: id, ...job });
 
@@ -342,13 +346,16 @@ export class ZaloManager extends EventEmitter {
         for (const gid of ids) {
           if (!this.live.has(id)) { job.error = 'Mất kết nối giữa chừng.'; break; }
           try {
-            const h = await live.api.getGroupChatHistory(gid, count);
+            installGroupHistoryV2(live.api);
+            const h = await live.api.getGroupHistoryV2({ groupId: gid, count, onPage: (n) => { job.pageMessages = n; } });
             const msgs = Array.isArray(h?.groupMsgs) ? h.groupMsgs : [];
             const before = this.db.getConversation(id, gid)?.message_count ?? 0;
             for (const msg of msgs) await this.ingest(id, msg, 'history');
             const after = this.db.getConversation(id, gid)?.message_count ?? 0;
             job.messages += msgs.length;
             job.newMessages += Math.max(0, after - before);
+            // Zalo báo isFiltered=1 kèm 0 tin: máy chủ CÓ tin nhưng không cấp cho phiên web này.
+            if (!msgs.length && Number(h?.meta?.isFiltered) === 1) job.filtered++;
           } catch (err) {
             this.log.warn(`Không lấy được lịch sử nhóm ${gid}: ${err?.message ?? err}`);
           }
@@ -356,8 +363,9 @@ export class ZaloManager extends EventEmitter {
           this.emit('progress', { accountId: id, ...job });
           await sleep(1200);
         }
-        if (!job.error) this.db.setGroupsImportedAt(id);
-        this.log.info(`Nhập lịch sử nhóm xong: ${job.done}/${job.total} nhóm, ${job.messages} tin đọc được, ${job.newMessages} tin mới lưu.`);
+        // Chỉ ghi "đã nhập" khi thật sự đọc được tin — 65 nhóm mà 0 tin là endpoint hỏng, lần kết nối sau phải thử lại.
+        if (!job.error && (job.messages > 0 || job.total === 0)) this.db.setGroupsImportedAt(id);
+        this.log.info(`Nhập lịch sử nhóm xong: ${job.done}/${job.total} nhóm, ${job.messages} tin đọc được, ${job.newMessages} tin mới lưu, ${job.filtered} nhóm bị Zalo lọc (không cấp lịch sử cho phiên web).`);
       } catch (err) {
         job.error = err?.message ?? String(err);
         this.log.error(`Nhập lịch sử nhóm thất bại: ${job.error}`);
