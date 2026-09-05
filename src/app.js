@@ -118,12 +118,21 @@ export async function startApp({ platform, port = PORT } = {}) {
   const automation = {
     timer: null, lastRunAt: null, lastResult: null, nextRunAt: null, running: false,
     status() { const s = loadSettings(); return { minutes: Number(s.autoUpdateMinutes ?? 60), preset: s.defaultPreset ?? 'waiting', lastRunAt: this.lastRunAt, nextRunAt: this.nextRunAt, running: this.running, lastResult: this.lastResult ? { conversations: this.lastResult.conversations, messages: this.lastResult.messages, error: this.lastResult.error ?? null } : null }; },
+    /**
+     * Chạy theo MỐC GIỜ TRÒN (60 phút ⇒ đúng :00, 30 phút ⇒ :00/:30…) thay vì đếm từ lúc mở khoá — để lịch tự động của
+     * Claude Cowork (vd mỗi giờ lúc :10) luôn đọc được gói vừa cập nhật ở :00.
+     */
     schedule() {
-      clearInterval(this.timer); this.timer = null; this.nextRunAt = null;
+      clearTimeout(this.timer); clearInterval(this.timer); this.timer = null; this.nextRunAt = null;
       const mins = Number(loadSettings().autoUpdateMinutes ?? 60);
       if (!db.unlocked || !mins) return;
-      this.timer = setInterval(() => { void this.run('auto'); }, mins * 60e3);
-      this.nextRunAt = Date.now() + mins * 60e3;
+      const period = mins * 60e3;
+      const next = Math.ceil((Date.now() + 1000) / period) * period;
+      this.nextRunAt = next;
+      this.timer = setTimeout(() => {
+        void this.run('auto');
+        this.timer = setInterval(() => { void this.run('auto'); }, period);
+      }, Math.max(1000, next - Date.now()));
     },
     async run(reason = 'auto') {
       if (!db.unlocked || this.running) return null;
@@ -140,12 +149,12 @@ export async function startApp({ platform, port = PORT } = {}) {
       } finally {
         this.running = false;
         const mins = Number(loadSettings().autoUpdateMinutes ?? 60);
-        this.nextRunAt = this.timer && mins ? Date.now() + mins * 60e3 : null;
+        this.nextRunAt = this.timer && mins ? Math.ceil((Date.now() + 1000) / (mins * 60e3)) * (mins * 60e3) : null;
         events.emit('workspace', this.status());
       }
       return this.lastResult;
     },
-    stop() { clearInterval(this.timer); this.timer = null; this.nextRunAt = null; },
+    stop() { clearTimeout(this.timer); clearInterval(this.timer); this.timer = null; this.nextRunAt = null; },
   };
 
   /** Gợi ý phản hồi do Claude ghi vào ket-qua/ — theo dõi thư mục, gắn vào hội thoại (cần db đã mở khoá để đọc tên). */

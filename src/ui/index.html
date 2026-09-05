@@ -438,7 +438,7 @@
         <div class="kv" id="wsKv"></div>
         <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
         <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Tự cập nhật dữ liệu cho Claude định kỳ</b><span>Luôn có sẵn một gói mới; gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+        <div class="setting"><div class="txt"><b>Tự cập nhật dữ liệu cho Claude định kỳ</b><span>Chạy đúng mốc giờ tròn (60 phút = đúng :00) để lịch tự động của Claude Cowork đọc được gói mới. Gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
         <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
       </div>
 

@@ -43,6 +43,12 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
    này: hội thoại có gợi ý hiện nhãn **💡 Có gợi ý**; mở hội thoại thấy thẻ gợi ý (ưu tiên, tóm tắt, câu trả lời, ghi chú)
    → bấm **Dùng gợi ý này** để điền vào ô soạn → sửa → **Gửi**. Gợi ý cũ hơn tin mới nhất được cảnh báo "có tin mới sau gợi ý".
 
+**Tự động hoá hoàn toàn với lịch của Claude Cowork:** ứng dụng cập nhật `du-lieu/` đúng mỗi giờ tròn (:00); trong Claude
+Cowork tạo một *scheduled task* chạy mỗi giờ lúc :10 (vd `10 8-19 * * *`) với nội dung: đọc `huong-dan/00`, bỏ qua nếu
+`de-xuat.json` mới hơn `du-lieu/.trang-thai.json`, ngược lại tổng hợp mọi hội thoại và ghi `ket-qua/de-xuat.json` +
+`YYYY-MM-DD-tong-hop.md`. Ứng dụng nhận file mới trong vài giây và gắn 💡 vào từng hội thoại. Lịch chỉ chạy khi Claude
+Cowork đang mở (đóng thì chạy bù ở lần mở sau). Mẫu prompt đầy đủ: `docs/cowork-scheduled-task.md`.
+
 Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 
 | Đường dẫn | Ai ghi | Nội dung |
