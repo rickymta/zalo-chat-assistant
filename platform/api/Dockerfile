@@ -1,5 +1,5 @@
-# Không khai "# syntax=docker/dockerfile:1" (quy ước hạ tầng MedDental — directive đó bắt BuildKit hỏi
-# Docker Hub trước MỖI lần build; registry tắc một nhịp là hỏng cả pipeline ngay ở bước resolve).
+# Không khai "# syntax=docker/dockerfile:1": directive đó bắt BuildKit hỏi Docker Hub trước MỖI lần build; Docker Hub tắc
+# một nhịp là build hỏng ngay ở bước resolve. BuildKit tích hợp trong Docker Engine hiện tại đã đủ cho Dockerfile này.
 
 FROM node:20-alpine AS deps
 WORKDIR /app
