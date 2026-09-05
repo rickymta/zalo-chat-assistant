@@ -416,6 +416,9 @@
   .ws-line .grow { display: none; }
   .ws-line { flex-wrap: nowrap; }
   .zstrip .pill { min-width: 90px; }
+  .zstrip { flex: 0 1 auto; overflow: hidden; }
+  /* Thanh trên chật (< 1120px): giấu tên ứng dụng và nhãn "Mở thư mục" để pill Zalo và các nút chính còn chỗ. */
+  @media (max-width: 1120px) { .brand-mini b { display: none; } .topbar button[data-open="workspace"] .lbl { display: none; } .topbar button[data-open="workspace"] { padding: 0 10px; } }
   .topbar select { max-width: 160px; }
   .report-dlg .settings-head h2 { white-space: nowrap; margin-right: 4px; }
   .report-dlg .settings-head select { max-width: 200px; }
@@ -573,7 +576,7 @@
     <div class="grow"></div>
     <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
     <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
-    <button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>
+    <button data-open="workspace" title="Mở thư mục làm việc với Claude trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
     <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
     <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
   </header>
