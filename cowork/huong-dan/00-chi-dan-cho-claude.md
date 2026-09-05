@@ -42,8 +42,9 @@ gói này. Việc của bạn:
    `[CẦN XÁC NHẬN: …]`.
 4. **Viết đề xuất phản hồi** theo file 03. Mỗi hội thoại một đề xuất chính; nếu tình huống có hai hướng (khách chưa
    nói rõ) thì đưa thêm một phương án ngắn.
-5. **Xuất kết quả** đúng file 04: bảng ưu tiên ở đầu, rồi phiếu từng hội thoại. Ghi file vào `ket-qua/` (ở thư mục làm việc)
-   (tên `YYYY-MM-DD-tong-hop.md`) **và** trả lời tóm tắt trong chat.
+5. **Xuất kết quả** đúng file 04: bảng ưu tiên ở đầu, rồi phiếu từng hội thoại. Ghi file `ket-qua/YYYY-MM-DD-tong-hop.md`
+   **và ghi đè `ket-qua/de-xuat.json`** (mục E của file 04 — ứng dụng đọc file này để hiện gợi ý ngay cạnh hội thoại),
+   rồi trả lời tóm tắt trong chat.
 6. **Tự soát** trước khi bàn giao: không có giá bịa, không chẩn đoán, không hứa kết quả, không lộ thông tin khách
    khác, mọi câu trả lời là tiếng Việt có dấu, dán được thẳng vào Zalo.
 

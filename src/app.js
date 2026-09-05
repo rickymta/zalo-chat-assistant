@@ -20,6 +20,7 @@ import { AuthClient } from './auth/client.js';
 import { Cipher } from './crypto/cipher.js';
 import { ensureWorkspace, updateWorkspaceData } from './workspace.js';
 import { presetParams } from './server.js';
+import { SuggestionStore } from './suggestions.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -59,6 +60,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       void manager.restoreAll();
       void this.reencryptIfNeeded();
       automation.schedule();
+      suggestions.start();
       setTimeout(() => { void automation.run('sau khi mở khoá'); }, 10000);
       return true;
     },
@@ -66,6 +68,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     /** Khoá lại: dừng Zalo (không còn khoá để ghi tin), gỡ khoá khỏi db. */
     lock() {
       automation.stop();
+      suggestions.stop();
       manager.stopAll();
       db.setCipher(null);
       cipher.clear();
@@ -145,8 +148,12 @@ export async function startApp({ platform, port = PORT } = {}) {
     stop() { clearInterval(this.timer); this.timer = null; this.nextRunAt = null; },
   };
 
+  /** Gợi ý phản hồi do Claude ghi vào ket-qua/ — theo dõi thư mục, gắn vào hội thoại (cần db đã mở khoá để đọc tên). */
+  const suggestions = new SuggestionStore({ root: WORKSPACE_DIR, db, log });
+  suggestions.on('changed', (s) => events.emit('suggestions', s));
+
   const paths = { dataDir: DATA_DIR, workspaceDir: WORKSPACE_DIR, coworkDir: COWORK_DIR, uiDir: UI_DIR };
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
@@ -162,6 +169,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     stopped = true;
     log.info('Đang dừng…');
     automation.stop();
+    suggestions.stop();
     manager.stopAll();
     try { await Promise.race([server.close(), new Promise((r) => setTimeout(r, 3000))]); } catch { /* bỏ qua */ }
     try { db.close(); } catch { /* bỏ qua */ }

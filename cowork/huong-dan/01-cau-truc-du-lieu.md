@@ -25,7 +25,7 @@ mới (giải mã từ cơ sở dữ liệu); `ket-qua/` và `huong-dan/` giữ 
 ```
 # Hội thoại: Nguyễn Thị Lan
 
-- Loại: 1-1 · Mã thread: `1001`
+- Loại: 1-1 · Mã thread: `1001` · Mã tài khoản: `770338730752256045`
 - SĐT khách: 0912000001
 - Tài khoản Zalo của mình: Tư vấn viên Demo (0985018688)
 - Khoảng thời gian trong gói: 04/09/2026 08:10:00 → 04/09/2026 08:40:00

@@ -96,3 +96,35 @@ Anh A ơi, về chi phí ghép xương em xin lỗi vì trả lời muộn ạ. 
 ```
 
 Nhóm không có việc của mình và không có câu hỏi hướng tới mình thì chỉ giữ phần **Chủ đề đã bàn** + **Quyết định** (tối đa 6 dòng).
+
+## E. BẮT BUỘC kèm file máy đọc `ket-qua/de-xuat.json`
+
+Ứng dụng Zalo Chat Assistant đọc file này để hiện gợi ý **ngay trong màn Hội thoại** (tư vấn viên bấm là điền sẵn vào ô
+soạn tin). Mỗi lần bàn giao, ngoài file `.md` ở mục A–D, **ghi đè** `ket-qua/de-xuat.json` với cấu trúc:
+
+```json
+{
+  "createdAt": "2026-09-05T08:15:00+07:00",
+  "items": [
+    {
+      "threadId": "1001",
+      "accountId": "770338730752256045",
+      "name": "Nguyễn Thị Lan",
+      "priority": "P2",
+      "summary": "Hỏi giá Invisalign, đã gửi ảnh, hỏi cơ sở gần Thanh Xuân; chờ 3,2 giờ.",
+      "reply": "Chị Lan ơi, em nhận được ảnh rồi ạ…\nChị ở Thanh Xuân thì tiện nhất là MedDental Khuất Duy Tiến…",
+      "notes": "[CẦN XÁC NHẬN: giá Invisalign hiện tại]",
+      "nextAction": "Gửi bảng giá tham khảo, chốt lịch.",
+      "file": "du-lieu/hoi-thoai/001-nguyen-thi-lan.md"
+    }
+  ]
+}
+```
+
+Quy tắc:
+
+- `threadId` và `accountId` lấy từ dòng "Mã thread" / "Mã tài khoản" ở đầu file hội thoại — **bắt buộc có `threadId`**.
+- `reply` là **đúng văn bản dán vào Zalo** (nhiều dòng dùng `\n`, không markdown). Không có đề xuất thì **không đưa mục đó vào** `items`.
+- `priority`: `P1` | `P2` | `P3` | `Nhóm`. Hội thoại "không cần trả lời" không đưa vào.
+- Một hội thoại chỉ một mục; nếu có phương án A/B thì ghép vào `reply` bằng hai đoạn có tiêu đề "Phương án A:" / "Phương án B:".
+- File `.md` vẫn là bản người đọc; `de-xuat.json` là bản máy đọc — hai bản phải khớp nhau.

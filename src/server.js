@@ -50,7 +50,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -71,6 +71,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('auth', (d) => broadcast('auth', d));
   events.on('security', (d) => broadcast('security', d));
   events.on('workspace', (d) => broadcast('workspace', d));
+  events.on('suggestions', (d) => broadcast('suggestions', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -111,6 +112,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       platform: { name: platform.name, autoStart: platform.getAutoStart(), version: platform.appVersion },
       workspace: unlocked ? workspaceInfo(paths.workspaceDir) : { root: paths.workspaceDir, hasData: false },
       automation: automation?.status() ?? null,
+      suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
   });
@@ -188,6 +190,12 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       .map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], raw_json: undefined }));
     return { conversation: conv, messages };
   });
+
+  // ── Gửi tin & gợi ý của Claude ───────────────────────────────────────────────
+  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text)));
+  app.get('/api/suggestions', async () => suggestions?.all() ?? { count: 0, items: [] });
+  app.post('/api/suggestions/refresh', async () => suggestions?.refresh() ?? { count: 0 });
+  app.get('/api/conversations/:accountId/:threadId/suggestions', async (req) => suggestions?.forThread(req.params.accountId, req.params.threadId) ?? []);
 
   // ── Thư mục làm việc với Claude ──────────────────────────────────────────────
   app.get('/api/workspace', async () => workspaceInfo(paths.workspaceDir));

@@ -259,6 +259,19 @@
   .kv div:nth-child(odd) { color: var(--muted); }
   .kv code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
   .split { flex: 1; min-height: 0; height: auto; }
+  .tag.sug { background: #fff8e1; color: #92400e; }
+  .sug-card { flex: none; border-top: 1px solid var(--line); background: #fffbeb; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 40%; overflow: auto; }
+  .sug-card .head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .sug-card .prio { font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+  .sug-card .prio.p1 { background: var(--bad-soft); color: var(--bad); }
+  .sug-card .reply { white-space: pre-wrap; font-size: 15px; background: #fff; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 12px; }
+  .sug-card .notes { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+  .sug-card .acts { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+  .sug-card .head { position: sticky; top: 0; background: #fffbeb; padding-bottom: 4px; }
+  .composer { flex: none; border-top: 1px solid var(--line); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-end; background: #fff; }
+  .composer textarea { flex: 1; min-height: 46px; max-height: 160px; resize: vertical; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+  .composer textarea:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
+  .composer .hint { flex-basis: 100%; font-size: 13px; color: var(--muted); }
   .pane { min-height: 0; }
   #reencryptBar { width: 100%; flex: none; }
 </style>
@@ -366,6 +379,11 @@
         <div class="pane">
           <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Nội dung sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden>📁 Đưa riêng hội thoại này cho Claude</button></div>
           <div class="msgs" id="msgs"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div>
+          <div class="sug-card" id="sugCard" hidden></div>
+          <div class="composer" id="composer" hidden>
+            <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+            <button class="primary" id="btnSend">Gửi</button>
+          </div>
         </div>
       </div>
     </section>
@@ -503,8 +521,9 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions });
     if (s.locked) { showLogin(); return; }
+    try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { state.sugByKey = state.sugByKey || {}; }
     showApp();
     renderSide(); renderStrip(); renderReencrypt();
     if (state.view === 'settings') renderSettings();
@@ -531,6 +550,7 @@
     $('#zaloStrip').innerHTML = '<div class="zalo">' + zalo + '</div>' +
       '<span class="chipstat">⏳ <b>' + num(s.waiting) + '</b> chờ trả lời</span><span class="chipstat">📩 ' + num(s.today) + ' tin hôm nay</span>' + (s.groups ? '<span class="chipstat">👥 ' + num(s.groups) + ' nhóm</span>' : '') +
       (job ? '<span class="chipstat">⏳ nhập lịch sử nhóm ' + job.done + '/' + job.total + '</span>' : '') +
+      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '') +
       '<span class="grow"></span><select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>' +
       '<button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button><button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>';
     $('#presetSel').value = state.settings.defaultPreset || 'waiting';
@@ -583,7 +603,7 @@
     const key = c.account_id + '|' + c.thread_id;
     const w = waiting ? waitingLabel(c) : null;
     const who = c.last_message_outbound ? 'Mình' : (c.is_group ? (c.last_message_sender || '') : '');
-    const tag = c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>');
+    const tag = (c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>')) + ((state.sugByKey || {})[key]?.length ? ' <span class="tag sug">💡 Có gợi ý</span>' : '');
     return '<div class="conv ' + (state.selected === key ? 'active' : '') + '" data-key="' + esc(key) + '">' + avatarHtml(c.avatar_url, c.name) + '<div class="body"><div class="top"><span class="nm">' + esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div><div class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</div>' + tag + '</div></div>';
   }
   document.addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it) return; state.selected = it.dataset.key; $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === state.selected)); loadMessages(); });
@@ -619,7 +639,37 @@
       return sep + '<div class="bubble ' + (m.is_outbound ? 'out' : '') + ' ' + (m.recalled ? 'recalled' : '') + '"><div class="meta">' + (m.is_outbound ? 'Mình' : esc(m.sender_name || c.name || 'Khách')) + ' · ' + fmtClock(m.event_time) + (m.recalled ? ' · đã thu hồi' : '') + '</div>' + (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') + esc(m.text || '') + (att ? '<div class="att">' + att + '</div>' : '') + '</div>';
     }).join('') : '<div class="empty">Chưa có tin nhắn.</div>';
     box.scrollTop = box.scrollHeight;
+    renderSuggestion(accountId, threadId);
+    const acc = state.accounts.find((a) => a.id === accountId);
+    const comp = $('#composer'); comp.hidden = false;
+    const canSend = acc?.status === 'connected';
+    $('#btnSend').disabled = !canSend; $('#composeText').disabled = !canSend;
+    $('#composeText').placeholder = canSend ? 'Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
   }
+  function renderSuggestion(accountId, threadId) {
+    const list = (state.sugByKey || {})[accountId + '|' + threadId] || [];
+    const card = $('#sugCard');
+    if (!list.length) { card.hidden = true; card.innerHTML = ''; return; }
+    const it = list[0];
+    card.hidden = false;
+    card.innerHTML = '<div class="head"><span class="prio ' + (it.priority === 'P1' ? 'p1' : '') + '">' + esc(it.priority || 'Gợi ý') + '</span><b>💡 Gợi ý từ Claude</b> · ' + fmtTime(it.writtenAt) + (it.hasNewer ? ' · <span style="color:var(--warn)">⚠️ có tin mới sau gợi ý — đọc lại trước khi gửi</span>' : '') + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '<span class="acts" style="margin-left:auto"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span></div>' +
+      (it.summary ? '<div class="notes">' + esc(it.summary) + '</div>' : '') +
+      '<div class="reply">' + esc(it.reply) + '</div>' +
+      (it.notes ? '<div class="notes">📝 ' + esc(it.notes) + '</div>' : '');
+    $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
+    $('#btnCopySug').onclick = async () => { try { await navigator.clipboard.writeText(it.reply); toast('Đã sao chép gợi ý.'); } catch { toast('Không sao chép được.'); } };
+  }
+  async function sendCurrent() {
+    if (!state.selected) return;
+    const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
+    const [accountId, threadId] = state.selected.split('|');
+    await busy($('#btnSend'), 'Đang gửi…', async () => {
+      try { await api('/api/conversations/' + encodeURIComponent(accountId) + '/' + encodeURIComponent(threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; toast('Đã gửi.'); await loadMessages(); loadConversations(); }
+      catch (err) { toast('Không gửi được: ' + err.message); }
+    });
+  }
+  $('#btnSend').onclick = sendCurrent;
+  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } });
   $('#chatExportBtn').onclick = () => { if (!state.selected) return; const [accountId, threadId] = state.selected.split('|'); updateWorkspace({ preset: 'one', accountIds: [accountId], threadIds: [threadId] }, $('#chatExportBtn')); };
 
   // ── Cài đặt ──────────────────────────────────────────────────────────────
@@ -704,7 +754,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace'].forEach((ev) => es.addEventListener(ev, scheduleReload));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions'].forEach((ev) => es.addEventListener(ev, scheduleReload));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

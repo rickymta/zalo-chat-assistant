@@ -1,9 +1,10 @@
 # Zalo Chat Assistant
 
 Ứng dụng macOS cho tư vấn viên MedDental: **đăng nhập tài khoản ứng dụng** (máy chủ xác thực riêng), **kết nối Zalo cá
-nhân bằng mã QR**, **tự lưu mọi tin nhắn đến/đi vào máy ở dạng mã hoá**, và **duy trì một thư mục làm việc** để
-**Claude Cowork** tổng hợp hội thoại và đề xuất câu trả lời. Ứng dụng **chỉ đọc** Zalo — không gửi tin, không đánh dấu
-đã xem — để giảm rủi ro cho tài khoản.
+nhân bằng mã QR**, **tự lưu mọi tin nhắn đến/đi vào máy ở dạng mã hoá**, **duy trì một thư mục làm việc** để
+**Claude Cowork** tổng hợp hội thoại và đề xuất câu trả lời, **hiện gợi ý của Claude ngay cạnh hội thoại** và cho
+**trả lời trực tiếp** từ ứng dụng (mỗi tin gửi là một lần người dùng bấm Gửi — không gửi tự động/hàng loạt; tin gửi đi
+cũng được lưu mã hoá). Ứng dụng không đánh dấu đã xem.
 
 Dùng cùng thư viện `zca-js` và cùng cách đăng nhập với kênh Zalo cá nhân trong CRM (`backend/services/zalo-personal-bridge`
 của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy cá nhân.
@@ -38,7 +39,9 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
 4. **Claude Cowork**: trỏ Cowork vào `~/Documents/Zalo Chat Assistant/` **một lần**. Mỗi khi muốn Claude làm việc, bấm
    **📁 Cập nhật dữ liệu cho Claude** (chọn kiểu: khách đang chờ trả lời / hôm nay / 7 ngày / nhóm / tất cả), rồi nhắn
    Cowork: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*
-   Kết quả nằm ở `ket-qua/`. Tư vấn viên đọc, sửa, tự gửi trên Zalo.
+   Claude ghi kết quả vào `ket-qua/` (bản `.md` cho người đọc **và** `de-xuat.json` cho máy đọc). Ứng dụng theo dõi thư mục
+   này: hội thoại có gợi ý hiện nhãn **💡 Có gợi ý**; mở hội thoại thấy thẻ gợi ý (ưu tiên, tóm tắt, câu trả lời, ghi chú)
+   → bấm **Dùng gợi ý này** để điền vào ô soạn → sửa → **Gửi**. Gợi ý cũ hơn tin mới nhất được cảnh báo "có tin mới sau gợi ý".
 
 Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 
@@ -124,6 +127,7 @@ src/crypto/cipher.js    AES-256-GCM từng trường, khoá dẫn xuất HKDF, g
 src/db.js               SQLite: mã hoá khi ghi / giải mã khi đọc, tìm kiếm bằng JS, mã hoá lại theo lô
 src/zalo/*              manager (QR, listener, nhập lịch sử nhóm), normalize, profiles, groupHistory (endpoint mới)
 src/workspace.js        Thư mục làm việc Claude: huong-dan/ (chép từ cowork/), du-lieu/ (ghi đè), ket-qua/
+src/suggestions.js      Đọc gợi ý Claude trong ket-qua/ (de-xuat.json, fallback .md theo mẫu phiếu), gắn vào hội thoại, theo dõi thay đổi
 src/export/*            markdown.js (mỗi hội thoại 1 file), excel.js (1 sheet/hội thoại)
 src/server.js           API bridge: /api/auth/*, /api/security/*, /api/workspace/*, Zalo, hội thoại; gác 423 khi chưa mở khoá
 src/ui/index.html       Giao diện: Đăng nhập/Đăng ký/Quên mật khẩu → Hội thoại · Cài đặt

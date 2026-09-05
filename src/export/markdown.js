@@ -66,6 +66,7 @@ export async function exportMarkdown({
   const now = Date.now();
   const width = Math.max(3, String(selection.length).length);   // 001-, 002-… để Finder sắp đúng thứ tự
   const indexRows = [];
+  const fileMap = {};   // "hoi-thoai/001-....md" → { accountId, threadId, name } — để ứng dụng gắn gợi ý của Claude vào đúng hội thoại
   let totalMessages = 0;
   let waitingCount = 0;
   let jsonl = null;
@@ -83,7 +84,7 @@ export async function exportMarkdown({
     const lines = [];
     lines.push(`# Hội thoại: ${c.name || '(chưa rõ tên)'}`);
     lines.push('');
-    lines.push(`- Loại: ${c.is_group ? 'Nhóm' : '1-1'} · Mã thread: \`${c.thread_id}\``);
+    lines.push(`- Loại: ${c.is_group ? 'Nhóm' : '1-1'} · Mã thread: \`${c.thread_id}\` · Mã tài khoản: \`${c.account_id}\``);
     lines.push(`- SĐT khách: ${c.phone || 'không có'}`);
     lines.push(`- Tài khoản Zalo của mình: ${account?.display_name || c.account_id}${account?.phone ? ` (${account.phone})` : ''}`);
     lines.push(`- Khoảng thời gian trong gói: ${formatVn(stats?.first_at)} → ${formatVn(stats?.last_at)}`);
@@ -118,6 +119,7 @@ export async function exportMarkdown({
     }
     lines.push('');
     writeText(path.join(convDir, fileName), lines.join('\n'));
+    fileMap[`hoi-thoai/${fileName}`] = { accountId: c.account_id, threadId: c.thread_id, name: c.name ?? null, isGroup: !!c.is_group };
 
     indexRows.push({
       idx, file: `hoi-thoai/${fileName}`, name: c.name || '(chưa rõ tên)', kind: c.is_group ? 'Nhóm' : '1-1',
@@ -129,6 +131,8 @@ export async function exportMarkdown({
     });
   });
   if (jsonl) await new Promise((r) => jsonl.end(r));
+
+  writeText(path.join(outDir, '.map.json'), JSON.stringify(fileMap, null, 2));
 
   // 00-INDEX.md
   const idx = [];

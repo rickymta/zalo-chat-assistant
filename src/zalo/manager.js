@@ -477,6 +477,42 @@ export class ZaloManager extends EventEmitter {
     }
   }
 
+  // ── Gửi tin ──────────────────────────────────────────────────────────────────
+  /**
+   * Gửi tin văn bản do NGƯỜI DÙNG soạn (người dùng chốt 05/09/2026: cho phép trả lời từ ứng dụng). Tin gửi đi được
+   * lưu ngay (mã hoá như mọi tin khác); listener với selfListen cũng sẽ dội lại tin này — chống trùng theo msgId.
+   * Không có gửi tự động/hàng loạt: mỗi lời gọi là một lần người dùng bấm Gửi.
+   */
+  async sendMessage(id, threadId, text) {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không gửi được.');
+    const body = String(text ?? '').trim();
+    if (!body) throw new Error('Nội dung trống.');
+    if (body.length > 4000) throw new Error('Tin quá dài (tối đa 4000 ký tự).');
+    const tid = String(threadId);
+    const conv = this.db.getConversation(id, tid);
+    const isGroup = !!conv?.is_group;
+    const res = await live.api.sendMessage({ msg: body }, tid, isGroup ? ThreadType.Group : ThreadType.User);
+    // sendMessage trả { message: { msgId } | null, attachment: [...] } — KHÔNG phải { msgId } phẳng (bài học từ CRM).
+    const msgId = res?.message?.msgId ?? res?.attachment?.[0]?.msgId ?? null;
+    const account = this.db.getAccount(id);
+    const now = Date.now();
+    const row = {
+      account_id: id, thread_id: tid, is_group: isGroup,
+      zalo_msg_id: msgId ? String(msgId) : `local-${now}`, cli_msg_id: null,
+      is_outbound: 1, sender_id: id, sender_name: account?.display_name ?? 'Tôi',
+      type: 'text', text: body, attachments_json: null, quote_text: null,
+      event_time: now, source: 'sent', raw_json: null, created_at: now,
+      conv_name: null, conv_avatar: null, conv_phone: null,
+      preview: previewOf({ type: 'text', text: body, attachments: [] }),
+    };
+    const inserted = this.db.insertMessage(row);
+    if (msgId) this.db.bumpLastMsgId(id, isGroup, String(msgId));
+    if (inserted) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: row.preview, eventTime: now, source: 'sent' });
+    this.log.info(`Đã gửi tin tới ${conv?.name ? '[hội thoại]' : tid} (${body.length} ký tự).`);
+    return { ok: true, msgId: msgId ? String(msgId) : null, eventTime: now };
+  }
+
   // ── Dừng / đăng xuất ─────────────────────────────────────────────────────────
 
   isLive(id) { return this.live.has(id); }

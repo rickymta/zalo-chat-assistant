@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   /** Kèm file Excel khi cập nhật dữ liệu cho Claude. */
   includeExcel: false,
   /** Kiểu chọn dữ liệu mặc định cho nút "Cập nhật dữ liệu cho Claude". */
-  defaultPreset: 'waiting',
+  defaultPreset: 'today',
   /** Tự cập nhật du-lieu/ cho Claude mỗi N phút (0 = tắt). Luôn chỉ có MỘT gói — ghi đè, không sinh thêm thư mục. */
   autoUpdateMinutes: 60,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
