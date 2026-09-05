@@ -256,9 +256,9 @@
     const url = a.url ? esc(a.url) : '';
     // Ảnh/sticker lỗi tải (link Zalo hết hạn, không có mạng) → đổi sang chip có tên + liên kết, không để ô trống.
     const onErr = (label) => ' onerror="this.parentElement.outerHTML=\x27<a class=&quot;att-chip&quot; href=&quot;' + url + '&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>' + label + ' (không tải được — mở liên kết)</a>\x27"';
-    if (a.type === 'sticker') return url ? '<span data-preview="' + url + '" data-name="Sticker" title="Xem lớn"><img class="sticker" src="' + url + '" alt="Sticker" loading="lazy"' + onErr('😊 Sticker') + '></span>' : '<span class="att-chip">😊 Sticker</span>';
+    if (a.type === 'sticker') return url ? '<span data-preview="' + url + '" data-name="Sticker"><img class="sticker" src="' + url + '" alt="Sticker" loading="lazy"' + onErr('😊 Sticker') + '></span>' : '<span class="att-chip">😊 Sticker</span>';
     // Ảnh/GIF: bấm mở hộp xem ảnh trong ứng dụng (không mở trình duyệt); href giữ để chuột phải "sao chép liên kết" vẫn dùng được.
-    if (a.type === 'image' || a.type === 'gif') return url ? '<a href="' + url + '" class="att-open" data-preview="' + url + '" data-name="' + esc(a.name || (a.type === 'gif' ? 'Ảnh động' : 'Ảnh')) + '" title="Xem lớn"><img class="att-img" src="' + url + '" alt="' + esc(a.name || 'Ảnh') + '" loading="lazy"' + onErr((a.type === 'gif' ? '🎞 ' : '🖼 ') + esc(a.name || 'Ảnh')) + '></a>' : '<span class="att-chip">🖼 ' + esc(a.name || 'Ảnh') + '</span>';
+    if (a.type === 'image' || a.type === 'gif') return url ? '<a href="' + url + '" class="att-open" data-preview="' + url + '" data-name="' + esc(a.name || (a.type === 'gif' ? 'Ảnh động' : 'Ảnh')) + '"><img class="att-img" src="' + url + '" alt="' + esc(a.name || 'Ảnh') + '" loading="lazy"' + onErr((a.type === 'gif' ? '🎞 ' : '🖼 ') + esc(a.name || 'Ảnh')) + '></a>' : '<span class="att-chip">🖼 ' + esc(a.name || 'Ảnh') + '</span>';
     if (a.type === 'video') return url ? '<video class="att-video" controls preload="metadata"' + (a.thumb ? ' poster="' + esc(a.thumb) + '"' : '') + ' src="' + url + '"></video>' : '<span class="att-chip">🎬 Video</span>';
     if (a.type === 'audio') return url ? '<audio class="att-audio" controls preload="none" src="' + url + '"></audio>' : '<span class="att-chip">🎤 Ghi âm</span>';
     if (a.type === 'file') return url ? '<a class="att-chip file" href="' + url + '" target="_blank" rel="noopener">📎 ' + esc(a.name || 'Tệp') + '</a>' : '<span class="att-chip">📎 ' + esc(a.name || 'Tệp') + '</span>';
@@ -275,28 +275,29 @@
     more: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     like: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
   };
-  function bubble(m) {
+  function bubble(m, cont = false) {
     const c = chat.conv || {};
     const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
     const atts = (m.attachments || []);
     const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
     const rs = (m.reactions || []).slice().sort((a, b) => b.count - a.count); const total = rs.reduce((n, r) => n + r.count, 0); const mine = rs.some((r) => r.mine);
     const canAct = !m.recalled && m.zalo_msg_id && !/^(local|fwd)-/.test(String(m.zalo_msg_id));
-    // Pill cảm xúc + nút thả nhanh: bám góc dưới-phải của bong bóng/ảnh (như Zalo), nút chỉ hiện khi rê chuột.
+    // Pill cảm xúc + nút thả nhanh bám góc dưới-phải của bong bóng/thẻ ảnh (như Zalo); nút chỉ hiện khi rê chuột.
     const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + (total > 1 ? '<b>' + total + '</b>' : '') + '</span>' : '';
     const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
-    const reacts = (pill || quick) ? '<div class="reacts">' + pill + quick + '</div>' : '';
+    const reacts = (pill ? '<div class="reacts">' + pill + '</div>' : '') + quick;
     const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
-    const showAvatar = !!c.is_group && !m.is_outbound;
+    // Trong nhóm: avatar + tên chỉ ở tin ĐẦU CỤM (cùng người gửi, cách dưới 5 phút); tin tiếp theo thụt lề bằng chỗ avatar.
+    const grpIn = !!c.is_group && !m.is_outbound;
+    const avatar = grpIn ? (cont ? '<div class="avatar-gap"></div>' : avatarHtml(m.sender_avatar || null, who, 'msg')) : '';
+    const meta = grpIn && !cont ? '<div class="meta">' + esc(who) + '</div>' : '';
     const body = m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (m.text || atts.length ? callText(m.text) : '<i class="faint">[Nội dung không hiển thị được — ' + esc({ text: 'tin trống', image: 'ảnh', gif: 'ảnh động', sticker: 'sticker', video: 'video', audio: 'ghi âm', file: 'tệp', link: 'liên kết', location: 'vị trí', other: 'tin hệ thống' }[m.type] || m.type) + ']</i>');
-    const time = '<div class="time">' + fmtClock(m.event_time) + '</div>';
-    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + (rs.length ? ' has-reacts' : '') + (mediaOnly ? ' is-media' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
-      (showAvatar ? avatarHtml(null, who, 'xs') : '') +
-      '<div class="mcol">' + (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + (cont ? ' cont' : '') + (rs.length ? ' has-reacts' : '') + (mediaOnly ? ' is-media' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
+      avatar + '<div class="mcol">' + meta +
       '<div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
       (m.quote_text ? quoteHtml(m.quote_text) : '') + body +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      (mediaOnly ? '' : time) + reacts + '</div>' + (mediaOnly ? time : '') + '</div>' + acts + '</div>';
+      '<div class="time">' + fmtClock(m.event_time) + '</div>' + reacts + '</div></div>' + acts + '</div>';
   }
   // Hành động trên tin: thả cảm xúc (nút nhanh + bảng 6 cảm xúc), trả lời, chuyển tiếp, thêm (sao chép, xem ảnh); bấm pill của mình để bỏ cảm xúc.
   const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));
@@ -386,8 +387,13 @@
   function renderMessages(scrollBottom) {
     const box = $('#msgs'), list = $('#msgsList');
     const prevH = box.scrollHeight, prevTop = box.scrollTop;
-    let lastDay = '', html = '';
-    for (const m of chat.items) { const d = dayKey(m.event_time); if (d !== lastDay) { html += '<div class="day-sep">' + fmtDay(m.event_time) + '</div>'; lastDay = d; } html += bubble(m); }
+    let lastDay = '', html = '', prev = null;
+    for (const m of chat.items) {
+      const d = dayKey(m.event_time);
+      if (d !== lastDay) { html += '<div class="day-sep">' + fmtDay(m.event_time) + '</div>'; lastDay = d; prev = null; }
+      const cont = !!prev && !!prev.is_outbound === !!m.is_outbound && String(prev.sender_id) === String(m.sender_id) && (m.event_time - prev.event_time) < 5 * 60e3;
+      html += bubble(m, cont); prev = m;
+    }
     list.innerHTML = html || '<div class="empty">Chưa có tin nhắn.</div>';
     $('#msgsTop').textContent = chat.hasMore ? 'Cuộn lên để xem tin cũ hơn' : (chat.items.length ? 'Đầu hội thoại đã lưu' : '');
     if (scrollBottom) box.scrollTop = box.scrollHeight; else box.scrollTop = box.scrollHeight - prevH + prevTop;

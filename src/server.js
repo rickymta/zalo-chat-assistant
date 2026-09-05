@@ -213,7 +213,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const limit = req.query?.limit ? Number(req.query.limit) : 60;
     const rows = db.getRecentMessages(accountId, threadId, { limit, before: req.query?.before ? Number(req.query.before) : null });
     const reactions = db.reactionsForMessages(accountId, threadId, rows.map((m) => m.zalo_msg_id).filter(Boolean), accountId);
-    const messages = rows.map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], reactions: reactions[m.zalo_msg_id] ?? [], raw_json: undefined }));
+    const avatars = db.contactAvatars(accountId, rows.map((m) => m.sender_id));
+    const messages = rows.map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], reactions: reactions[m.zalo_msg_id] ?? [], sender_avatar: avatars[String(m.sender_id)] ?? null, raw_json: undefined }));
     // Lần tải đầu (không phân trang) kèm tóm tắt của Claude cho hội thoại này — cột trợ lý dùng.
     const claude = req.query?.before ? undefined : (() => { try { return claudeEntryFor(paths.workspaceDir, threadId); } catch { return null; } })();
     return { conversation: conv, messages, hasMore: rows.length >= limit, claude };

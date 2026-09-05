@@ -100,23 +100,25 @@ const css = `
   .chatcol .chat-head { background: var(--panel); }
   .msgs { flex: 1; overflow-y: auto; padding: 12px 20px 16px; display: flex; flex-direction: column; }
   .msgs-top { text-align: center; color: var(--faint); font-size: 12px; padding: 4px 0 10px; flex: none; }
-  #msgsList { display: flex; flex-direction: column; gap: 6px; }
+  #msgsList { display: flex; flex-direction: column; gap: 0; padding-bottom: 6px; }
   /* Tin nhắn kiểu Zalo: hàng ngang (avatar nhỏ ở nhóm) + cột bong bóng; hành động hiện khi rê chuột; cảm xúc bám góc bong bóng. */
-  .msg { display: flex; flex-direction: row; align-items: flex-end; gap: 6px; content-visibility: auto; contain-intrinsic-size: auto 56px; padding: 1px 0; }
+  .msg { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; content-visibility: auto; contain-intrinsic-size: auto 56px; padding: 0; margin-top: 10px; }
+  .msg.cont { margin-top: 3px; }
+  .avatar.msg { width: 36px; height: 36px; font-size: 13px; flex: none; }
+  .avatar-gap { width: 36px; flex: none; }
   .msg.out { justify-content: flex-end; }
   .msg .mcol { display: flex; flex-direction: column; align-items: flex-start; max-width: 74%; min-width: 0; }
   .msg.out .mcol { align-items: flex-end; }
-  .msg .avatar.xs { width: 28px; height: 28px; font-size: 11px; margin-bottom: 18px; flex: none; }
+
   /* Thanh 3 nút vuông (Trả lời · Chuyển tiếp · Thêm) ở góc dưới cạnh tin, hiện khi rê chuột — như Zalo. */
-  .msg-acts { display: none; gap: 4px; align-self: flex-end; margin: 0 4px 22px; }
-  .msg.is-media .msg-acts { margin-bottom: 22px; }
+  .msg-acts { display: none; gap: 4px; align-self: flex-end; margin: 0 0 -6px 30px; }
+  .msg.out .msg-acts { margin: 0 30px -6px 0; }
+  .msg.has-reacts .msg-acts { margin-bottom: 0; }
   .msg:hover .msg-acts { display: inline-flex; }
   .msg.out .msg-acts { order: -1; }
   .msg-acts button { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid #dfe4ec; background: #fff; color: #4b5563; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .msg-acts button:hover { background: #f1f5fb; color: var(--primary); border-color: #c7dcff; }
-  .msg .mcol .meta { font-size: 12px; color: var(--primary); font-weight: 600; margin: 0 0 3px 4px; }
-  .msg .bubble .meta { display: none; }
-  .msg .mcol > .time { font-size: 11px; color: var(--faint); margin: 4px 0 0 4px; }
+  .msg .mcol .meta { font-size: 12px; color: #6b7280; font-weight: 500; margin: 2px 0 4px 2px; }
   .more-pop { position: fixed; z-index: 60; display: flex; flex-direction: column; min-width: 200px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.14); }
   .more-pop button { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; text-align: left; padding: 8px 10px; border-radius: 8px; font-size: 13.5px; height: auto; }
   .more-pop button:hover { background: #f1f5fb; }
@@ -146,10 +148,13 @@ const css = `
   .msg .bubble .quote { display: flex; flex-direction: column; border-left: 3px solid var(--primary); background: rgba(10,102,255,.06); border-radius: 6px; padding: 4px 8px; margin-bottom: 6px; white-space: normal; }
   .msg .bubble .quote b { font-size: 12px; color: var(--primary); }
   .msg .bubble .quote span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .msg .bubble { max-width: 100%; position: relative; padding: 8px 12px 6px; border-radius: 14px; background: #fff; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
-  .msg.out .bubble { background: #e5efff; border-color: #c7dcff; }
-  .msg .bubble.media { background: transparent; border: 0; padding: 0; }
-  .msg .bubble.media .time { position: static; margin-top: 2px; }
+  .msg .bubble { max-width: 100%; position: relative; padding: 8px 12px 6px; border-radius: 10px; background: #fff; border: 0; box-shadow: 0 1px 1px rgba(0,0,0,.06); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
+  .msg.out .bubble { background: #e5efff; }
+  /* Tin ảnh/sticker: thẻ trắng ôm ảnh, giờ ở góc dưới-trái trong thẻ (như Zalo). */
+  .msg .bubble.media { background: #fff; padding: 4px; }
+  .msg .bubble.media .atts { margin: 0; }
+  .msg .bubble.media .att-img, .msg .bubble.media .sticker { border-radius: 8px; max-width: 360px; max-height: 360px; }
+  .msg .bubble.media .time { padding: 3px 6px 1px; margin: 0; }
   .msg .bubble .meta { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 2px; white-space: normal; }
   .msg .bubble .time { font-size: 11px; color: var(--faint); text-align: right; margin-top: 3px; }
   .msg .bubble .quote { border-left: 3px solid #c7d2de; padding-left: 8px; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
@@ -165,9 +170,10 @@ const css = `
   .msg .bubble { position: relative; }
   .msg.has-reacts { padding-bottom: 6px; }
   .msg.has-reacts .bubble { margin-bottom: 6px; }
-  .reacts { position: absolute; right: 6px; bottom: -10px; z-index: 1; display: flex; align-items: center; gap: 4px; }
-  .msg.is-media .reacts { right: 8px; bottom: -8px; }
-  .react-quick { display: none; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid #dfe4ec; background: #fff; color: #6b7280; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+  .reacts { position: absolute; right: 8px; bottom: -10px; z-index: 1; display: flex; align-items: center; }
+  /* Nút 👍 thả nhanh: ngay ngoài mép phải (tin nhận) / mép trái (tin gửi), ngang hàng pill cảm xúc — như Zalo. */
+  .react-quick { display: none; position: absolute; bottom: -10px; right: -30px; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid #dfe4ec; background: #fff; color: #6b7280; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.14); z-index: 1; }
+  .msg.out .react-quick { right: auto; left: -30px; }
   .msg:hover .react-quick { display: grid; }
   .react-quick:hover { color: var(--primary); border-color: #c7dcff; background: #eef4ff; }
   .react { display: inline-flex; align-items: center; gap: 2px; height: 20px; padding: 0 6px 0 5px; background: #fff; border: 1px solid #e3e8ef; border-radius: 999px; font-size: 12px; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.14); cursor: default; }
@@ -178,7 +184,7 @@ const css = `
   .react.mine b { color: var(--primary); }
   .react.mine:hover { background: #fee2e2; border-color: #fca5a5; }
   .msg .bubble .time { text-align: left; font-size: 11px; color: var(--faint); margin-top: 3px; }
-  .msg .bubble.media .time { margin-left: 2px; }
+
   .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
   .settings-dlg { width: 860px; max-width: min(94vw, 1100px); padding: 0; }
   .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; position: relative; }

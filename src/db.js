@@ -467,6 +467,17 @@ export function openDb(dbPath) {
       st.upsertReaction.run({ account_id: accountId, thread_id: threadId, msg_id: String(msgId), reactor_id: String(reactorId), icon: enc(icon), ts: Number(ts) || Date.now() });
       return true;
     },
+    /** Avatar theo mã người dùng (từ danh bạ đã đồng bộ) — hiện cạnh tin trong nhóm. */
+    contactAvatars(accountId, userIds) {
+      const ids = [...new Set((userIds || []).filter(Boolean).map(String))]; if (!ids.length) return {};
+      const out = {};
+      for (let i = 0; i < ids.length; i += 400) {
+        const chunk = ids.slice(i, i + 400);
+        const rows = db.prepare(`SELECT user_id, avatar_url FROM contacts WHERE account_id = ? AND user_id IN (${chunk.map(() => '?').join(',')})`).all(accountId, ...chunk);
+        for (const r of rows) { const u = dec(r.avatar_url); if (u) out[String(r.user_id)] = u; }
+      }
+      return out;
+    },
     /** Cảm xúc của một loạt tin: { msgId → [{ icon, count, mine }] } — gom theo icon. */
     reactionsForMessages(accountId, threadId, msgIds, selfId) {
       if (!msgIds.length) return {};
