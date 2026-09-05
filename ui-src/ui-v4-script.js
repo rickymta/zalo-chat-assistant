@@ -284,10 +284,11 @@
     const canAct = !m.recalled && m.zalo_msg_id && !/^(local|fwd)-/.test(String(m.zalo_msg_id));
     // Pill cảm xúc + nút thả nhanh bám góc dưới-phải của bong bóng/thẻ ảnh (như Zalo); nút chỉ hiện khi rê chuột.
     const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + '<b>' + total + '</b>' + '</span>' : '';
-    const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
+    const quick = canAct ? '<a class="react-quick" role="button" tabindex="0" data-act="react" title="Thả cảm xúc">' + ICO.like + '</a>' : '';
     // Cụm cảm xúc như Zalo: [pill][👍] chung một cụm ở góc dưới-phải, chồng lên mép dưới của bong bóng/ảnh.
     const reacts = (pill || quick) ? '<div class="reacts">' + pill + quick + '</div>' : '';
-    const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
+    // Dùng <a role="button"> để không bị quy tắc chung của <button> (cao 36px, bo 10px, đệm ngang) đè lên — kích cỡ/hình dạng theo Zalo.
+    const acts = canAct ? '<div class="msg-acts"><a class="act" role="button" tabindex="0" data-act="reply" title="Trả lời">' + ICO.reply + '</a><a class="act" role="button" tabindex="0" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</a><a class="act" role="button" tabindex="0" data-act="more" title="Thêm">' + ICO.more + '</a></div>' : '';
     // Trong nhóm: avatar + tên chỉ ở tin ĐẦU CỤM (cùng người gửi, cách dưới 5 phút); tin tiếp theo thụt lề bằng chỗ avatar.
     const grpIn = !!c.is_group && !m.is_outbound;
     const avatar = grpIn ? (cont ? '<div class="avatar-gap"></div>' : avatarHtml(m.sender_avatar || null, who, 'msg')) : '';
@@ -323,13 +324,14 @@
   }
   $('#msgsList').addEventListener('click', (e) => {
     const chip = e.target.closest('.react.mine'); if (chip) { const m = msgById(chip.closest('.msg')); if (m) react(m.zalo_msg_id, ''); return; }
-    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const b = e.target.closest('[data-act]'); if (!b) return;
     const m = msgById(b.closest('.msg')); if (!m) return;
     if (b.dataset.act === 'react') openReactPop(b, m);
     else if (b.dataset.act === 'reply') setQuote(m);
     else if (b.dataset.act === 'forward') openForward(m);
     else if (b.dataset.act === 'more') openMorePop(b, m);
   });
+  $('#msgsList').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-act]')) { e.preventDefault(); e.target.click(); } });
   $('#reactPop').addEventListener('click', (e) => { const b = e.target.closest('button[data-icon]'); if (!b) return; react($('#reactPop').dataset.msgid, b.dataset.icon); });
   $('#morePop').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-more]'); if (!b) return; const pop = $('#morePop'); pop.hidden = true;
@@ -341,8 +343,8 @@
     else if (b.dataset.more === 'forward') openForward(m);
   });
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#reactPop') && !e.target.closest('button[data-act="react"]')) $('#reactPop').hidden = true;
-    if (!e.target.closest('#morePop') && !e.target.closest('button[data-act="more"]')) $('#morePop').hidden = true;
+    if (!e.target.closest('#reactPop') && !e.target.closest('[data-act="react"]')) $('#reactPop').hidden = true;
+    if (!e.target.closest('#morePop') && !e.target.closest('[data-act="more"]')) $('#morePop').hidden = true;
     if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true;
   });
   // Chuyển tiếp: chọn nhiều hội thoại (tìm theo tên), gửi văn bản của tin tới từng nơi.
