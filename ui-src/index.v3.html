@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zalo Chat Assistant</title>
+<style>
+  :root {
+    --bg: #f5f7fb; --panel: #ffffff; --line: #e4e9f0; --text: #172033; --muted: #4b5563; --faint: #8a94a6;
+    --primary: #0a66ff; --primary-dark: #0550d6; --primary-soft: #e8f0ff;
+    --ok: #15803d; --ok-soft: #e7f6ec; --warn: #b45309; --warn-soft: #fff4e0; --bad: #b91c1c; --bad-soft: #fdecec;
+    --radius: 16px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 6px 20px rgba(16,24,40,.06);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* thuộc tính hidden phải thắng mọi display:flex/inline-flex */
+  html, body { margin: 0; height: 100%; }
+  body { font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--text); background: var(--bg); }
+  h1, h2, h3 { margin: 0; font-weight: 700; }
+  h1 { font-size: 24px; } h2 { font-size: 19px; } h3 { font-size: 16px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); } .faint { color: var(--faint); } .small { font-size: 14px; }
+  a { color: var(--primary); }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 12px; padding: 0 16px; height: 44px; font-weight: 600; transition: .15s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  button:hover { border-color: #c9d2de; background: #f8fafc; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  button.primary:hover { background: var(--primary-dark); }
+  button.xl { height: 56px; font-size: 18px; padding: 0 26px; border-radius: 14px; }
+  button.sm { height: 36px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: 500; }
+  button.link { border: 0; background: transparent; color: var(--primary); padding: 0; height: auto; }
+  button.danger { color: var(--bad); }
+  input[type=text], input[type=search], input[type=date], input[type=number], input[type=email], input[type=password], select { font: inherit; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); }
+  input:focus, select:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
+  input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--primary); }
+
+  /* ── Khung ứng dụng ── */
+  .app { display: grid; grid-template-columns: 236px 1fr; height: 100vh; }
+  .sidebar { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 14px; gap: 6px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 16px 8px 18px; -webkit-app-region: drag; }
+  .brand .logo { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
+  .brand b { font-size: 16px; line-height: 1.2; display: block; }
+  .nav button { width: 100%; justify-content: flex-start; border: 0; background: transparent; height: 48px; font-size: 16px; font-weight: 600; color: var(--muted); padding: 0 12px; }
+  .nav button:hover { background: #f1f5fb; color: var(--text); }
+  .nav button.active { background: var(--primary-soft); color: var(--primary); }
+  .nav button .ico { font-size: 20px; width: 26px; text-align: center; }
+  .nav .badge { margin-left: auto; background: var(--warn); color: #fff; border-radius: 999px; font-size: 13px; padding: 2px 9px; }
+  .nav .badge:empty { display: none; }
+  .side-account { margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .side-account .who { min-width: 0; }
+  .side-account .who b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; margin-right: 6px; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: #f59e0b; } .dot.bad { background: var(--bad); }
+
+  main { overflow: auto; padding: 28px 32px 48px; display: flex; flex-direction: column; min-height: 0; }
+  main.fixed { overflow: hidden; padding-bottom: 24px; }
+  .view { display: flex; flex-direction: column; gap: 20px; max-width: 1180px; width: 100%; margin: 0 auto; }
+  #view-chats { flex: 1; min-height: 0; gap: 14px; }
+  .view[hidden] { display: none; }
+  .view-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .view-head p { margin-top: 4px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 24px; }
+  .card h2 { margin-bottom: 4px; }
+  .card .desc { color: var(--muted); margin-bottom: 16px; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: #dbe4f0; object-fit: cover; flex: none; display: grid; place-items: center; font-weight: 700; color: #3b4a63; font-size: 15px; }
+  .avatar.lg { width: 56px; height: 56px; font-size: 18px; }
+  .avatar.sm { width: 36px; height: 36px; font-size: 13px; }
+
+  /* ── Băng trạng thái ── */
+  .banner { border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 18px; border: 1px solid transparent; }
+  .banner .ico { font-size: 34px; line-height: 1; }
+  .banner b { font-size: 18px; display: block; }
+  .banner .sub { color: var(--muted); margin-top: 2px; }
+  .banner.ok { background: var(--ok-soft); border-color: #bfe6cb; }
+  .banner.warn { background: var(--warn-soft); border-color: #fbd9a5; }
+  .banner.bad { background: var(--bad-soft); border-color: #f5c2c2; }
+  .banner.info { background: var(--primary-soft); border-color: #c7dbff; }
+  .banner .actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow); }
+  .tile .v { font-size: 38px; font-weight: 800; line-height: 1.1; }
+  .tile .l { color: var(--muted); margin-top: 4px; }
+  .tile.hot { background: var(--warn-soft); border-color: #fbd9a5; }
+  .tile.hot .v { color: var(--warn); }
+
+  .steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+  .steps3 div { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .steps3 .n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; margin-bottom: 6px; }
+
+  /* ── Danh sách hội thoại ── */
+  .conv-list { display: flex; flex-direction: column; }
+  .conv { display: flex; gap: 14px; padding: 14px 12px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 10px; }
+  .conv:first-child { border-top: 0; }
+  .conv:hover { background: #f4f7fc; }
+  .conv.active { background: var(--primary-soft); }
+  .conv .body { flex: 1; min-width: 0; }
+  .conv .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .conv .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv .tm { font-size: 13px; color: var(--faint); white-space: nowrap; }
+  .conv .pv { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; margin-top: 2px; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); margin-top: 6px; }
+  .tag.late { background: var(--bad-soft); color: var(--bad); }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.grp { background: var(--primary-soft); color: var(--primary); }
+  .progress { font-size: 14px; color: var(--primary); margin-top: 4px; }
+  .empty { padding: 44px 20px; text-align: center; color: var(--muted); }
+  .empty .big { font-size: 40px; margin-bottom: 8px; }
+
+  /* ── Màn Hội thoại: chia đôi ── */
+  .split { display: grid; grid-template-columns: 400px 1fr; gap: 18px; }
+  .pane { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
+  .pane .toolbar { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .pane .toolbar input[type=search] { flex: 1; min-width: 150px; }
+  .chip { height: 38px; border-radius: 999px; padding: 0 14px; font-size: 14px; }
+  .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .pane .scroll { overflow: auto; flex: 1; padding: 6px; }
+  .pane .foot { padding: 10px 16px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
+  .chat-head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; }
+  .chat-head .who { flex: 1; min-width: 0; }
+  .chat-head .who b { font-size: 17px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msgs { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #f6f8fc; }
+  .bubble { max-width: 70%; padding: 10px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; }
+  .bubble.out { align-self: flex-end; background: #dfeaff; border-color: #c4d8ff; }
+  .bubble .meta { font-size: 12px; color: var(--faint); margin-bottom: 4px; }
+  .bubble .quote { border-left: 3px solid #c7d2de; padding-left: 8px; color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+  .bubble .att a { font-size: 14px; }
+  .bubble.recalled { opacity: .6; font-style: italic; }
+  .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; }
+
+  /* ── Màn Xuất ── */
+  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .choice { border: 2px solid var(--line); border-radius: 14px; padding: 16px 18px; cursor: pointer; background: #fff; display: flex; gap: 14px; align-items: flex-start; }
+  .choice:hover { border-color: #b9c8de; }
+  .choice.active { border-color: var(--primary); background: var(--primary-soft); }
+  .choice .ico { font-size: 26px; line-height: 1.2; }
+  .choice b { display: block; font-size: 16px; }
+  .choice span { color: var(--muted); font-size: 14px; }
+  .choice .rec { display: inline-block; font-size: 12px; font-weight: 700; color: var(--ok); background: var(--ok-soft); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+  .date-range { display: none; gap: 12px; margin-top: 12px; align-items: end; flex-wrap: wrap; }
+  .date-range.show { display: flex; }
+  .field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
+  .opt .txt b { display: block; font-weight: 600; }
+  .opt .txt span { color: var(--muted); font-size: 14px; }
+  details.adv summary { cursor: pointer; color: var(--primary); font-weight: 600; margin: 8px 0; }
+  .result { border: 1px solid #bfe6cb; background: var(--ok-soft); border-radius: var(--radius); padding: 20px 24px; }
+  .result[hidden] { display: none; }
+  .path { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; word-break: break-all; margin: 10px 0; }
+  .howto { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-top: 12px; }
+  .howto ol { margin: 6px 0 0; padding-left: 22px; }
+  .howto li { margin: 4px 0; }
+  .howto code { background: #eef2f7; padding: 2px 8px; border-radius: 6px; font-size: 14px; }
+  table.list { width: 100%; border-collapse: collapse; }
+  table.list th, table.list td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  table.list th { color: var(--muted); font-weight: 600; font-size: 13px; }
+
+  /* ── Cài đặt ── */
+  .acc-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .acc-row:first-child { border-top: 0; padding-top: 0; }
+  .acc-row .who { min-width: 200px; flex: 1; }
+  .acc-row .who b { display: block; font-size: 16px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #eef2f7; color: var(--muted); margin-top: 4px; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.warn { background: var(--warn-soft); color: var(--warn); } .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .acc-row .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .setting { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .setting:first-of-type { border-top: 0; }
+  .setting .txt { flex: 1; } .setting .txt b { display: block; } .setting .txt span { color: var(--muted); font-size: 14px; }
+  .switch { position: relative; width: 50px; height: 30px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; transition: .2s; }
+  .switch i::after { content: ""; position: absolute; width: 24px; height: 24px; left: 3px; top: 3px; border-radius: 50%; background: #fff; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .switch input:checked + i { background: var(--primary); }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  pre.logbox { background: #0f172a; color: #d1e3ff; font: 12.5px/1.5 ui-monospace, Menlo, monospace; padding: 12px; border-radius: 10px; max-height: 300px; overflow: auto; white-space: pre-wrap; margin: 10px 0 0; }
+  .warnbox { background: var(--warn-soft); border: 1px solid #fbd9a5; border-radius: 12px; padding: 12px 16px; font-size: 15px; }
+
+  /* ── Hộp thoại ── */
+  dialog { border: 0; border-radius: 18px; padding: 0; box-shadow: 0 24px 70px rgba(0,0,0,.28); max-width: 94vw; }
+  dialog::backdrop { background: rgba(15, 23, 42, .5); }
+  .dlg { padding: 26px 28px; width: 720px; max-width: 94vw; }
+  .dlg h2 { margin-bottom: 14px; }
+  .dlg .foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .qr-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
+  .qr-wrap img { width: 300px; height: 300px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+  .qr-wrap .placeholder { width: 300px; height: 300px; border: 2px dashed #c9d2de; border-radius: 14px; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 16px; }
+  .qr-steps { padding-left: 22px; margin: 0; font-size: 16px; }
+  .qr-steps li { margin-bottom: 10px; }
+  .qr-state { margin-top: 14px; font-weight: 700; font-size: 16px; padding: 10px 14px; border-radius: 10px; background: #eef2f7; }
+  .qr-state.ok { background: var(--ok-soft); color: var(--ok); } .qr-state.bad { background: var(--bad-soft); color: var(--bad); }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #111827; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 15px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; max-width: 80vw; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .sidebar { flex-direction: row; align-items: center; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .brand { padding: 0 8px 0 0; } .brand b { display: none; }
+    .nav { display: flex; gap: 4px; flex: 1; } .nav button { width: auto; height: 40px; padding: 0 10px; font-size: 14px; }
+    .side-account { margin: 0; border: 0; padding: 0; }
+    main { padding: 18px; }
+    .tiles, .choices, .steps3 { grid-template-columns: 1fr; }
+    .split { grid-template-columns: 1fr; height: auto; } .pane { min-height: 320px; }
+    .qr-wrap { grid-template-columns: 1fr; }
+  }
+</style>
+<style>
+  /* ── Màn đăng nhập ── */
+  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 28px; background: radial-gradient(1200px 600px at 10% -10%, #dbe8ff 0%, transparent 60%), radial-gradient(900px 500px at 110% 110%, #d7f1ff 0%, transparent 60%), var(--bg); }
+  .login-shell { display: grid; grid-template-columns: 1.05fr 1fr; width: 1040px; max-width: 100%; min-height: 620px; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 30px 80px rgba(16,24,40,.14); overflow: hidden; }
+  .login-hero { background: linear-gradient(160deg, #0a5cff 0%, #0b7dff 55%, #19b3ff 100%); color: #fff; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 22px; }
+  .hero-brand { display: flex; align-items: center; gap: 12px; }
+  .hero-brand .logo { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .hero-brand b { display: block; font-size: 17px; line-height: 1.2; } .hero-brand span { font-size: 13px; opacity: .85; }
+  .login-hero h1 { font-size: 30px; line-height: 1.2; margin-top: 6px; letter-spacing: -.3px; }
+  .hero-sub { font-size: 16px; opacity: .92; line-height: 1.55; }
+  .hero-steps { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .hero-steps li { display: flex; gap: 14px; align-items: flex-start; }
+  .hero-steps .n { flex: none; width: 32px; height: 32px; border-radius: 50%; background: #fff; color: var(--primary); display: grid; place-items: center; font-weight: 800; }
+  .hero-steps b { display: block; font-size: 16px; } .hero-steps li span:not(.n) { font-size: 14px; opacity: .9; }
+  .hero-foot { margin-top: auto; font-size: 13px; opacity: .9; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
+  .login-card { padding: 44px 46px 30px; display: flex; flex-direction: column; justify-content: center; }
+  .form { display: flex; flex-direction: column; gap: 14px; }
+  .form h2 { font-size: 26px; letter-spacing: -.2px; }
+  .form-sub { color: var(--muted); margin-top: -8px; font-size: 15px; }
+  .fld { display: flex; flex-direction: column; gap: 6px; }
+  .fld > span:first-child { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .fld em { font-style: normal; font-weight: 400; color: var(--faint); }
+  .fld input { width: 100%; height: 48px; font-size: 16px; }
+  .pw { position: relative; display: flex; align-items: center; }
+  .pw input { padding-right: 48px; }
+  .pw .eye { position: absolute; right: 6px; height: 36px; width: 36px; padding: 0; justify-content: center; border: 0; background: transparent; font-size: 17px; opacity: .6; }
+  .pw .eye:hover { opacity: 1; background: #f1f5fb; }
+  .pw .inl { position: absolute; right: 6px; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 14px; }
+  .pw .inl ~ input, .pw input:has(+ .inl) { padding-right: 96px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .err { background: var(--bad-soft); border: 1px solid #f5c2c2; color: var(--bad); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .hint { background: var(--primary-soft); border: 1px solid #c7dbff; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text); }
+  button.wide { width: 100%; justify-content: center; margin-top: 4px; }
+  .links { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .links a { font-weight: 600; text-decoration: none; }
+  .server-line { margin-top: auto; padding-top: 22px; font-size: 13px; color: var(--faint); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .server-line code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; color: var(--muted); }
+  .server-line a { text-decoration: none; font-weight: 600; }
+  .server-edit { flex-basis: 100%; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+  .server-edit input { flex: 1; min-width: 220px; height: 40px; font-size: 14px; }
+  .server-edit .small { flex-basis: 100%; }
+  @media (max-width: 960px) { .login-shell { grid-template-columns: 1fr; } .login-hero { display: none; } .login-card { padding: 32px 26px; } .two { grid-template-columns: 1fr; } }
+  .strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; box-shadow: var(--shadow); }
+  .strip .zalo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .strip .chipstat { background: #f1f5fb; border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .strip .chipstat b { color: var(--warn); }
+  .strip select { height: 44px; }
+  .ws-line { font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: none; }
+  .ws-line code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; }
+  .topbar-warn { background: var(--warn-soft); border: 1px solid #fbd9a5; border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+  .kv { display: grid; grid-template-columns: 180px 1fr; gap: 6px 14px; font-size: 15px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  .kv code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+  .split { flex: 1; min-height: 0; height: auto; }
+  .tag.sug { background: #fff8e1; color: #92400e; }
+  .tag.sug.follow { background: #ecfdf5; color: #047857; }
+  .tag.sug.none { background: #f1f5f9; color: #64748b; }
+  .sug-card { flex: none; border-top: 1px solid var(--line); background: #fff; padding: 12px 16px 12px 14px; display: flex; flex-direction: column; gap: 10px; max-height: 42%; overflow: auto; border-left: 4px solid #f59e0b; }
+  .sug-card.follow { border-left-color: #10b981; }
+  .sug-card.none { border-left-color: #94a3b8; background: #f8fafc; }
+  .sug-card .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; top: -12px; background: inherit; padding: 2px 0 6px; margin-top: -2px; }
+  .sug-card .head .ttl { font-weight: 700; font-size: 15px; }
+  .sug-card .head .meta { font-size: 13px; color: var(--faint); }
+  .sug-card .prio { font-weight: 800; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); letter-spacing: .3px; }
+  .sug-card .prio.p1 { background: var(--bad-soft); color: var(--bad); }
+  .sug-card .prio.p3 { background: var(--ok-soft); color: var(--ok); }
+  .sug-card .kind { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #fff8e1; color: #92400e; }
+  .sug-card.follow .kind { background: #ecfdf5; color: #047857; }
+  .sug-card.none .kind { background: #e2e8f0; color: #475569; }
+  .sug-card .warnnew { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; }
+  .sug-card .ctx { font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .sug-card .ctx b { color: var(--text); font-weight: 600; }
+  .sug-card .reply { position: relative; white-space: pre-wrap; font-size: 15.5px; line-height: 1.6; background: #eef4ff; border: 1px solid #c7dcff; border-radius: 14px 14px 14px 4px; padding: 12px 14px; color: var(--text); }
+  .sug-card .reply::before { content: "Tin sẽ gửi"; position: absolute; top: -9px; left: 12px; font-size: 11px; font-weight: 700; color: var(--primary); background: #fff; padding: 0 6px; border-radius: 6px; }
+  .sug-card details.more { font-size: 13px; color: var(--muted); }
+  .sug-card details.more summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+  .sug-card details.more div { white-space: pre-wrap; margin-top: 6px; line-height: 1.5; }
+  .sug-card .acts { display: inline-flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .sug-card .reason { font-size: 14px; color: var(--muted); }
+  .composer { flex: none; border-top: 1px solid var(--line); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-end; background: #fff; }
+  .composer textarea { flex: 1; min-height: 46px; max-height: 160px; resize: vertical; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+  .composer textarea:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
+  .composer .hint { flex-basis: 100%; font-size: 13px; color: var(--muted); }
+  .pane { min-height: 0; }
+  #reencryptBar { width: 100%; flex: none; }
+</style>
+</head>
+<body>
+<!-- ═══════════ ĐĂNG NHẬP ═══════════ -->
+<div class="login-wrap" id="loginView" hidden>
+  <div class="login-shell">
+    <aside class="login-hero">
+      <div class="hero-brand"><div class="logo">Z</div><div><b>Zalo Chat Assistant</b><span>MedDental</span></div></div>
+      <h1>Lưu tin nhắn Zalo, để Claude gợi ý câu trả lời</h1>
+      <p class="hero-sub">Mọi tin nhắn được lưu và mã hoá ngay trên máy của bạn. Máy chủ chỉ giữ tài khoản, không bao giờ nhận tin.</p>
+      <ol class="hero-steps">
+        <li><span class="n">1</span><div><b>Đăng nhập tài khoản</b><span>Một lần duy nhất — các lần sau ứng dụng tự mở khoá.</span></div></li>
+        <li><span class="n">2</span><div><b>Kết nối Zalo bằng mã QR</b><span>Giống đăng nhập Zalo Web, không cần mật khẩu Zalo.</span></div></li>
+        <li><span class="n">3</span><div><b>Trỏ Claude Cowork vào thư mục</b><span>Ứng dụng tự chuẩn bị dữ liệu mỗi giờ; Claude tổng hợp và đề xuất phản hồi.</span></div></li>
+      </ol>
+      <div class="hero-foot">🔒 Mã hoá AES-256 · Chỉ đọc Zalo, không gửi tin · Dữ liệu ở trên máy này</div>
+    </aside>
+
+    <section class="login-card">
+      <!-- ĐĂNG NHẬP -->
+      <form class="form" id="formLogin">
+        <h2>Đăng nhập</h2>
+        <p class="form-sub">Dùng tài khoản ứng dụng (không phải tài khoản Zalo).</p>
+        <label class="fld"><span>Email</span><input type="email" id="liEmail" autocomplete="username" placeholder="ten@meddental.vn" required></label>
+        <label class="fld"><span>Mật khẩu</span><span class="pw"><input type="password" id="liPassword" autocomplete="current-password" placeholder="••••••••" required><button type="button" class="eye" data-eye="liPassword" title="Hiện/ẩn mật khẩu">👁</button></span></label>
+        <div class="err" id="liErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="liBtn">Đăng nhập</button>
+        <div class="links"><a href="#" data-tab="forgot">Quên mật khẩu?</a><span>Chưa có tài khoản? <a href="#" data-tab="register">Đăng ký</a></span></div>
+      </form>
+
+      <!-- ĐĂNG KÝ -->
+      <form class="form" id="formRegister" hidden>
+        <h2>Tạo tài khoản</h2>
+        <p class="form-sub">Tài khoản này mở khoá dữ liệu trên máy và nhận chuỗi mã hoá riêng.</p>
+        <label class="fld"><span>Họ tên</span><input type="text" id="rgName" autocomplete="name" placeholder="Nguyễn Văn A"></label>
+        <label class="fld"><span>Email</span><input type="email" id="rgEmail" autocomplete="username" placeholder="ten@meddental.vn" required></label>
+        <div class="two">
+          <label class="fld"><span>Mật khẩu (≥ 8 ký tự)</span><span class="pw"><input type="password" id="rgPassword" autocomplete="new-password" required minlength="8"><button type="button" class="eye" data-eye="rgPassword" title="Hiện/ẩn">👁</button></span></label>
+          <label class="fld"><span>Nhập lại mật khẩu</span><input type="password" id="rgPassword2" autocomplete="new-password" required></label>
+        </div>
+        <label class="fld"><span>Mã đăng ký <em>(chỉ khi công ty yêu cầu)</em></span><input type="text" id="rgCode" placeholder="Bỏ trống nếu không có"></label>
+        <div class="err" id="rgErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="rgBtn">Tạo tài khoản</button>
+        <div class="links"><span>Đã có tài khoản? <a href="#" data-tab="login">Đăng nhập</a></span></div>
+      </form>
+
+      <!-- QUÊN MẬT KHẨU -->
+      <form class="form" id="formForgot" hidden>
+        <h2>Đặt lại mật khẩu</h2>
+        <p class="form-sub">Bước 1: nhận mã 8 ký tự. Bước 2: nhập mã cùng mật khẩu mới.</p>
+        <label class="fld"><span>Email</span><span class="pw"><input type="email" id="fgEmail" placeholder="ten@meddental.vn" required><button type="button" class="inl" id="fgSend">Gửi mã</button></span></label>
+        <div class="hint" id="fgHint" hidden></div>
+        <div class="two">
+          <label class="fld"><span>Mã nhận được</span><input type="text" id="fgCode" maxlength="8" placeholder="8 ký tự" style="text-transform:uppercase; letter-spacing:2px"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><span class="pw"><input type="password" id="fgPassword" minlength="8"><button type="button" class="eye" data-eye="fgPassword" title="Hiện/ẩn">👁</button></span></label>
+        </div>
+        <div class="err" id="fgErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="fgBtn">Đặt lại mật khẩu</button>
+        <div class="links"><span><a href="#" data-tab="login">← Quay lại đăng nhập</a></span></div>
+      </form>
+
+      <div class="trial-box" id="trialBox">
+        <div><b>Dùng thử không cần máy chủ</b><span>Máy này tự tạo chuỗi mã hoá riêng — không cần Docker hay tài khoản. Dữ liệu chỉ đọc được trên chính máy này; đăng xuất hoặc chuyển sang tài khoản thật sẽ xoá dữ liệu thử.</span></div>
+        <button type="button" class="sm" id="btnTrial">Bắt đầu dùng thử</button>
+      </div>
+      <div class="server-line">
+        <span>Máy chủ: <code id="serverUrlText"></code></span>
+        <a href="#" id="serverToggle">Đổi</a>
+        <div class="server-edit" id="serverEdit" hidden>
+          <input type="text" id="serverUrl" placeholder="http://127.0.0.1:4789">
+          <button type="button" class="sm" id="btnPing">Kiểm tra</button>
+          <div class="small muted" id="pingResult"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═══════════ ỨNG DỤNG ═══════════ -->
+<div class="app" id="appView" hidden>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">Z</div><div><b>Zalo Chat<br>Assistant</b></div></div>
+    <nav class="nav">
+      <button data-view="chats"><span class="ico">💬</span> Hội thoại <span class="badge" id="navWaiting"></span></button>
+      <button data-view="settings"><span class="ico">⚙️</span> Cài đặt</button>
+    </nav>
+    <div class="side-account" id="sideAccount" title="Mở Cài đặt"></div>
+  </aside>
+
+  <main>
+    <div id="reencryptBar" hidden style="margin:0 auto 14px; max-width:1180px"></div>
+
+    <section class="view" id="view-chats" hidden>
+      <div class="strip" id="zaloStrip"></div>
+      <div class="ws-line" id="wsLine"></div>
+      <div class="split">
+        <div class="pane">
+          <div class="toolbar">
+            <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
+            <button class="chip active" data-filter="all">Tất cả</button>
+            <button class="chip" data-filter="waiting">Đang chờ trả lời</button>
+            <button class="chip" data-filter="groups">Nhóm</button>
+          </div>
+          <div class="scroll conv-list" id="convList"></div>
+          <div class="foot" id="convFoot"></div>
+        </div>
+        <div class="pane">
+          <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Nội dung sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden>📁 Đưa riêng hội thoại này cho Claude</button></div>
+          <div class="msgs" id="msgs"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div>
+          <div class="sug-card" id="sugCard" hidden></div>
+          <div class="composer" id="composer" hidden>
+            <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+            <button class="primary" id="btnSend">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings" hidden>
+      <div class="view-head"><div><h1>Cài đặt</h1><p class="muted">Tài khoản, bảo mật, Zalo, tuỳ chọn và thư mục làm việc với Claude.</p></div></div>
+
+      <div class="card">
+        <h2>Tài khoản đăng nhập</h2>
+        <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
+        <details><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+          <div class="form" style="margin-top:10px; max-width:420px">
+            <div class="field"><label>Mật khẩu hiện tại</label><input type="password" id="cpCurrent"></div>
+            <div class="field"><label>Mật khẩu mới (≥ 8 ký tự)</label><input type="password" id="cpNew"></div>
+            <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
+          </div>
+        </details>
+        <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Bảo mật dữ liệu</h2>
+        <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
+        <div class="kv" id="securityKv"></div>
+        <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền, có thể mất vài phút).</span></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
+        <div id="accountRows"></div>
+      </div>
+
+      <div class="card">
+        <h2>Thư mục làm việc với Claude Cowork</h2>
+        <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
+        <div class="kv" id="wsKv"></div>
+        <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
+        <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Tự cập nhật dữ liệu cho Claude định kỳ</b><span>Chạy đúng mốc giờ tròn (60 phút = đúng :00) để lịch tự động của Claude Cowork đọc được gói mới. Gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+        <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất (đến hoặc đi) thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
+        <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
+      </div>
+
+      <div class="card">
+        <h2>Tuỳ chọn</h2>
+        <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng thử lấy lịch sử gần đây của các nhóm (Zalo có thể không cấp).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
+        <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
+        <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
+        <div class="row" style="margin-top:14px; justify-content:flex-end"><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Nơi lưu dữ liệu</h2>
+        <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
+        <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
+      </div>
+
+      <div class="card">
+        <h2>Lưu ý quan trọng</h2>
+        <ul style="margin:8px 0 0; padding-left:22px; line-height:1.7">
+          <li>Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng trở đi; nhóm có thể có thêm lịch sử gần đây nếu Zalo cấp.</li>
+          <li>Không mở Zalo Web (chat.zalo.me) trên trình duyệt cùng lúc — sẽ làm mất kết nối ở đây. Zalo trên điện thoại dùng bình thường.</li>
+          <li>Ứng dụng chỉ đọc, không gửi tin, không đánh dấu đã xem.</li>
+        </ul>
+      </div>
+
+      <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlgQr"><div class="dlg">
+  <h2>Đăng nhập Zalo bằng mã QR</h2>
+  <div class="qr-wrap">
+    <div id="qrImageWrap"><div class="placeholder">Đang tạo mã QR…</div></div>
+    <div>
+      <ol class="qr-steps"><li>Mở ứng dụng <b>Zalo</b> trên điện thoại.</li><li>Chạm biểu tượng <b>mã QR</b> ở góc trên, cạnh ô tìm kiếm.</li><li>Quét mã bên trái.</li><li>Chạm <b>Đồng ý</b> trên điện thoại.</li></ol>
+      <div class="qr-state" id="qrState">Đang chờ quét…</div>
+      <p class="small muted" style="margin-top:10px">Mã hết hạn sau vài phút; bấm "Tạo mã mới" nếu cần. Đăng nhập tại đây không làm thoát Zalo trên điện thoại.</p>
+    </div>
+  </div>
+  <div class="foot"><button id="btnQrRetry">Tạo mã mới</button><button class="primary" id="btnQrClose">Đóng</button></div>
+</div></dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, view: 'chats', tab: 'login' };
+  const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại.';
+
+  const fmtTime = (ms) => ms ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ms)) : '';
+  const fmtClock = (ms) => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+  const fmtDay = (ms) => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ms));
+  const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(ms));
+  const fmtRel = (ms) => { if (!ms) return ''; const d = Date.now() - ms; if (d < 60e3) return 'vừa xong'; if (d < 3600e3) return Math.floor(d / 60e3) + ' phút trước'; if (d < 86400e3) return Math.floor(d / 3600e3) + ' giờ trước'; return Math.floor(d / 86400e3) + ' ngày trước'; };
+  const num = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const initials = (name) => (name || '?').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
+  const avatarHtml = (url, name, cls = '') => url ? '<img class="avatar ' + cls + '" src="' + esc(url) + '" alt="">' : '<div class="avatar ' + cls + '">' + esc(initials(name)) + '</div>';
+  const api = async (url, opt = {}) => {
+    const headers = opt.body ? { 'Content-Type': 'application/json' } : {};
+    const res = await fetch(url, { ...opt, headers, body: opt.body ? JSON.stringify(opt.body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 423) { state.locked = true; showLogin(); }
+    if (!res.ok) throw new Error(data.error || ('Lỗi ' + res.status));
+    return data;
+  };
+  let toastTimer;
+  const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3800); };
+  const busy = async (btn, label, fn) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = label; try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = old; } };
+  const waitingLabel = (c) => { const h = (Date.now() - c.last_message_at) / 3600e3; const limit = Number(state.settings.waitingHours ?? 2); if (h >= limit) return { cls: 'late', text: h >= 48 ? 'Chờ ' + Math.floor(h / 24) + ' ngày' : 'Chờ ' + Math.floor(h) + ' giờ' }; if (h >= 1) return { cls: '', text: 'Chờ ' + Math.floor(h) + ' giờ' }; return { cls: '', text: 'Vừa nhắn' }; };
+  const STATUS = { connected: ['ok', 'Đang kết nối'], connecting: ['warn', 'Đang kết nối…'], reconnecting: ['warn', 'Đang nối lại…'], need_relogin: ['bad', 'Cần đăng nhập lại'], disconnected: ['', 'Đã tạm dừng'], logged_out: ['', 'Đã đăng xuất'] };
+  const visibleAccounts = () => state.accounts.filter((a) => a.status !== 'logged_out' || a.hasSession);
+
+  // ── Đăng nhập máy chủ ─────────────────────────────────────────────────────
+  function showLogin() { $('#loginView').hidden = false; $('#appView').hidden = true; if (!$('#serverUrl').value) $('#serverUrl').value = state.auth.serverUrl || ''; $('#serverUrlText').textContent = $('#serverUrl').value || state.auth.serverUrl || ''; }
+  const setErr = (sel, msg) => { const el = $(sel); el.textContent = msg || ''; el.hidden = !msg; };
+  function switchTab(name) { state.tab = name; $('#formLogin').hidden = name !== 'login'; $('#formRegister').hidden = name !== 'register'; $('#formForgot').hidden = name !== 'forgot'; ['#liErr', '#rgErr', '#fgErr'].forEach((s) => setErr(s, '')); const first = $(name === 'login' ? '#liEmail' : name === 'register' ? '#rgName' : '#fgEmail'); setTimeout(() => first?.focus(), 50); }
+  $$('[data-tab]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); switchTab(a.dataset.tab); }));
+  $$('[data-eye]').forEach((b) => b.onclick = () => { const i = $('#' + b.dataset.eye); i.type = i.type === 'password' ? 'text' : 'password'; b.style.opacity = i.type === 'text' ? '1' : ''; });
+  $('#serverToggle').onclick = (e) => { e.preventDefault(); const ed = $('#serverEdit'); ed.hidden = !ed.hidden; if (!ed.hidden) $('#serverUrl').focus(); };
+  $('#serverUrl').addEventListener('input', () => { $('#serverUrlText').textContent = $('#serverUrl').value.trim() || state.auth.serverUrl || ''; });
+  function showApp() { $('#loginView').hidden = true; $('#appView').hidden = false; }
+  const serverUrl = () => $('#serverUrl').value.trim() || undefined;
+  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); show(state.view); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
+  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); show(state.view); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
+  $('#fgSend').onclick = async () => { setErr('#fgErr', ''); if (!$('#fgEmail').value.trim()) return setErr('#fgErr', 'Nhập email trước.'); await busy($('#fgSend'), 'Đang gửi…', async () => { try { const r = await api('/api/auth/forgot', { method: 'POST', body: { email: $('#fgEmail').value, serverUrl: serverUrl() } }); const h = $('#fgHint'); h.hidden = false; h.textContent = r.delivery === 'server-log' ? 'ℹ️ Máy chủ chưa cấu hình gửi email: mã đặt lại nằm trong nhật ký máy chủ — hãy hỏi quản trị viên rồi nhập ở bước 2.' : '✅ Đã gửi mã tới email (hiệu lực 30 phút). Nhập mã ở bước 2.'; $('#fgCode').focus(); } catch (err) { setErr('#fgErr', err.message); } }); };
+  $('#formForgot').onsubmit = async (e) => { e.preventDefault(); setErr('#fgErr', ''); if (!$('#fgCode').value.trim()) return setErr('#fgErr', 'Nhập mã 8 ký tự đã nhận.'); await busy($('#fgBtn'), 'Đang đặt lại…', async () => { try { await api('/api/auth/reset', { method: 'POST', body: { email: $('#fgEmail').value, code: $('#fgCode').value, newPassword: $('#fgPassword').value, serverUrl: serverUrl() } }); toast('Đã đặt lại mật khẩu — hãy đăng nhập.'); $('#liEmail').value = $('#fgEmail').value; switchTab('login'); } catch (err) { setErr('#fgErr', err.message); } }); };
+  $('#btnPing').onclick = async () => { $('#pingResult').textContent = 'Đang kiểm tra…'; try { const r = await api('/api/auth/ping?url=' + encodeURIComponent(serverUrl() || '')); $('#pingResult').textContent = '✅ Máy chủ trả lời (' + num(r.server?.users) + ' tài khoản' + (r.server?.smtp ? ', có gửi email' : ', chưa cấu hình email') + ').'; } catch (err) { $('#pingResult').textContent = '❌ ' + err.message; } };
+
+  // ── Trạng thái chung ──────────────────────────────────────────────────────
+  async function refreshState() {
+    const s = await api('/api/state');
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions });
+    if (s.locked) { showLogin(); return; }
+    try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { state.sugByKey = state.sugByKey || {}; }
+    showApp();
+    renderSide(); renderStrip(); renderReencrypt();
+    if (state.view === 'settings') renderSettings();
+  }
+  function renderSide() {
+    const list = visibleAccounts();
+    const a = list.find((x) => x.status === 'connected') || list[0];
+    const [cls, label] = a ? (STATUS[a.status] || ['', a.status]) : ['', 'Chưa kết nối Zalo'];
+    $('#sideAccount').innerHTML = avatarHtml(a?.avatarUrl, a?.displayName || state.auth.user?.name || state.auth.user?.email) + '<div class="who"><b>' + esc(state.auth.user?.name || state.auth.user?.email || '') + '</b><span class="small muted"><span class="dot ' + cls + '"></span>' + (a ? 'Zalo ' + esc(a.displayName || '') + ' · ' + label : label) + '</span></div>';
+    const w = Number(state.stats?.waiting || 0);
+    $('#navWaiting').textContent = w ? String(w) : '';
+  }
+  function renderStrip() {
+    const list = visibleAccounts();
+    const live = list.filter((a) => a.status === 'connected');
+    const bad = list.find((a) => a.status === 'need_relogin');
+    let zalo;
+    if (!list.length) zalo = '<span class="pill">Chưa kết nối Zalo</span><button class="primary" data-act="qr">📱 Đăng nhập Zalo (QR)</button>';
+    else if (bad) zalo = '<span class="pill bad">Zalo ' + esc(bad.displayName || '') + ': mất kết nối</span><button class="primary" data-act="qr">Quét mã QR</button>';
+    else if (live.length) zalo = avatarHtml(live[0].avatarUrl, live[0].displayName, 'sm') + '<span class="pill ok">Zalo ' + esc(live.map((a) => a.displayName || a.id).join(', ')) + ' · đang lưu tin</span>';
+    else { const p = list[0]; zalo = '<span class="pill warn">Zalo ' + esc(p.displayName || '') + ': ' + (STATUS[p.status]?.[1] || p.status) + '</span>' + (p.hasSession ? '<button class="primary" data-act="start" data-id="' + esc(p.id) + '">Kết nối</button>' : '<button class="primary" data-act="qr">Quét mã QR</button>'); }
+    const s = state.stats || {};
+    const job = list.map((a) => a.importJob).find((j) => j && j.running);
+    $('#zaloStrip').innerHTML = '<div class="zalo">' + zalo + '</div>' +
+      '<span class="chipstat">⏳ <b>' + num(s.waiting) + '</b> chờ trả lời</span><span class="chipstat">📩 ' + num(s.today) + ' tin hôm nay</span>' + (s.groups ? '<span class="chipstat">👥 ' + num(s.groups) + ' nhóm</span>' : '') +
+      (job ? '<span class="chipstat">⏳ nhập lịch sử nhóm ' + job.done + '/' + job.total + '</span>' : '') +
+      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '') +
+      '<span class="grow"></span><select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>' +
+      '<button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button><button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>';
+    $('#presetSel').value = state.settings.defaultPreset || 'waiting';
+    $('#btnWsUpdate').onclick = () => updateWorkspace({ preset: $('#presetSel').value }, $('#btnWsUpdate'));
+    const ws = state.workspace || {};
+    $('#wsLine').innerHTML = ws.hasData && ws.status
+      ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) + ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>'
+      : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.';
+    const au = state.automation;
+    if (au) $('#wsLine').innerHTML += (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) + ' (' + au.quietMinutes + ' phút sau tin cuối)' : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 và mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '');
+    const cp = $('#btnCopyPrompt2'); if (cp) cp.onclick = copyPrompt;
+  }
+  function renderReencrypt() {
+    const r = state.security?.reencrypt; const bar = $('#reencryptBar');
+    if (r?.running) { bar.hidden = false; bar.innerHTML = '<div class="topbar-warn">🔐 Đang mã hoá lại dữ liệu bằng chuỗi mới' + (r.table ? ' — ' + r.table + ' ' + num(r.done) + '/' + num(r.total) : '') + '… Ứng dụng vẫn dùng được bình thường.</div>'; }
+    else bar.hidden = true;
+  }
+  $('#zaloStrip').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    if (btn.dataset.act === 'qr') return openQr();
+    if (btn.dataset.act === 'start') { btn.disabled = true; try { await api('/api/accounts/' + encodeURIComponent(btn.dataset.id) + '/start', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } finally { btn.disabled = false; } }
+  });
+  async function copyPrompt() { try { await navigator.clipboard.writeText(PROMPT); toast('Đã sao chép câu lệnh — dán vào Claude Cowork.'); } catch { toast('Không sao chép được.'); } }
+  async function updateWorkspace(body, btn) {
+    body.includeExcel = !!state.settings.includeExcel;
+    await busy(btn, 'Đang chuẩn bị…', async () => {
+      try { const r = await api('/api/workspace/update', { method: 'POST', body }); toast('Đã cập nhật ' + num(r.conversations) + ' hội thoại, ' + num(r.messages) + ' tin cho Claude.'); await refreshState(); }
+      catch (err) { toast('Không cập nhật được: ' + err.message); }
+    });
+  }
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (!b) return; const p = b.dataset.open === 'workspace' ? state.paths.workspaceDir : state.paths.dataDir; api('/api/open', { method: 'POST', body: { path: p } }).catch((err) => toast(err.message)); });
+
+  // ── Điều hướng ───────────────────────────────────────────────────────────
+  function show(view) {
+    state.view = view;
+    $$('.view').forEach((v) => { v.hidden = v.id !== 'view-' + view; });
+    $$('.nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+    $('main').classList.toggle('fixed', view === 'chats');   // Hội thoại: trang không cuộn, chỉ hai cột cuộn
+    location.hash = view;
+    if (view === 'chats') loadConversations();
+    if (view === 'settings') renderSettings();
+  }
+  $$('.nav button').forEach((b) => b.onclick = () => show(b.dataset.view));
+  $('#sideAccount').onclick = () => show('settings');
+  window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (['chats', 'settings'].includes(v) && v !== state.view) show(v); });
+
+  // ── Hội thoại ────────────────────────────────────────────────────────────
+  function convItem(c) {
+    const waiting = c.last_message_outbound === 0 && !c.is_group;
+    const key = c.account_id + '|' + c.thread_id;
+    const w = waiting ? waitingLabel(c) : null;
+    const who = c.last_message_outbound ? 'Mình' : (c.is_group ? (c.last_message_sender || '') : '');
+    const tag = (c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>')) + (((state.sugByKey || {})[key] || []).length ? (() => { const s = (state.sugByKey[key].find((x) => x.reply) || state.sugByKey[key][0]); return s.reply ? ' <span class="tag sug ' + (s.kind === 'theo-doi' ? 'follow' : '') + '">💡 ' + (s.kind === 'theo-doi' ? 'Gợi ý theo dõi' : 'Có gợi ý') + '</span>' : ' <span class="tag sug none">Claude: không cần nhắn</span>'; })() : '');
+    return '<div class="conv ' + (state.selected === key ? 'active' : '') + '" data-key="' + esc(key) + '">' + avatarHtml(c.avatar_url, c.name) + '<div class="body"><div class="top"><span class="nm">' + esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div><div class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</div>' + tag + '</div></div>';
+  }
+  document.addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it) return; state.selected = it.dataset.key; $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === state.selected)); loadMessages(); });
+  function setFilter(f) { state.filter = f; $$('.chip').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
+  $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); loadConversations(); });
+  let loadTimer, loadSeq = 0;
+  async function loadConversations() {
+    if (state.locked) return;
+    const seq = ++loadSeq;   // bỏ kết quả cũ về muộn (tìm kiếm + tải lại theo SSE có thể chồng nhau)
+    const p = new URLSearchParams({ limit: 400, includeGroups: 'true' });
+    if (state.q) p.set('q', state.q);
+    if (state.filter === 'waiting') p.set('waiting', 'true');
+    if (state.filter === 'groups') p.set('groups', 'true');
+    const r = await api('/api/conversations?' + p.toString());
+    if (seq !== loadSeq) return;
+    $('#convList').innerHTML = r.rows.length ? r.rows.map(convItem).join('') : '<div class="empty"><div class="big">📭</div>' + (state.q || state.filter !== 'all' ? 'Không có hội thoại nào khớp.' : 'Chưa có hội thoại nào. Kết nối Zalo ở thanh trên; khi có tin nhắn mới, hội thoại sẽ hiện ở đây.') + '</div>';
+    $('#convFoot').textContent = 'Hiển thị ' + r.rows.length + ' / ' + num(r.total) + ' hội thoại';
+  }
+  $('#search').addEventListener('input', (e) => { state.q = e.target.value.trim(); clearTimeout(loadTimer); loadTimer = setTimeout(loadConversations, 250); });
+  async function loadMessages() {
+    if (!state.selected) return;
+    const [accountId, threadId] = state.selected.split('|');
+    const r = await api('/api/conversations/' + encodeURIComponent(accountId) + '/' + encodeURIComponent(threadId) + '/messages?limit=400');
+    const c = r.conversation || {};
+    $('#chatName').textContent = c.name || threadId;
+    $('#chatMeta').textContent = c.is_group ? 'Nhóm chat · ' + num(c.message_count) + ' tin (thành viên ' + num(c.inbound_count) + ', mình ' + num(c.outbound_count) + ')' : 'Khách' + (c.phone ? ' · ' + c.phone : '') + ' · ' + num(c.message_count) + ' tin (khách ' + num(c.inbound_count) + ', mình ' + num(c.outbound_count) + ')';
+    $('#chatAvatar').outerHTML = avatarHtml(c.avatar_url, c.name).replace('class="avatar', 'id="chatAvatar" class="avatar');
+    $('#chatExportBtn').hidden = false;
+    const box = $('#msgs'); let lastDay = '';
+    box.innerHTML = r.messages.length ? r.messages.map((m) => {
+      const d = dayKey(m.event_time); const sep = d !== lastDay ? '<div class="day-sep">' + fmtDay(m.event_time) + '</div>' : ''; lastDay = d;
+      const att = (m.attachments || []).map((a) => a.url ? '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">[' + esc(a.type === 'image' ? 'Ảnh' : a.type === 'file' ? 'Tệp' : a.type === 'sticker' ? 'Sticker' : a.type) + (a.name && a.type !== 'sticker' ? ': ' + esc(a.name) : '') + ']</a>' : '<span>[' + esc(a.name || a.type) + ']</span>').join(' ');
+      return sep + '<div class="bubble ' + (m.is_outbound ? 'out' : '') + ' ' + (m.recalled ? 'recalled' : '') + '"><div class="meta">' + (m.is_outbound ? 'Mình' : esc(m.sender_name || c.name || 'Khách')) + ' · ' + fmtClock(m.event_time) + (m.recalled ? ' · đã thu hồi' : '') + '</div>' + (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') + esc(m.text || '') + (att ? '<div class="att">' + att + '</div>' : '') + '</div>';
+    }).join('') : '<div class="empty">Chưa có tin nhắn.</div>';
+    box.scrollTop = box.scrollHeight;
+    renderSuggestion(accountId, threadId);
+    const acc = state.accounts.find((a) => a.id === accountId);
+    const comp = $('#composer'); comp.hidden = false;
+    const canSend = acc?.status === 'connected';
+    $('#btnSend').disabled = !canSend; $('#composeText').disabled = !canSend;
+    $('#composeText').placeholder = canSend ? 'Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
+  }
+  const KIND = { 'tra-loi': ['', 'Trả lời'], 'theo-doi': ['follow', 'Theo dõi'], 'nhom': ['', 'Nhóm'], 'khong-can': ['none', 'Không cần nhắn'] };
+  function renderSuggestion(accountId, threadId) {
+    const list = (state.sugByKey || {})[accountId + '|' + threadId] || [];
+    const card = $('#sugCard');
+    if (!list.length) { card.hidden = true; card.innerHTML = ''; card.className = 'sug-card'; return; }
+    const it = list.find((x) => x.reply) || list[0];
+    const [kcls, klabel] = KIND[it.kind] || KIND['tra-loi'];
+    card.hidden = false;
+    card.className = 'sug-card ' + kcls;
+    const prio = it.priority ? '<span class="prio ' + (it.priority === 'P1' ? 'p1' : it.priority === 'P3' ? 'p3' : '') + '">' + esc(it.priority) + '</span>' : '';
+    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ Claude</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
+      (it.reply ? '<span class="acts"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span>' : '') + '</div>';
+    const warn = it.hasNewer ? '<div class="warnnew">⚠️ Có tin mới sau khi Claude viết gợi ý — đọc lại hội thoại trước khi gửi.</div>' : '';
+    if (!it.reply) {
+      card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '');
+      return;
+    }
+    card.innerHTML = head + warn +
+      (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') +
+      '<div class="reply">' + esc(it.reply) + '</div>' +
+      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của Claude' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
+    $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
+    $('#btnCopySug').onclick = async () => { try { await navigator.clipboard.writeText(it.reply); toast('Đã sao chép gợi ý.'); } catch { toast('Không sao chép được.'); } };
+  }
+  async function sendCurrent() {
+    if (!state.selected) return;
+    const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
+    const [accountId, threadId] = state.selected.split('|');
+    await busy($('#btnSend'), 'Đang gửi…', async () => {
+      try { await api('/api/conversations/' + encodeURIComponent(accountId) + '/' + encodeURIComponent(threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; toast('Đã gửi.'); await loadMessages(); loadConversations(); }
+      catch (err) { toast('Không gửi được: ' + err.message); }
+    });
+  }
+  $('#btnSend').onclick = sendCurrent;
+  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } });
+  $('#chatExportBtn').onclick = () => { if (!state.selected) return; const [accountId, threadId] = state.selected.split('|'); updateWorkspace({ preset: 'one', accountIds: [accountId], threadIds: [threadId] }, $('#chatExportBtn')); };
+
+  // ── Cài đặt ──────────────────────────────────────────────────────────────
+  function renderSettings() {
+    const u = state.auth.user || {};
+    $('#accountKv').innerHTML = '<div>Email</div><div><b>' + esc(u.email || '') + '</b>' + (u.name ? ' · ' + esc(u.name) : '') + '</div><div>Máy chủ</div><div>' + esc(state.auth.serverUrl || '') + (state.auth.loggedIn ? ' <span class="pill ok">Còn phiên</span>' : ' <span class="pill bad">Hết phiên — cần đăng nhập lại</span>') + '</div>' + (state.auth.lastServerError ? '<div>Lần gần nhất</div><div class="small" style="color:var(--bad)">' + esc(state.auth.lastServerError) + '</div>' : '');
+    const sec = state.security || {}; const r = sec.reencrypt;
+    $('#securityKv').innerHTML = '<div>Chuỗi mã hoá</div><div>Phiên bản <b>' + num(sec.keyVersion) + '</b> · đang giữ ' + num(sec.keyCount) + ' phiên bản để giải mã dữ liệu cũ</div><div>Trạng thái</div><div>' + (r?.running ? '🔐 Đang mã hoá lại: ' + (r.table || '') + ' ' + num(r.done) + '/' + num(r.total) : (sec.pending ? '⚠️ ' + num(sec.pending) + ' dòng chưa ở phiên bản hiện tại' : '✅ Toàn bộ dữ liệu ở phiên bản hiện tại')) + (r && !r.running && r.finishedAt ? ' · lần gần nhất ' + fmtTime(r.finishedAt) + (r.error ? ' — lỗi: ' + esc(r.error) : '') : '') + '</div>';
+    const list = visibleAccounts();
+    $('#accountRows').innerHTML = list.length ? list.map((a) => {
+      const [cls, label] = STATUS[a.status] || ['', a.status];
+      const needQr = a.status === 'need_relogin' || a.status === 'logged_out' || (a.status === 'disconnected' && !a.hasSession);
+      const j = a.importJob;
+      return '<div class="acc-row" data-id="' + esc(a.id) + '">' + avatarHtml(a.avatarUrl, a.displayName, 'lg') + '<div class="who"><b>' + esc(a.displayName || a.id) + '</b><span class="muted">' + esc(a.phone || '') + '</span><br><span class="pill ' + cls + '">' + label + '</span>' + (a.lastError && cls === 'bad' ? '<div class="small" style="color:var(--bad)">' + esc(a.lastError).slice(0, 140) + '</div>' : '') + '</div>' +
+        (j ? '<div class="progress" style="flex-basis:100%">' + (j.running ? '⏳ Đang nhập lịch sử nhóm: ' + j.done + '/' + j.total + ' nhóm, ' + num(j.newMessages) + ' tin mới…' : j.error ? '⚠️ Nhập lịch sử nhóm dừng: ' + esc(j.error) : (j.newMessages === 0 && j.total > 0 ? 'ℹ️ Đã hỏi ' + j.total + ' nhóm: không lấy thêm được tin cũ — Zalo không cấp lịch sử cũ cho phiên web (' + (j.filtered || 0) + ' nhóm bị lọc). Tin nhóm vẫn được lưu từ lúc kết nối. (' + fmtTime(j.finishedAt) + ')' : '✅ Đã nhập lịch sử ' + j.done + ' nhóm, ' + num(j.newMessages) + ' tin mới (' + fmtTime(j.finishedAt) + ')')) + '</div>' : '') +
+        '<div class="btns">' + (needQr ? '<button class="primary" data-act="relogin">Quét mã QR</button>' : '') + (a.status === 'disconnected' && a.hasSession ? '<button class="primary" data-act="start">Kết nối</button>' : '') + (['connected', 'reconnecting', 'connecting'].includes(a.status) ? '<button data-act="stop">Tạm dừng</button>' : '') + (a.status === 'connected' ? '<button data-act="import-groups" ' + (j?.running ? 'disabled' : '') + '>👥 Nhập lịch sử nhóm</button><button data-act="sync-contacts">Đồng bộ danh bạ</button><button data-act="sync-old">Lấy tin bỏ lỡ</button>' : '') + '<button class="danger" data-act="logout">Đăng xuất Zalo</button></div></div>';
+    }).join('') : '<p class="muted">Chưa đăng nhập Zalo nào. Bấm "Đăng nhập Zalo (QR)".</p>';
+    const ws = state.workspace || {};
+    $('#wsKv').innerHTML = '<div>Đường dẫn</div><div><code>' + esc(ws.root || state.paths.workspaceDir || '') + '</code></div><div>Dữ liệu hiện có</div><div>' + (ws.hasData && ws.status ? num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin — ' + fmtTime(ws.status.updatedAt) : 'chưa có') + '</div><div>Câu lệnh cho Claude</div><div><code>' + esc(PROMPT) + '</code></div>';
+    const s = state.settings;
+    $('#setExcel').checked = !!s.includeExcel; $('#setPreset').value = s.defaultPreset || 'waiting'; $('#setAutoMinutes').value = s.autoUpdateMinutes ?? 60; $('#setQuietMinutes').value = s.quietMinutes ?? 3;
+    $('#setGroups').checked = !!s.includeGroups; $('#setSyncOld').checked = s.syncOldOnConnect !== false;
+    $('#setWaitingHours').value = s.waitingHours ?? 2; $('#setGroupCount').value = s.groupHistoryCount ?? 300;
+    const supportsAuto = state.platform && state.platform.autoStart !== null && state.platform.autoStart !== undefined;
+    $('#setAutoStartRow').hidden = !supportsAuto; if (supportsAuto) $('#setAutoStart').checked = !!state.platform.autoStart;
+    $('#pathData').textContent = state.paths.dataDir || '';
+    $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
+  }
+  $('#accountRows').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const id = btn.closest('.acc-row').dataset.id; const act = btn.dataset.act;
+    try {
+      if (act === 'relogin') return openQr();
+      if (act === 'logout' && !confirm('Đăng xuất tài khoản Zalo này khỏi ứng dụng?\nTin nhắn đã lưu vẫn được giữ. Muốn dùng lại phải quét mã QR.')) return;
+      btn.disabled = true;
+      const r = await api('/api/accounts/' + encodeURIComponent(id) + '/' + act, { method: 'POST' });
+      if (act === 'sync-contacts') toast('Đã đồng bộ ' + num(r.count) + ' bạn bè.');
+      if (act === 'sync-old') toast('Đã yêu cầu Zalo gửi lại tin bỏ lỡ.');
+      if (act === 'import-groups') toast('Bắt đầu nhập lịch sử nhóm — chạy nền.');
+      await refreshState();
+    } catch (err) { toast(err.message); } finally { btn.disabled = false; }
+  });
+  $('#btnAddAccount').onclick = openQr;
+  $('#btnSettingsSave').onclick = async () => {
+    try {
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value) };
+      if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
+      await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
+    } catch (err) { toast(err.message); }
+  };
+  $('#btnLogoutApp').onclick = async () => { if (!confirm('Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).')) return; try { await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
+  $('#cpBtn').onclick = async () => { $('#cpMsg').textContent = ''; try { await api('/api/auth/change-password', { method: 'POST', body: { currentPassword: $('#cpCurrent').value, newPassword: $('#cpNew').value } }); $('#cpMsg').textContent = '✅ Đã đổi mật khẩu.'; $('#cpCurrent').value = ''; $('#cpNew').value = ''; } catch (err) { $('#cpMsg').textContent = '❌ ' + err.message; } };
+  $('#btnRotate').onclick = async () => { if (!confirm('Đổi chuỗi mã hoá?\nMáy chủ sẽ cấp chuỗi mới và ứng dụng mã hoá lại TOÀN BỘ dữ liệu trên máy (chạy nền). Máy khác dùng cùng tài khoản sẽ tự lấy chuỗi mới khi mở.')) return; await busy($('#btnRotate'), 'Đang đổi…', async () => { try { const r = await api('/api/security/rotate-key', { method: 'POST' }); toast('Đã đổi sang phiên bản ' + r.version + ' — đang mã hoá lại.'); await refreshState(); } catch (err) { toast(err.message); } }); };
+  $('#btnReencrypt').onclick = async () => { try { await api('/api/security/reencrypt', { method: 'POST' }); toast('Đã bắt đầu mã hoá lại phần còn thiếu.'); } catch (err) { toast(err.message); } };
+  $('#btnCopyWs').onclick = async () => { try { await navigator.clipboard.writeText(state.paths.workspaceDir || ''); toast('Đã sao chép đường dẫn.'); } catch { toast('Không sao chép được.'); } };
+  $('#btnCopyPrompt').onclick = copyPrompt;
+  $('#btnClearWs').onclick = async () => { if (!confirm('Xoá toàn bộ nội dung du-lieu/ trong thư mục Claude? Cơ sở dữ liệu gốc không bị ảnh hưởng.')) return; try { await api('/api/workspace/clear', { method: 'POST' }); toast('Đã xoá dữ liệu đã chuẩn bị.'); await refreshState(); } catch (err) { toast(err.message); } };
+  async function loadLogs() { try { const rows = await api('/api/logs?n=150'); $('#logbox').textContent = rows.map((r) => '[' + new Date(r.ts).toLocaleTimeString('vi-VN') + '] ' + r.level.toUpperCase() + ' ' + r.message).join('\n'); } catch { /* bỏ qua */ } }
+  $('#logDetails').addEventListener('toggle', (e) => { if (e.target.open) loadLogs(); });
+
+  // ── QR ───────────────────────────────────────────────────────────────────
+  async function openQr() {
+    $('#dlgQr').showModal(); $('#qrImageWrap').innerHTML = '<div class="placeholder">Đang tạo mã QR…</div>';
+    const st = $('#qrState'); st.className = 'qr-state'; st.textContent = 'Đang tạo mã…';
+    try { const r = await api('/api/accounts/login-qr', { method: 'POST' }); state.qrKey = r.key; showQr(r); clearInterval(state.qrTimer); state.qrTimer = setInterval(pollQr, 1500); }
+    catch (err) { st.className = 'qr-state bad'; st.textContent = 'Không tạo được mã: ' + err.message; }
+  }
+  function showQr(r) {
+    if (r.qrImage) $('#qrImageWrap').innerHTML = '<img src="' + r.qrImage + '" alt="Mã QR">';
+    const st = $('#qrState');
+    const map = { pending: ['', 'Đang chờ bạn quét mã…'], scanned: ['ok', 'Đã quét' + (r.scannedName ? ' — ' + r.scannedName : '') + '. Hãy bấm Đồng ý trên điện thoại.'], success: ['ok', '✅ Đăng nhập thành công!'], expired: ['bad', 'Mã đã hết hạn — bấm "Tạo mã mới".'], declined: ['bad', 'Bạn đã từ chối trên điện thoại.'], failed: ['bad', 'Đăng nhập thất bại' + (r.error ? ': ' + r.error : '')] };
+    const [cls, text] = map[r.state] || ['', r.state]; st.className = 'qr-state ' + cls; st.textContent = text;
+    if (r.state === 'success') { clearInterval(state.qrTimer); setTimeout(() => { $('#dlgQr').close(); refreshState(); loadConversations(); }, 1200); }
+    if (['expired', 'declined', 'failed'].includes(r.state)) clearInterval(state.qrTimer);
+  }
+  async function pollQr() { if (!state.qrKey) return; try { showQr(await api('/api/accounts/login-qr/' + state.qrKey)); } catch { /* bỏ qua */ } }
+  $('#btnQrRetry').onclick = openQr; $('#btnQrClose').onclick = () => { clearInterval(state.qrTimer); $('#dlgQr').close(); };
+
+  // ── Realtime ─────────────────────────────────────────────────────────────
+  let reloadTimer, esRetry = 3000;
+  const scheduleReload = () => { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => { refreshState().then(() => { if (!state.locked && state.view === 'chats') { loadConversations(); if (state.selected) loadMessages(); } }).catch(() => {}); }, 500); };
+  function connectEvents() {
+    const es = new EventSource('/api/events');
+    es.onopen = () => { esRetry = 3000; };
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions'].forEach((ev) => es.addEventListener(ev, scheduleReload));
+    es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
+    es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
+  }
+
+  (async () => {
+    const initial = ['chats', 'settings'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'chats';
+    state.view = initial;
+    try { await refreshState(); } catch (err) { toast('Không kết nối được với ứng dụng: ' + err.message); }
+    if (!state.locked) show(initial);
+    connectEvents();
+    setInterval(() => { refreshState().catch(() => {}); }, 30000);
+  })();
+})();
+
+</script>
+</body>
+</html>

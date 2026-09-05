@@ -1,0 +1,152 @@
+<!-- ═══════════ ỨNG DỤNG (bố cục kiểu Zalo) ═══════════ -->
+<div class="zapp" id="appView" hidden>
+  <header class="topbar">
+    <div class="brand-mini"><div class="logo">Z</div><b>Zalo Chat Assistant</b></div>
+    <div class="zstrip" id="zaloStrip"></div>
+    <div class="grow"></div>
+    <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
+    <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
+    <button data-open="workspace" title="Mở thư mục làm việc với Claude trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
+    <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
+    <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
+  </header>
+  <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
+  <div id="reencryptBar" hidden></div>
+  <div id="powerBar" hidden></div>
+
+  <div class="cols">
+    <aside class="convcol">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button></div>
+      </div>
+      <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
+      <div class="foot" id="convFoot"></div>
+    </aside>
+    <div class="gutter" data-gutter="1" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
+
+    <section class="chatcol">
+      <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden title="Đưa riêng hội thoại này vào gói dữ liệu cho Claude">📁 Cho Claude</button><button class="sm" id="btnSideToggle" title="Bật/tắt cột trợ lý Claude">💡 Trợ lý</button></div>
+      <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
+      <div class="composer" id="composer" hidden>
+        <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+        <button class="primary" id="btnSend">Gửi</button>
+      </div>
+    </section>
+    <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
+
+    <aside class="sidecol" id="sidecol">
+      <div class="side-head"><b>💡 Trợ lý Claude</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
+      <div class="side-body">
+        <div class="sug-card" id="sugCard" hidden></div>
+        <div class="side-sec" id="sideClaude"><div class="empty small">Chọn một hội thoại để xem tóm tắt và gợi ý của Claude.</div></div>
+        <div class="side-sec" id="sideTemplates">
+          <div class="sec-head"><b>✉️ Tin nhắn mẫu</b><span class="muted small">bấm để điền vào ô soạn</span><span class="grow"></span><button class="sm" id="btnTplAdd">＋ Thêm</button></div>
+          <div id="tplList"><div class="empty small">Đang tải…</div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ═══════════ TIN NHẮN MẪU (hộp thoại sửa) ═══════════ -->
+<dialog id="dlgTemplate" class="settings-dlg tpl-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2 id="tplDlgTitle">Tin nhắn mẫu</h2></div>
+  <div class="settings-body"><div class="form">
+    <label class="fld"><span>Tên mẫu</span><input id="tplTitle" maxlength="80" placeholder="Ví dụ: Xác nhận lịch hẹn"></label>
+    <label class="fld"><span>Nội dung — dán được thẳng vào Zalo; viết [tên] để tự thay bằng tên người đối thoại, các ô [..] khác tự điền trước khi gửi</span><textarea id="tplText" rows="7" maxlength="2000"></textarea></label>
+    <div class="row"><button class="primary" id="btnTplSave">Lưu mẫu</button><button class="danger" id="btnTplDelete" hidden>Xoá mẫu</button><span class="small muted" id="tplMsg"></span></div>
+  </div></div>
+</div></dialog>
+
+<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
+<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
+  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
+  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
+</div></dialog>
+
+<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
+<dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span></div>
+  <div class="settings-body">
+    <div class="card">
+      <h2>Tài khoản đăng nhập</h2>
+      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
+      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+        <div class="form" style="margin-top:10px; max-width:420px">
+          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
+          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
+        </div>
+      </details>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Bảo mật dữ liệu</h2>
+      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
+      <div class="kv" id="securityKv"></div>
+      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
+      <div id="accountRows"></div>
+    </div>
+
+    <div class="card">
+      <h2>Thư mục làm việc với Claude Cowork</h2>
+      <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
+      <div class="kv" id="wsKv"></div>
+      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
+      <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Claude tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30); lịch Cowork kiểm tra mỗi 5 phút và chỉ tổng hợp khi gói đổi. Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
+    </div>
+
+    <div class="card">
+      <h2>Tuỳ chọn</h2>
+      <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
+      <div class="setting" id="setKeepAwakeRow"><div class="txt"><b>Giữ máy không ngủ khi ứng dụng chạy</b><span>Màn hình vẫn tắt/khoá được, nhưng máy không tự ngủ nên Zalo không mất kết nối và lịch Claude vẫn chạy. Gập MacBook vẫn ngủ theo hệ điều hành. <span id="keepAwakeState" class="muted"></span></span></div><label class="switch"><input type="checkbox" id="setKeepAwake"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng thử lấy lịch sử gần đây của các nhóm (Zalo có thể không cấp).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
+      <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Nơi lưu dữ liệu</h2>
+      <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
+      <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
+    </div>
+
+    <div class="card">
+      <h2>Lưu ý quan trọng</h2>
+      <ul style="margin:8px 0 0; padding-left:22px; line-height:1.7">
+        <li>Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng trở đi; nhóm có thể có thêm lịch sử gần đây nếu Zalo cấp.</li>
+        <li>Không mở Zalo Web (chat.zalo.me) trên trình duyệt cùng lúc — sẽ làm mất kết nối ở đây. Zalo trên điện thoại dùng bình thường.</li>
+        <li>Mỗi tin gửi từ ứng dụng là một lần bạn bấm Gửi; ứng dụng không gửi tự động, không đánh dấu đã xem.</li>
+      </ul>
+    </div>
+
+    <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
+  </div>
+  <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+</div></dialog>
+
+<dialog id="dlgQr"><div class="dlg">
+  <h2>Đăng nhập Zalo bằng mã QR</h2>
+  <div class="qr-wrap">
+    <div id="qrImageWrap"><div class="placeholder">Đang tạo mã QR…</div></div>
+    <div>
+      <ol class="qr-steps"><li>Mở ứng dụng <b>Zalo</b> trên điện thoại.</li><li>Chạm biểu tượng <b>mã QR</b> ở góc trên, cạnh ô tìm kiếm.</li><li>Quét mã bên trái.</li><li>Chạm <b>Đồng ý</b> trên điện thoại.</li></ol>
+      <div class="qr-state" id="qrState">Đang chờ quét…</div>
+      <p class="small muted" style="margin-top:10px">Mã hết hạn sau vài phút; bấm "Tạo mã mới" nếu cần. Đăng nhập tại đây không làm thoát Zalo trên điện thoại.</p>
+    </div>
+  </div>
+  <div class="foot"><button id="btnQrRetry">Tạo mã mới</button><button class="primary" id="btnQrClose">Đóng</button></div>
+</div></dialog>
+
+<div class="toast" id="toast"></div>
