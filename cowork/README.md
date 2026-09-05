@@ -11,5 +11,8 @@ Trỏ Claude Cowork vào **đúng thư mục này** một lần. Ứng dụng Za
 
 Câu mở đầu mỗi phiên: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*
 
+Ứng dụng tự cập nhật `du-lieu/` theo chu kỳ (mặc định 60 phút, đổi trong Cài đặt) và ngay sau khi mở khoá — luôn chỉ có MỘT gói.
+Gói kiểu cũ (`yyyyMMdd-HHmmss/`) nếu còn được dồn vào `_goi-cu/` (xoá được).
+
 ⚠️ `du-lieu/` là bản **giải mã** của tin nhắn để Claude đọc được. Không cần nữa thì bấm "Xoá dữ liệu đã chuẩn bị" trong
 Cài đặt của ứng dụng (hoặc xoá thư mục `du-lieu/`); cơ sở dữ liệu gốc trong ứng dụng vẫn được mã hoá.

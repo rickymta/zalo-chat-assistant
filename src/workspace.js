@@ -35,6 +35,7 @@ function copyTree(src, dest) {
     if (e.isDirectory()) { n += copyTree(from, to); continue; }
     if (!/\.(md|txt|csv)$/i.test(e.name)) continue;
     fs.copyFileSync(from, to); n++;
+    try { fs.chmodSync(to, 0o644); } catch { /* bỏ qua */ }   // chép từ asar có thể ra 0600 — để Cowork/Finder đọc thoải mái
   }
   return n;
 }
@@ -48,8 +49,20 @@ export function ensureWorkspace(root, sourceCoworkDir, log) {
     const n = copyTree(path.join(sourceCoworkDir, 'huong-dan'), L.docsDir);
     for (const f of ['CLAUDE.md', 'README.md']) {
       const src = path.join(sourceCoworkDir, f);
-      if (fs.existsSync(src)) fs.copyFileSync(src, path.join(root, f));
+      if (fs.existsSync(src)) { fs.copyFileSync(src, path.join(root, f)); try { fs.chmodSync(path.join(root, f), 0o644); } catch { /* bỏ qua */ } }
     }
+    // Mục #5: chỉ MỘT gói. Thư mục gói kiểu cũ (yyyyMMdd-HHmmss) do bản trước tạo được dồn vào _goi-cu/ — không xoá dữ liệu
+    // của người dùng, nhưng gốc thư mục làm việc luôn gọn để Cowork không lạc.
+    try {
+      const legacy = fs.readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory() && /^\d{8}-\d{6}$/.test(e.name));
+      if (legacy.length) {
+        const archive = path.join(root, '_goi-cu');
+        fs.mkdirSync(archive, { recursive: true });
+        for (const e of legacy) fs.renameSync(path.join(root, e.name), path.join(archive, e.name));
+        fs.writeFileSync(path.join(archive, 'README.md'), '# _goi-cu/\n\nCác gói dữ liệu do bản ứng dụng cũ tạo (mỗi lần xuất một thư mục). Bản mới chỉ dùng MỘT thư mục `du-lieu/` ghi đè. Thư mục này xoá được.\n');
+        log?.info(`Đã dồn ${legacy.length} gói dữ liệu kiểu cũ vào ${archive}.`);
+      }
+    } catch (err) { log?.warn(`Không dọn được gói cũ: ${err?.message ?? err}`); }
     log?.info(`Thư mục làm việc Claude: ${root} (đã cập nhật ${n} file hướng dẫn).`);
   } else {
     // Nguồn = đích (chế độ dev): chỉ đảm bảo CLAUDE.md khớp bản 00.
