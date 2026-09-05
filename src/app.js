@@ -116,8 +116,18 @@ export async function startApp({ platform, port = PORT } = {}) {
    * nên số gói trên máy không bao giờ tăng. Chạy một lần ngay sau khi mở khoá (nếu đã có hội thoại) rồi mỗi N phút.
    */
   const automation = {
-    timer: null, lastRunAt: null, lastResult: null, nextRunAt: null, running: false,
-    status() { const s = loadSettings(); return { minutes: Number(s.autoUpdateMinutes ?? 60), preset: s.defaultPreset ?? 'waiting', lastRunAt: this.lastRunAt, nextRunAt: this.nextRunAt, running: this.running, lastResult: this.lastResult ? { conversations: this.lastResult.conversations, messages: this.lastResult.messages, error: this.lastResult.error ?? null } : null }; },
+    timer: null, lastRunAt: null, lastResult: null, nextRunAt: null, running: false, quietTimer: null, quietAt: null, lastActivityAt: null,
+    status() { const s = loadSettings(); return { minutes: Number(s.autoUpdateMinutes ?? 60), quietMinutes: Number(s.quietMinutes ?? 3), preset: s.defaultPreset ?? 'today', lastRunAt: this.lastRunAt, nextRunAt: this.nextRunAt, quietAt: this.quietAt, lastActivityAt: this.lastActivityAt, running: this.running, lastResult: this.lastResult ? { conversations: this.lastResult.conversations, messages: this.lastResult.messages, error: this.lastResult.error ?? null } : null }; },
+    /** Có tin mới (đến hoặc đi): hẹn cập nhật gói sau N phút yên lặng — mỗi tin mới lại dời mốc. */
+    onActivity() {
+      this.lastActivityAt = Date.now();
+      const mins = Number(loadSettings().quietMinutes ?? 3);
+      if (!db.unlocked || !mins) return;
+      clearTimeout(this.quietTimer);
+      this.quietAt = Date.now() + mins * 60e3;
+      this.quietTimer = setTimeout(() => { this.quietTimer = null; this.quietAt = null; void this.run(`${mins} phút sau tin cuối`); }, mins * 60e3);
+      events.emit('workspace', this.status());
+    },
     /**
      * Chạy theo MỐC GIỜ TRÒN (60 phút ⇒ đúng :00, 30 phút ⇒ :00/:30…) thay vì đếm từ lúc mở khoá — để lịch tự động của
      * Claude Cowork (vd mỗi giờ lúc :10) luôn đọc được gói vừa cập nhật ở :00.
@@ -154,10 +164,12 @@ export async function startApp({ platform, port = PORT } = {}) {
       }
       return this.lastResult;
     },
-    stop() { clearTimeout(this.timer); clearInterval(this.timer); this.timer = null; this.nextRunAt = null; },
+    stop() { clearTimeout(this.timer); clearInterval(this.timer); this.timer = null; this.nextRunAt = null; clearTimeout(this.quietTimer); this.quietTimer = null; this.quietAt = null; },
   };
 
   /** Gợi ý phản hồi do Claude ghi vào ket-qua/ — theo dõi thư mục, gắn vào hội thoại (cần db đã mở khoá để đọc tên). */
+  manager.on('message', () => automation.onActivity());
+
   const suggestions = new SuggestionStore({ root: WORKSPACE_DIR, db, log });
   suggestions.on('changed', (s) => events.emit('suggestions', s));
 

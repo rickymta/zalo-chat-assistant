@@ -46,6 +46,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   defaultPreset: 'today',
   /** Tự cập nhật du-lieu/ cho Claude mỗi N phút (0 = tắt). Luôn chỉ có MỘT gói — ghi đè, không sinh thêm thư mục. */
   autoUpdateMinutes: 60,
+  /** Cập nhật gói N phút sau TIN NHẮN CUỐI (yên lặng N phút thì chạy; có tin tiếp thì đếm lại). 0 = tắt. */
+  quietMinutes: 3,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
   syncOldOnConnect: true,
   /** Hội thoại có tin cuối là của KHÁCH và đã quá số giờ này ⇒ đánh dấu "quá hạn trả lời". */

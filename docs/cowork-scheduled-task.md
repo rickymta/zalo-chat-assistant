@@ -1,6 +1,9 @@
 # Lịch tự động trong Claude Cowork — mẫu prompt
 
-Tạo trong Claude Cowork một scheduled task (cron `10 8-19 * * *` = mỗi giờ lúc :10 từ 08:10 đến 19:10, giờ máy) với prompt:
+Tạo trong Claude Cowork một scheduled task chạy **mỗi 5 phút** trong giờ làm việc (cron `*/5 7-22 * * *`, giờ máy). Ứng dụng
+cập nhật `du-lieu/` **3 phút sau tin nhắn cuối** (Cài đặt → "Cập nhật gói sau tin nhắn cuối"), lịch Cowork đọc hai file nhỏ để
+biết có dữ liệu mới không rồi mới xử lý ⇒ gợi ý có mặt sau tin cuối khoảng 3–8 phút (Cowork cộng thêm vài phút trễ điều phối).
+Prompt:
 
 ```
 Bạn là trợ lý của tư vấn viên Nha khoa MedDental. Thư mục làm việc: /Users/<tên-máy>/Documents/Zalo Chat Assistant
@@ -20,6 +23,5 @@ Ràng buộc: KHÔNG gửi tin nhắn, KHÔNG sửa/xoá trong du-lieu/ và huon
 thông tin không có trong dữ liệu; chỗ chưa chắc ghi [CẦN XÁC NHẬN: …] ở phần ghi chú. Kết thúc bằng 2–3 dòng tóm tắt.
 ```
 
-Lưu ý: lịch chỉ chạy khi Claude Cowork đang mở; mỗi lần chạy tốn token theo số hội thoại — giờ cao điểm mỗi giờ là đủ,
-ngoài giờ nên tắt. Ứng dụng cập nhật du-lieu/ đúng :00 mỗi giờ (Cài đặt → Tự cập nhật, mặc định 60 phút) nên :10 luôn đọc
-được gói mới.
+Lưu ý: lịch chỉ chạy khi Claude Cowork đang mở (đóng thì chạy bù ở lần mở sau). Lượt "dữ liệu chưa đổi" chỉ đọc hai file JSON
+nhỏ nên rất rẻ; lượt có dữ liệu mới tốn token theo số hội thoại. Ứng dụng vẫn giữ nhịp cập nhật mỗi giờ tròn làm nền.

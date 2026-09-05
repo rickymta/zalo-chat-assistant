@@ -234,6 +234,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     if (Number.isFinite(Number(body.groupHistoryCount))) patch.groupHistoryCount = Math.min(Math.max(Number(body.groupHistoryCount), 20), 2000);
     if (typeof body.defaultPreset === 'string' && ['waiting', 'today', 'week', 'groups', 'all'].includes(body.defaultPreset)) patch.defaultPreset = body.defaultPreset;
     if (Number.isFinite(Number(body.autoUpdateMinutes))) patch.autoUpdateMinutes = Math.min(Math.max(Math.round(Number(body.autoUpdateMinutes)), 0), 1440);
+    if (Number.isFinite(Number(body.quietMinutes))) patch.quietMinutes = Math.min(Math.max(Math.round(Number(body.quietMinutes)), 0), 120);
     const saved = settings.save(patch);
     automation?.schedule();
     if (typeof body.autoStart === 'boolean') platform.setAutoStart(body.autoStart);

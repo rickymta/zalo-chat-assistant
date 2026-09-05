@@ -439,6 +439,7 @@
         <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
         <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
         <div class="setting"><div class="txt"><b>Tự cập nhật dữ liệu cho Claude định kỳ</b><span>Chạy đúng mốc giờ tròn (60 phút = đúng :00) để lịch tự động của Claude Cowork đọc được gói mới. Gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+        <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất (đến hoặc đi) thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
         <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
       </div>
 
@@ -576,7 +577,7 @@
       ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) + ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>'
       : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.';
     const au = state.automation;
-    if (au) $('#wsLine').innerHTML += au.minutes ? ' · 🔄 tự cập nhật mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ', lần tới ' + fmtClock(au.nextRunAt) : '') : ' · tự cập nhật: tắt';
+    if (au) $('#wsLine').innerHTML += (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) + ' (' + au.quietMinutes + ' phút sau tin cuối)' : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 và mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '');
     const cp = $('#btnCopyPrompt2'); if (cp) cp.onclick = copyPrompt;
   }
   function renderReencrypt() {
@@ -717,7 +718,7 @@
     const ws = state.workspace || {};
     $('#wsKv').innerHTML = '<div>Đường dẫn</div><div><code>' + esc(ws.root || state.paths.workspaceDir || '') + '</code></div><div>Dữ liệu hiện có</div><div>' + (ws.hasData && ws.status ? num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin — ' + fmtTime(ws.status.updatedAt) : 'chưa có') + '</div><div>Câu lệnh cho Claude</div><div><code>' + esc(PROMPT) + '</code></div>';
     const s = state.settings;
-    $('#setExcel').checked = !!s.includeExcel; $('#setPreset').value = s.defaultPreset || 'waiting'; $('#setAutoMinutes').value = s.autoUpdateMinutes ?? 60;
+    $('#setExcel').checked = !!s.includeExcel; $('#setPreset').value = s.defaultPreset || 'waiting'; $('#setAutoMinutes').value = s.autoUpdateMinutes ?? 60; $('#setQuietMinutes').value = s.quietMinutes ?? 3;
     $('#setGroups').checked = !!s.includeGroups; $('#setSyncOld').checked = s.syncOldOnConnect !== false;
     $('#setWaitingHours').value = s.waitingHours ?? 2; $('#setGroupCount').value = s.groupHistoryCount ?? 300;
     const supportsAuto = state.platform && state.platform.autoStart !== null && state.platform.autoStart !== undefined;
@@ -742,7 +743,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value) };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value) };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
