@@ -28,8 +28,9 @@ export const COWORK_DIR = path.join(ROOT_DIR, 'cowork');
 export const WORKSPACE_DIR = process.env.ZCA_WORKSPACE_DIR ? path.resolve(process.env.ZCA_WORKSPACE_DIR) : COWORK_DIR;
 /** Phiên đăng nhập máy chủ xác thực + chuỗi mã hoá (quyền 600). */
 export const AUTH_FILE = path.join(DATA_DIR, 'auth.json');
-/** Địa chỉ máy chủ xác thực mặc định — người dùng đổi được ở màn đăng nhập. */
-export const DEFAULT_SERVER_URL = (process.env.ZCA_SERVER_URL ?? 'http://127.0.0.1:4789').replace(/\/+$/, '');
+/** Địa chỉ máy chủ tài khoản mặc định (nền tảng web volcanion.vn) — người dùng đổi được ở màn đăng nhập (Nâng cao).
+ *  Máy dev: ZCA_SERVER_URL=http://127.0.0.1:4789 npm start. */
+export const DEFAULT_SERVER_URL = (process.env.ZCA_SERVER_URL ?? 'https://volcanion.vn').replace(/\/+$/, '');
 export const UI_DIR = path.join(__dirname, 'ui');
 
 export const PORT = Number(process.env.PORT ?? 3789);

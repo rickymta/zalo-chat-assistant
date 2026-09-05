@@ -148,7 +148,9 @@ hoá), khu **/admin** (bài viết, phiên bản, người dùng, nội dung tra
 
 ```bash
 cd platform && cp .env.example .env   # điền JWT_SECRET, ADMIN_EMAILS, PUBLIC_URL (địa chỉ web người dùng gõ được)
-docker compose up -d --build           # mongo + api:4789 + web:4790
+docker compose up -d --build           # mongo + api 127.0.0.1:4789 + web 127.0.0.1:4790 (BIND_IP=0.0.0.0 nếu cần mở ra LAN)
+# Máy chủ thật volcanion.vn / admin.volcanion.vn (nginx + Let's Encrypt, chỉ mở 80/443, chuyển dữ liệu Mongo + bộ cài
+# từ máy này): platform/DEPLOY.md. Ứng dụng desktop mặc định trỏ https://volcanion.vn từ bản 0.0.2.
 # Chuyển dữ liệu từ máy chủ cũ (server/, SQLite): xem platform/api/README.md mục 5 (docker cp → migrate-from-sqlite.mjs);
 # người dùng cũ giữ nguyên id + mật khẩu + chuỗi mã hoá + phiên đang đăng nhập.
 ```
@@ -194,7 +196,7 @@ npm run export -- --preset week    # cập nhật du-lieu/ bằng dòng lệnh (
 ```
 
 Biến môi trường: `ZCA_DATA_DIR` (mặc định `./data`), `ZCA_WORKSPACE_DIR` (mặc định `./cowork`; bản .app dùng
-`~/Documents/Zalo Chat Assistant`), `ZCA_SERVER_URL` (mặc định `http://127.0.0.1:4789`), `PORT` (3789), `OPEN_BROWSER=false`.
+`~/Documents/Zalo Chat Assistant`), `ZCA_SERVER_URL` (mặc định `https://volcanion.vn`; máy dev đặt `http://127.0.0.1:4789`), `PORT` (3789), `OPEN_BROWSER=false`.
 
 ### Đóng gói bản Electron
 
