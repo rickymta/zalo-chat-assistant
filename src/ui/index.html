@@ -29,7 +29,7 @@
   button.sm { height: 36px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: 500; }
   button.link { border: 0; background: transparent; color: var(--primary); padding: 0; height: auto; }
   button.danger { color: var(--bad); }
-  input[type=text], input[type=search], input[type=date], input[type=number], select { font: inherit; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); }
+  input[type=text], input[type=search], input[type=date], input[type=number], input[type=email], input[type=password], select { font: inherit; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); }
   input:focus, select:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
   input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--primary); }
 
@@ -204,17 +204,47 @@
   }
 </style>
 <style>
-  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(180deg, #eef3fb, var(--bg)); }
-  .login { width: 460px; max-width: 94vw; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 28px 30px; }
-  .login .brand { padding: 0 0 18px; }
-  .tabs { display: flex; gap: 4px; background: #eef2f7; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
-  .tabs button { flex: 1; border: 0; background: transparent; height: 40px; border-radius: 9px; font-weight: 600; color: var(--muted); }
-  .tabs button.active { background: #fff; color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-  .form { display: flex; flex-direction: column; gap: 12px; }
-  .form input { width: 100%; }
-  .form .field label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 4px; }
-  .form .err { color: var(--bad); font-size: 14px; min-height: 20px; }
-  details.adv summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  /* ── Màn đăng nhập ── */
+  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 28px; background: radial-gradient(1200px 600px at 10% -10%, #dbe8ff 0%, transparent 60%), radial-gradient(900px 500px at 110% 110%, #d7f1ff 0%, transparent 60%), var(--bg); }
+  .login-shell { display: grid; grid-template-columns: 1.05fr 1fr; width: 1040px; max-width: 100%; min-height: 620px; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 30px 80px rgba(16,24,40,.14); overflow: hidden; }
+  .login-hero { background: linear-gradient(160deg, #0a5cff 0%, #0b7dff 55%, #19b3ff 100%); color: #fff; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 22px; }
+  .hero-brand { display: flex; align-items: center; gap: 12px; }
+  .hero-brand .logo { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .hero-brand b { display: block; font-size: 17px; line-height: 1.2; } .hero-brand span { font-size: 13px; opacity: .85; }
+  .login-hero h1 { font-size: 30px; line-height: 1.2; margin-top: 6px; letter-spacing: -.3px; }
+  .hero-sub { font-size: 16px; opacity: .92; line-height: 1.55; }
+  .hero-steps { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .hero-steps li { display: flex; gap: 14px; align-items: flex-start; }
+  .hero-steps .n { flex: none; width: 32px; height: 32px; border-radius: 50%; background: #fff; color: var(--primary); display: grid; place-items: center; font-weight: 800; }
+  .hero-steps b { display: block; font-size: 16px; } .hero-steps li span:not(.n) { font-size: 14px; opacity: .9; }
+  .hero-foot { margin-top: auto; font-size: 13px; opacity: .9; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.25); }
+  .login-card { padding: 44px 46px 30px; display: flex; flex-direction: column; justify-content: center; }
+  .form { display: flex; flex-direction: column; gap: 14px; }
+  .form h2 { font-size: 26px; letter-spacing: -.2px; }
+  .form-sub { color: var(--muted); margin-top: -8px; font-size: 15px; }
+  .fld { display: flex; flex-direction: column; gap: 6px; }
+  .fld > span:first-child { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .fld em { font-style: normal; font-weight: 400; color: var(--faint); }
+  .fld input { width: 100%; height: 48px; font-size: 16px; }
+  .pw { position: relative; display: flex; align-items: center; }
+  .pw input { padding-right: 48px; }
+  .pw .eye { position: absolute; right: 6px; height: 36px; width: 36px; padding: 0; justify-content: center; border: 0; background: transparent; font-size: 17px; opacity: .6; }
+  .pw .eye:hover { opacity: 1; background: #f1f5fb; }
+  .pw .inl { position: absolute; right: 6px; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 14px; }
+  .pw .inl ~ input, .pw input:has(+ .inl) { padding-right: 96px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .err { background: var(--bad-soft); border: 1px solid #f5c2c2; color: var(--bad); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .hint { background: var(--primary-soft); border: 1px solid #c7dbff; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text); }
+  button.wide { width: 100%; justify-content: center; margin-top: 4px; }
+  .links { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .links a { font-weight: 600; text-decoration: none; }
+  .server-line { margin-top: auto; padding-top: 22px; font-size: 13px; color: var(--faint); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .server-line code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; color: var(--muted); }
+  .server-line a { text-decoration: none; font-weight: 600; }
+  .server-edit { flex-basis: 100%; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+  .server-edit input { flex: 1; min-width: 220px; height: 40px; font-size: 14px; }
+  .server-edit .small { flex-basis: 100%; }
+  @media (max-width: 960px) { .login-shell { grid-template-columns: 1fr; } .login-hero { display: none; } .login-card { padding: 32px 26px; } .two { grid-template-columns: 1fr; } }
   .strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; box-shadow: var(--shadow); }
   .strip .zalo { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .strip .chipstat { background: #f1f5fb; border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
@@ -232,40 +262,72 @@
 <body>
 <!-- ═══════════ ĐĂNG NHẬP ═══════════ -->
 <div class="login-wrap" id="loginView" hidden>
-  <div class="login">
-    <div class="brand"><div class="logo">Z</div><div><b>Zalo Chat Assistant</b><div class="small muted">Đăng nhập để mở khoá dữ liệu trên máy này</div></div></div>
-    <div class="tabs"><button class="active" data-tab="login">Đăng nhập</button><button data-tab="register">Đăng ký</button><button data-tab="forgot">Quên mật khẩu</button></div>
+  <div class="login-shell">
+    <aside class="login-hero">
+      <div class="hero-brand"><div class="logo">Z</div><div><b>Zalo Chat Assistant</b><span>MedDental</span></div></div>
+      <h1>Lưu tin nhắn Zalo, để Claude gợi ý câu trả lời</h1>
+      <p class="hero-sub">Mọi tin nhắn được lưu và mã hoá ngay trên máy của bạn. Máy chủ chỉ giữ tài khoản, không bao giờ nhận tin.</p>
+      <ol class="hero-steps">
+        <li><span class="n">1</span><div><b>Đăng nhập tài khoản</b><span>Một lần duy nhất — các lần sau ứng dụng tự mở khoá.</span></div></li>
+        <li><span class="n">2</span><div><b>Kết nối Zalo bằng mã QR</b><span>Giống đăng nhập Zalo Web, không cần mật khẩu Zalo.</span></div></li>
+        <li><span class="n">3</span><div><b>Trỏ Claude Cowork vào thư mục</b><span>Ứng dụng tự chuẩn bị dữ liệu mỗi giờ; Claude tổng hợp và đề xuất phản hồi.</span></div></li>
+      </ol>
+      <div class="hero-foot">🔒 Mã hoá AES-256 · Chỉ đọc Zalo, không gửi tin · Dữ liệu ở trên máy này</div>
+    </aside>
 
-    <form class="form" id="formLogin">
-      <div class="field"><label>Email</label><input type="email" id="liEmail" autocomplete="username" required></div>
-      <div class="field"><label>Mật khẩu</label><input type="password" id="liPassword" autocomplete="current-password" required></div>
-      <div class="err" id="liErr"></div>
-      <button class="primary xl" type="submit" id="liBtn">Đăng nhập</button>
-    </form>
+    <section class="login-card">
+      <!-- ĐĂNG NHẬP -->
+      <form class="form" id="formLogin">
+        <h2>Đăng nhập</h2>
+        <p class="form-sub">Dùng tài khoản ứng dụng (không phải tài khoản Zalo).</p>
+        <label class="fld"><span>Email</span><input type="email" id="liEmail" autocomplete="username" placeholder="ten@meddental.vn" required></label>
+        <label class="fld"><span>Mật khẩu</span><span class="pw"><input type="password" id="liPassword" autocomplete="current-password" placeholder="••••••••" required><button type="button" class="eye" data-eye="liPassword" title="Hiện/ẩn mật khẩu">👁</button></span></label>
+        <div class="err" id="liErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="liBtn">Đăng nhập</button>
+        <div class="links"><a href="#" data-tab="forgot">Quên mật khẩu?</a><span>Chưa có tài khoản? <a href="#" data-tab="register">Đăng ký</a></span></div>
+      </form>
 
-    <form class="form" id="formRegister" hidden>
-      <div class="field"><label>Họ tên</label><input type="text" id="rgName" autocomplete="name"></div>
-      <div class="field"><label>Email</label><input type="email" id="rgEmail" autocomplete="username" required></div>
-      <div class="field"><label>Mật khẩu (ít nhất 8 ký tự)</label><input type="password" id="rgPassword" autocomplete="new-password" required minlength="8"></div>
-      <div class="field"><label>Nhập lại mật khẩu</label><input type="password" id="rgPassword2" autocomplete="new-password" required></div>
-      <div class="field"><label>Mã đăng ký (nếu công ty yêu cầu)</label><input type="text" id="rgCode"></div>
-      <div class="err" id="rgErr"></div>
-      <button class="primary xl" type="submit" id="rgBtn">Tạo tài khoản</button>
-    </form>
+      <!-- ĐĂNG KÝ -->
+      <form class="form" id="formRegister" hidden>
+        <h2>Tạo tài khoản</h2>
+        <p class="form-sub">Tài khoản này mở khoá dữ liệu trên máy và nhận chuỗi mã hoá riêng.</p>
+        <label class="fld"><span>Họ tên</span><input type="text" id="rgName" autocomplete="name" placeholder="Nguyễn Văn A"></label>
+        <label class="fld"><span>Email</span><input type="email" id="rgEmail" autocomplete="username" placeholder="ten@meddental.vn" required></label>
+        <div class="two">
+          <label class="fld"><span>Mật khẩu (≥ 8 ký tự)</span><span class="pw"><input type="password" id="rgPassword" autocomplete="new-password" required minlength="8"><button type="button" class="eye" data-eye="rgPassword" title="Hiện/ẩn">👁</button></span></label>
+          <label class="fld"><span>Nhập lại mật khẩu</span><input type="password" id="rgPassword2" autocomplete="new-password" required></label>
+        </div>
+        <label class="fld"><span>Mã đăng ký <em>(chỉ khi công ty yêu cầu)</em></span><input type="text" id="rgCode" placeholder="Bỏ trống nếu không có"></label>
+        <div class="err" id="rgErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="rgBtn">Tạo tài khoản</button>
+        <div class="links"><span>Đã có tài khoản? <a href="#" data-tab="login">Đăng nhập</a></span></div>
+      </form>
 
-    <form class="form" id="formForgot" hidden>
-      <div class="field"><label>Email</label><input type="email" id="fgEmail" required></div>
-      <div class="row"><button type="button" id="fgSend">Gửi mã đặt lại</button><span class="small muted" id="fgHint"></span></div>
-      <div class="field"><label>Mã nhận được (8 ký tự)</label><input type="text" id="fgCode" maxlength="8" style="text-transform:uppercase"></div>
-      <div class="field"><label>Mật khẩu mới</label><input type="password" id="fgPassword" minlength="8"></div>
-      <div class="err" id="fgErr"></div>
-      <button class="primary xl" type="submit" id="fgBtn">Đặt lại mật khẩu</button>
-    </form>
+      <!-- QUÊN MẬT KHẨU -->
+      <form class="form" id="formForgot" hidden>
+        <h2>Đặt lại mật khẩu</h2>
+        <p class="form-sub">Bước 1: nhận mã 8 ký tự. Bước 2: nhập mã cùng mật khẩu mới.</p>
+        <label class="fld"><span>Email</span><span class="pw"><input type="email" id="fgEmail" placeholder="ten@meddental.vn" required><button type="button" class="inl" id="fgSend">Gửi mã</button></span></label>
+        <div class="hint" id="fgHint" hidden></div>
+        <div class="two">
+          <label class="fld"><span>Mã nhận được</span><input type="text" id="fgCode" maxlength="8" placeholder="8 ký tự" style="text-transform:uppercase; letter-spacing:2px"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><span class="pw"><input type="password" id="fgPassword" minlength="8"><button type="button" class="eye" data-eye="fgPassword" title="Hiện/ẩn">👁</button></span></label>
+        </div>
+        <div class="err" id="fgErr" hidden></div>
+        <button class="primary xl wide" type="submit" id="fgBtn">Đặt lại mật khẩu</button>
+        <div class="links"><span><a href="#" data-tab="login">← Quay lại đăng nhập</a></span></div>
+      </form>
 
-    <details class="adv" style="margin-top:16px"><summary>Nâng cao: địa chỉ máy chủ</summary>
-      <div class="row" style="margin-top:8px"><input type="text" id="serverUrl" placeholder="http://127.0.0.1:4789" style="flex:1"><button class="sm" id="btnPing">Kiểm tra</button></div>
-      <div class="small muted" id="pingResult" style="margin-top:6px"></div>
-    </details>
+      <div class="server-line">
+        <span>Máy chủ: <code id="serverUrlText"></code></span>
+        <a href="#" id="serverToggle">Đổi</a>
+        <div class="server-edit" id="serverEdit" hidden>
+          <input type="text" id="serverUrl" placeholder="http://127.0.0.1:4789">
+          <button type="button" class="sm" id="btnPing">Kiểm tra</button>
+          <div class="small muted" id="pingResult"></div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -419,14 +481,19 @@
   const visibleAccounts = () => state.accounts.filter((a) => a.status !== 'logged_out' || a.hasSession);
 
   // ── Đăng nhập máy chủ ─────────────────────────────────────────────────────
-  function showLogin() { $('#loginView').hidden = false; $('#appView').hidden = true; if (!$('#serverUrl').value) $('#serverUrl').value = state.auth.serverUrl || ''; }
+  function showLogin() { $('#loginView').hidden = false; $('#appView').hidden = true; if (!$('#serverUrl').value) $('#serverUrl').value = state.auth.serverUrl || ''; $('#serverUrlText').textContent = $('#serverUrl').value || state.auth.serverUrl || ''; }
+  const setErr = (sel, msg) => { const el = $(sel); el.textContent = msg || ''; el.hidden = !msg; };
+  function switchTab(name) { state.tab = name; $('#formLogin').hidden = name !== 'login'; $('#formRegister').hidden = name !== 'register'; $('#formForgot').hidden = name !== 'forgot'; ['#liErr', '#rgErr', '#fgErr'].forEach((s) => setErr(s, '')); const first = $(name === 'login' ? '#liEmail' : name === 'register' ? '#rgName' : '#fgEmail'); setTimeout(() => first?.focus(), 50); }
+  $$('[data-tab]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); switchTab(a.dataset.tab); }));
+  $$('[data-eye]').forEach((b) => b.onclick = () => { const i = $('#' + b.dataset.eye); i.type = i.type === 'password' ? 'text' : 'password'; b.style.opacity = i.type === 'text' ? '1' : ''; });
+  $('#serverToggle').onclick = (e) => { e.preventDefault(); const ed = $('#serverEdit'); ed.hidden = !ed.hidden; if (!ed.hidden) $('#serverUrl').focus(); };
+  $('#serverUrl').addEventListener('input', () => { $('#serverUrlText').textContent = $('#serverUrl').value.trim() || state.auth.serverUrl || ''; });
   function showApp() { $('#loginView').hidden = true; $('#appView').hidden = false; }
-  $$('.tabs button').forEach((b) => b.onclick = () => { state.tab = b.dataset.tab; $$('.tabs button').forEach((x) => x.classList.toggle('active', x === b)); $('#formLogin').hidden = state.tab !== 'login'; $('#formRegister').hidden = state.tab !== 'register'; $('#formForgot').hidden = state.tab !== 'forgot'; });
   const serverUrl = () => $('#serverUrl').value.trim() || undefined;
-  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); $('#liErr').textContent = ''; await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); show(state.view); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { $('#liErr').textContent = err.message; } }); };
-  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); $('#rgErr').textContent = ''; if ($('#rgPassword').value !== $('#rgPassword2').value) { $('#rgErr').textContent = 'Hai mật khẩu không khớp.'; return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); show(state.view); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { $('#rgErr').textContent = err.message; } }); };
-  $('#fgSend').onclick = async () => { $('#fgErr').textContent = ''; try { const r = await api('/api/auth/forgot', { method: 'POST', body: { email: $('#fgEmail').value, serverUrl: serverUrl() } }); $('#fgHint').textContent = r.delivery === 'server-log' ? 'Máy chủ chưa gửi email: mã nằm trong nhật ký máy chủ — hỏi quản trị viên.' : 'Đã gửi mã tới email (hiệu lực 30 phút).'; } catch (err) { $('#fgErr').textContent = err.message; } };
-  $('#formForgot').onsubmit = async (e) => { e.preventDefault(); $('#fgErr').textContent = ''; await busy($('#fgBtn'), 'Đang đặt lại…', async () => { try { await api('/api/auth/reset', { method: 'POST', body: { email: $('#fgEmail').value, code: $('#fgCode').value, newPassword: $('#fgPassword').value, serverUrl: serverUrl() } }); toast('Đã đặt lại mật khẩu — hãy đăng nhập.'); $('#liEmail').value = $('#fgEmail').value; $$('.tabs button')[0].click(); } catch (err) { $('#fgErr').textContent = err.message; } }); };
+  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); show(state.view); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
+  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); show(state.view); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
+  $('#fgSend').onclick = async () => { setErr('#fgErr', ''); if (!$('#fgEmail').value.trim()) return setErr('#fgErr', 'Nhập email trước.'); await busy($('#fgSend'), 'Đang gửi…', async () => { try { const r = await api('/api/auth/forgot', { method: 'POST', body: { email: $('#fgEmail').value, serverUrl: serverUrl() } }); const h = $('#fgHint'); h.hidden = false; h.textContent = r.delivery === 'server-log' ? 'ℹ️ Máy chủ chưa cấu hình gửi email: mã đặt lại nằm trong nhật ký máy chủ — hãy hỏi quản trị viên rồi nhập ở bước 2.' : '✅ Đã gửi mã tới email (hiệu lực 30 phút). Nhập mã ở bước 2.'; $('#fgCode').focus(); } catch (err) { setErr('#fgErr', err.message); } }); };
+  $('#formForgot').onsubmit = async (e) => { e.preventDefault(); setErr('#fgErr', ''); if (!$('#fgCode').value.trim()) return setErr('#fgErr', 'Nhập mã 8 ký tự đã nhận.'); await busy($('#fgBtn'), 'Đang đặt lại…', async () => { try { await api('/api/auth/reset', { method: 'POST', body: { email: $('#fgEmail').value, code: $('#fgCode').value, newPassword: $('#fgPassword').value, serverUrl: serverUrl() } }); toast('Đã đặt lại mật khẩu — hãy đăng nhập.'); $('#liEmail').value = $('#fgEmail').value; switchTab('login'); } catch (err) { setErr('#fgErr', err.message); } }); };
   $('#btnPing').onclick = async () => { $('#pingResult').textContent = 'Đang kiểm tra…'; try { const r = await api('/api/auth/ping?url=' + encodeURIComponent(serverUrl() || '')); $('#pingResult').textContent = '✅ Máy chủ trả lời (' + num(r.server?.users) + ' tài khoản' + (r.server?.smtp ? ', có gửi email' : ', chưa cấu hình email') + ').'; } catch (err) { $('#pingResult').textContent = '❌ ' + err.message; } };
 
   // ── Trạng thái chung ──────────────────────────────────────────────────────
