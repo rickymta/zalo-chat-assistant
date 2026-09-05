@@ -102,7 +102,9 @@ const css = `
   .msgs-top { text-align: center; color: var(--faint); font-size: 12px; padding: 4px 0 10px; flex: none; }
   #msgsList { display: flex; flex-direction: column; gap: 0; padding-bottom: 6px; }
   /* Tin nhắn kiểu Zalo: hàng ngang (avatar nhỏ ở nhóm) + cột bong bóng; hành động hiện khi rê chuột; cảm xúc bám góc bong bóng. */
-  .msg { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; content-visibility: auto; contain-intrinsic-size: auto 56px; padding: 0; margin-top: 10px; }
+  /* KHÔNG dùng content-visibility/contain ở .msg: chúng cắt phần pill cảm xúc và nút tràn ra ngoài ô tin. */
+  .msg { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; padding: 0; margin-top: 10px; position: relative; z-index: 1; }
+  .msg:hover { z-index: 3; }
   .msg.cont { margin-top: 3px; }
   .avatar.msg { width: 36px; height: 36px; font-size: 13px; flex: none; }
   .avatar-gap { width: 36px; flex: none; }
@@ -190,7 +192,7 @@ const css = `
   .att-chip.file { color: var(--primary); }
   /* Cảm xúc kiểu Zalo: pill nhỏ + nút thả nhanh bám góc dưới-phải của BONG BÓNG/ẢNH (chồng lên mép ~9px); nút chỉ hiện khi rê chuột. */
   .msg .bubble { position: relative; }
-  .msg.has-reacts { padding-bottom: 8px; }
+  .msg.has-reacts { padding-bottom: 12px; }
   .reacts { position: absolute; right: 8px; bottom: -13px; z-index: 2; display: flex; align-items: center; gap: 4px; }
   /* Nút 👍 thả nhanh nằm trong cụm cảm xúc, sau pill; chỉ hiện khi rê chuột (Zalo). */
   .react-quick { display: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid #e3e7ee; background: #fff; color: #5b6472; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.14); cursor: pointer; text-decoration: none; }

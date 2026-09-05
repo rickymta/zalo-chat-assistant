@@ -234,15 +234,15 @@
   $('#convScroll').addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it || !it.dataset.key) return; openConversation(it.dataset.key); });
 
   // ── Tin nhắn: cuộn vô cực lên trên + cảm xúc + ảnh/sticker ───────────────
-  const chat = { key: null, accountId: null, threadId: null, items: [], hasMore: false, loadingOlder: false, conv: null };
+  const chat = { key: null, accountId: null, threadId: null, items: [], hasMore: false, loadingOlder: false, conv: null, stick: true };
   const PAGE_MSG = 60;
   async function openConversation(key) {
     state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false; if (chat.quote) clearQuote(); $('#reactPop').hidden = true;
     $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === key));
     const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
     if (chat.key !== key) return;
-    chat.conv = r.conversation || {}; chat.items = r.messages; chat.hasMore = !!r.hasMore; chat.claude = r.claude ?? null;
-    renderHead(); renderMessages(true); renderSuggestion(chat.accountId, chat.threadId); renderSideClaude(); renderComposer();
+    chat.conv = r.conversation || {}; chat.items = r.messages; chat.hasMore = !!r.hasMore; chat.claude = r.claude ?? null; chat.stick = true;
+    renderHead(); renderMessages(true); renderSuggestion(chat.accountId, chat.threadId); renderSideClaude(); renderComposer(); stickBottom(); requestAnimationFrame(stickBottom);
     api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/read', { method: 'POST' }).then(() => { const row = vlist.rows.find((c) => c && c.account_id === chat.accountId && c.thread_id === chat.threadId); if (row) { row.unread_count = 0; vlist.render(); } refreshState(); }).catch(() => {});
   }
   function renderHead() {
@@ -412,7 +412,7 @@
     const img = e.target.closest('img.stk'); if (!img || !chat.key) return;
     let st; try { st = JSON.parse(img.dataset.st); } catch { return; }
     closeToolPops();
-    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/sticker', { method: 'POST', body: st }); rememberSticker(st); await refreshOpenChat(); vlist.refresh(); }
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/sticker', { method: 'POST', body: st }); rememberSticker(st); chat.stick = true; await refreshOpenChat(); vlist.refresh(); }
     catch (err) { toast('Không gửi được sticker: ' + err.message); }
   });
   let gifTimer = null;
@@ -429,7 +429,7 @@
   $('#gifGrid').addEventListener('click', async (e) => {
     const img = e.target.closest('img.gif'); if (!img || !chat.key) return; closeToolPops();
     toast('Đang gửi GIF…');
-    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/gif', { method: 'POST', body: { url: img.dataset.url } }); await refreshOpenChat(); vlist.refresh(); }
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/gif', { method: 'POST', body: { url: img.dataset.url } }); chat.stick = true; await refreshOpenChat(); vlist.refresh(); }
     catch (err) { toast('Không gửi được GIF: ' + err.message); }
   });
   async function pickAndSend(kind) {
@@ -440,7 +440,7 @@
       const caption = $('#composeText').value.trim();
       toast('Đang gửi ' + r.paths.length + ' tệp…');
       await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/attachments', { method: 'POST', body: { paths: r.paths, caption } });
-      $('#composeText').value = ''; await refreshOpenChat(); vlist.refresh();
+      $('#composeText').value = ''; chat.stick = true; await refreshOpenChat(); vlist.refresh();
     } catch (err) { toast('Không gửi được: ' + err.message); }
   }
   $('#btnImage').onclick = () => pickAndSend('image');
@@ -459,8 +459,14 @@
     }
     list.innerHTML = html || '<div class="empty">Chưa có tin nhắn.</div>';
     $('#msgsTop').textContent = chat.hasMore ? 'Cuộn lên để xem tin cũ hơn' : (chat.items.length ? 'Đầu hội thoại đã lưu' : '');
-    if (scrollBottom) box.scrollTop = box.scrollHeight; else box.scrollTop = box.scrollHeight - prevH + prevTop;
+    if (scrollBottom) { chat.stick = true; box.scrollTop = box.scrollHeight; } else box.scrollTop = box.scrollHeight - prevH + prevTop;
   }
+  // Bám đáy: khi đang ở cuối (mở hội thoại, vừa gửi tin), ảnh/sticker tải xong làm nội dung cao lên ⇒ vẫn kéo về cuối.
+  // Người dùng cuộn lên xa hơn 120px thì thôi bám; cuộn về gần cuối thì bám lại.
+  const msgsBox = $('#msgs');
+  msgsBox.addEventListener('scroll', () => { const dist = msgsBox.scrollHeight - msgsBox.scrollTop - msgsBox.clientHeight; if (dist > 120) chat.stick = false; else if (dist < 40) chat.stick = true; });
+  function stickBottom() { if (chat.stick && chat.key) msgsBox.scrollTop = msgsBox.scrollHeight; }
+  const stickRo = new ResizeObserver(stickBottom); stickRo.observe($('#msgsList')); stickRo.observe(msgsBox);
   async function loadOlder() {
     if (!chat.key || !chat.hasMore || chat.loadingOlder || !chat.items.length) return;
     chat.loadingOlder = true; const key = chat.key;
@@ -506,7 +512,7 @@
     if (!chat.key) return; const key = chat.key;
     const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
     if (chat.key !== key) return;
-    const box = $('#msgs'); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    const box = $('#msgs'); const atBottom = chat.stick || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     const byId = new Map(chat.items.map((m) => [m.id, m]));
     for (const m of r.messages) byId.set(m.id, m);
     chat.items = [...byId.values()].sort((a, b) => a.event_time - b.event_time || a.id - b.id);
@@ -545,7 +551,7 @@
     if (!chat.key) return;
     const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
     await busy($('#btnSend'), 'Đang gửi…', async () => {
-      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text, quoteMsgId: chat.quote?.msgId || null } }); t.value = ''; clearQuote(); await refreshOpenChat(); vlist.refresh(); }
+      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text, quoteMsgId: chat.quote?.msgId || null } }); t.value = ''; clearQuote(); chat.stick = true; await refreshOpenChat(); vlist.refresh(); }
       catch (err) { toast('Không gửi được: ' + err.message); }
     });
   }
