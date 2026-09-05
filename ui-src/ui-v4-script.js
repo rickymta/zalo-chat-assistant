@@ -256,8 +256,9 @@
     const url = a.url ? esc(a.url) : '';
     // Ảnh/sticker lỗi tải (link Zalo hết hạn, không có mạng) → đổi sang chip có tên + liên kết, không để ô trống.
     const onErr = (label) => ' onerror="this.parentElement.outerHTML=\x27<a class=&quot;att-chip&quot; href=&quot;' + url + '&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>' + label + ' (không tải được — mở liên kết)</a>\x27"';
-    if (a.type === 'sticker') return url ? '<span><img class="sticker" src="' + url + '" alt="Sticker" loading="lazy"' + onErr('😊 Sticker') + '></span>' : '<span class="att-chip">😊 Sticker</span>';
-    if (a.type === 'image' || a.type === 'gif') return url ? '<a href="' + url + '" target="_blank" rel="noopener"><img class="att-img" src="' + url + '" alt="' + esc(a.name || 'Ảnh') + '" loading="lazy"' + onErr((a.type === 'gif' ? '🎞 ' : '🖼 ') + esc(a.name || 'Ảnh')) + '></a>' : '<span class="att-chip">🖼 ' + esc(a.name || 'Ảnh') + '</span>';
+    if (a.type === 'sticker') return url ? '<span data-preview="' + url + '" data-name="Sticker" title="Xem lớn"><img class="sticker" src="' + url + '" alt="Sticker" loading="lazy"' + onErr('😊 Sticker') + '></span>' : '<span class="att-chip">😊 Sticker</span>';
+    // Ảnh/GIF: bấm mở hộp xem ảnh trong ứng dụng (không mở trình duyệt); href giữ để chuột phải "sao chép liên kết" vẫn dùng được.
+    if (a.type === 'image' || a.type === 'gif') return url ? '<a href="' + url + '" class="att-open" data-preview="' + url + '" data-name="' + esc(a.name || (a.type === 'gif' ? 'Ảnh động' : 'Ảnh')) + '" title="Xem lớn"><img class="att-img" src="' + url + '" alt="' + esc(a.name || 'Ảnh') + '" loading="lazy"' + onErr((a.type === 'gif' ? '🎞 ' : '🖼 ') + esc(a.name || 'Ảnh')) + '></a>' : '<span class="att-chip">🖼 ' + esc(a.name || 'Ảnh') + '</span>';
     if (a.type === 'video') return url ? '<video class="att-video" controls preload="metadata"' + (a.thumb ? ' poster="' + esc(a.thumb) + '"' : '') + ' src="' + url + '"></video>' : '<span class="att-chip">🎬 Video</span>';
     if (a.type === 'audio') return url ? '<audio class="att-audio" controls preload="none" src="' + url + '"></audio>' : '<span class="att-chip">🎤 Ghi âm</span>';
     if (a.type === 'file') return url ? '<a class="att-chip file" href="' + url + '" target="_blank" rel="noopener">📎 ' + esc(a.name || 'Tệp') + '</a>' : '<span class="att-chip">📎 ' + esc(a.name || 'Tệp') + '</span>';
@@ -299,6 +300,33 @@
     } catch (err) { toast(err.message); } finally { chat.loadingOlder = false; }
   }
   $('#msgs').addEventListener('scroll', () => { if ($('#msgs').scrollTop < 120) loadOlder(); });
+
+  // ── Xem ảnh trong ứng dụng (lightbox): mọi ảnh/GIF/sticker của hội thoại đang mở, ← → chuyển ảnh, bấm ảnh = kích cỡ thật.
+  const gallery = { items: [], index: -1 };
+  function galleryItems() { return [...$('#msgsList').querySelectorAll('[data-preview]')].map((el) => ({ url: el.dataset.preview, name: el.dataset.name || 'Ảnh', el })); }
+  function showImage(i) {
+    if (i < 0 || i >= gallery.items.length) return;
+    gallery.index = i; const it = gallery.items[i];
+    const img = $('#imgPreview'), msg = $('#imgMsg'); $('.img-wrap').classList.remove('zoomed'); $('#imgZoom').textContent = 'Kích cỡ thật';
+    msg.hidden = true; img.hidden = false; img.removeAttribute('src'); img.alt = it.name;
+    img.onload = () => { $('#imgZoom').hidden = img.naturalWidth <= img.clientWidth && img.naturalHeight <= img.clientHeight; };
+    img.onerror = () => { img.hidden = true; msg.hidden = false; msg.textContent = 'Không tải được ảnh — liên kết Zalo có thể đã hết hạn. Thử "Mở bằng trình duyệt".'; $('#imgZoom').hidden = true; };
+    img.src = it.url;
+    $('#imgName').textContent = it.name; $('#imgCount').textContent = gallery.items.length > 1 ? (i + 1) + ' / ' + gallery.items.length : '';
+    $('#imgPrev').disabled = i <= 0; $('#imgNext').disabled = i >= gallery.items.length - 1;
+  }
+  function openImage(el) {
+    gallery.items = galleryItems(); const i = gallery.items.findIndex((x) => x.el === el);
+    if (i < 0) return; const d = $('#dlgImage'); if (!d.open) d.showModal(); showImage(i);
+  }
+  $('#msgsList').addEventListener('click', (e) => { const p = e.target.closest('[data-preview]'); if (!p) return; e.preventDefault(); openImage(p); });
+  $('#imgPrev').onclick = () => showImage(gallery.index - 1);
+  $('#imgNext').onclick = () => showImage(gallery.index + 1);
+  $('#imgZoom').onclick = () => { const w = $('.img-wrap'); w.classList.toggle('zoomed'); $('#imgZoom').textContent = w.classList.contains('zoomed') ? 'Vừa màn hình' : 'Kích cỡ thật'; };
+  $('#imgPreview').addEventListener('click', () => $('#imgZoom').click());
+  $('#imgCopyUrl').onclick = () => { const it = gallery.items[gallery.index]; if (it) copyText(it.url, 'Đã sao chép liên kết ảnh.'); };
+  $('#imgOpen').onclick = () => { const it = gallery.items[gallery.index]; if (it) api('/api/open-url', { method: 'POST', body: { url: it.url } }).catch((err) => toast(err.message)); };
+  $('#dlgImage').addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') { e.preventDefault(); showImage(gallery.index - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); showImage(gallery.index + 1); } });
   /** Có tin mới/cảm xúc mới ở hội thoại đang mở: lấy phần mới nhất, ghép vào (giữ vị trí nếu đang đọc tin cũ). */
   async function refreshOpenChat() {
     if (!chat.key) return; const key = chat.key;

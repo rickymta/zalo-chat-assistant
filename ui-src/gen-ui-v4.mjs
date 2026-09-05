@@ -149,6 +149,24 @@ const css = `
   .trial-box { margin-top: 16px; padding: 12px 14px; border: 1px dashed #c9d2de; border-radius: 12px; display: flex; gap: 12px; align-items: center; font-size: 13px; color: var(--muted); line-height: 1.45; }
   .trial-box b { display: block; color: var(--text); font-size: 14px; margin-bottom: 2px; }
   .trial-box button { flex: none; }
+  /* Hộp xem ảnh */
+  .img-dlg { background: transparent; box-shadow: none; max-width: 96vw; padding: 0; }
+  .img-dlg::backdrop { background: rgba(8, 12, 22, .84); }
+  .img-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 10px 8px; background: #0f1420; border-radius: 14px; }
+  .img-stage { max-width: 92vw; max-height: 78vh; overflow: auto; display: grid; place-items: center; border-radius: 10px; min-width: 240px; min-height: 120px; }
+  .img-stage img { max-width: 92vw; max-height: 78vh; display: block; border-radius: 10px; background: #000; cursor: zoom-in; }
+  .img-wrap.zoomed .img-stage img { max-width: none; max-height: none; cursor: zoom-out; }
+  .img-msg { color: #e5e7eb; padding: 40px 30px; text-align: center; font-size: 14px; max-width: 420px; line-height: 1.5; }
+  .img-bar { display: flex; align-items: center; gap: 8px; width: 100%; color: #e5e7eb; }
+  .img-bar .faint { color: #9ca3af; }
+  .img-bar button { background: rgba(255,255,255,.1); color: #f3f4f6; border-color: rgba(255,255,255,.18); }
+  .img-bar button:hover { background: rgba(255,255,255,.2); }
+  .img-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.88); color: #111; font-size: 28px; line-height: 1; padding: 0; display: grid; place-items: center; z-index: 3; }
+  .img-nav.prev { left: 14px; } .img-nav.next { right: 14px; }
+  .img-nav:disabled { opacity: .25; }
+  .img-dlg .dlg-x { top: 14px; right: 14px; }
+  .att-open { display: inline-block; cursor: zoom-in; }
+  [data-preview] .sticker { cursor: zoom-in; }
   /* Màn đăng nhập trong cửa sổ hẹp (~1000px): không cuộn ngang, ẩn cột giới thiệu, ô dùng thử xuống dòng. */
   .login-wrap { padding: 16px; box-sizing: border-box; overflow: auto; }
   .login-shell { max-width: calc(100vw - 32px); }
