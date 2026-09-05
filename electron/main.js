@@ -5,7 +5,7 @@
  * Dữ liệu: ~/Library/Application Support/Zalo Chat Assistant/data   (CSDL, phiên đăng nhập, log)
  * Gói xuất: ~/Documents/Zalo Chat Assistant/                        (người dùng dễ tìm trong Finder)
  */
-import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
+import { clipboard, app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -34,6 +34,7 @@ const platform = {
   name: 'electron',
   appVersion: app.getVersion(),
   revealPath(p) { shell.openPath(p); },
+  copyText(t) { clipboard.writeText(String(t ?? '')); return true; },
   getAutoStart() { try { return !!app.getLoginItemSettings().openAtLogin; } catch { return false; } },
   setAutoStart(v) { try { app.setLoginItemSettings({ openAtLogin: !!v, openAsHidden: true }); } catch { /* bỏ qua */ } return this.getAutoStart(); },
 };

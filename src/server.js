@@ -238,6 +238,18 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     return { ok: true };
   });
 
+  // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
+  app.post('/api/clipboard', async (req, reply) => {
+    const text = String(req.body?.text ?? '');
+    if (text.length > 200_000) return reply.code(400).send({ ok: false, error: 'Nội dung quá dài.' });
+    if (typeof platform.copyText === 'function') { platform.copyText(text); return { ok: true, via: 'electron' }; }
+    if (process.platform === 'darwin') {
+      await new Promise((res, rej) => { const p = spawn('pbcopy'); p.on('error', rej); p.on('close', (c) => (c === 0 ? res() : rej(new Error('pbcopy trả mã ' + c)))); p.stdin.end(text); });
+      return { ok: true, via: 'pbcopy' };
+    }
+    return reply.code(501).send({ ok: false, error: 'Máy này chưa hỗ trợ sao chép từ ứng dụng.' });
+  });
+
   // ── Thiết lập / nhật ký ─────────────────────────────────────────────────────
   app.get('/api/settings', async () => settings.load());
   app.post('/api/settings', async (req) => {
