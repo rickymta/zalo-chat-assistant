@@ -130,7 +130,28 @@ tài khoản thật và đổi chuỗi mã hoá đồng bộ giữa các máy.
 - **Đăng xuất ứng dụng** xoá `data/auth.json` (token + chuỗi); dữ liệu vẫn nằm trên máy dạng mã hoá, đăng nhập lại cùng tài
   khoản là đọc được. Ai có `data/auth.json` hoặc `data/sessions/` là dùng được — không chia sẻ thư mục dữ liệu.
 
-## Máy chủ xác thực (`server/`)
+## Nền tảng web (`platform/`) — MERN, thay máy chủ xác thực cũ từ 05/09/2026
+
+`platform/api` (Express + MongoDB, cổng **4789**) giữ nguyên toàn bộ API đăng nhập/chuỗi mã hoá mà ứng dụng gọi, thêm quản lý
+**phiên bản phần mềm** (tải file, đếm lượt tải, kiểm tra cập nhật theo semver), **bài viết CMS**, quản trị người dùng, thống kê.
+`platform/web` (React + Vite → nginx, cổng **4790**): trang chủ, **/tai-ve** (tự nhận diện macOS chip Apple / Intel / Windows),
+**/cap-nhat** (lịch sử phiên bản), bài viết, hướng dẫn, đăng nhập/đăng ký/quên mật khẩu, tài khoản (phiên đăng nhập, đổi chuỗi mã
+hoá), khu **/admin** (bài viết, phiên bản, người dùng, nội dung trang chủ — chỉ tài khoản `role: admin`; email trong `ADMIN_EMAILS`
+được nâng quyền khi đăng nhập). Hợp đồng API: `platform/API-CONTRACT.md`.
+
+```bash
+cd platform && cp .env.example .env   # điền JWT_SECRET, ADMIN_EMAILS, PUBLIC_URL (địa chỉ web người dùng gõ được)
+docker compose up -d --build           # mongo + api:4789 + web:4790
+# Chuyển dữ liệu từ máy chủ cũ (server/, SQLite): xem platform/api/README.md mục 5 (docker cp → migrate-from-sqlite.mjs);
+# người dùng cũ giữ nguyên id + mật khẩu + chuỗi mã hoá + phiên đang đăng nhập.
+```
+
+Ứng dụng **tự kiểm tra bản cập nhật** ở máy chủ tài khoản (`GET /api/releases/check`) 20 giây sau khi mở và mỗi 6 giờ, hoặc bấm
+*Cài đặt → Kiểm tra cập nhật*. Có bản mới ⇒ thanh 🆕 với *Tải về* (mở trình duyệt), *Xem thay đổi*, *Bỏ qua bản này* (bản bắt buộc
+không bỏ qua được). Không tự cài vì bản chưa ký. Phát hành bản mới: admin → Phiên bản → tải file `.dmg`/`.exe` (tự đoán
+version/nền tảng/chip từ tên file), viết ghi chú, **Xuất bản**. Cần tăng `version` trong `package.json` trước khi `npm run dist`.
+
+## Máy chủ xác thực cũ (`server/`) — đã thay bằng `platform/api`, giữ để đối chiếu
 
 ```bash
 cd server
