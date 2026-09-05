@@ -269,33 +269,50 @@
   const callText = (t) => /^sendBubbleMessage\b/.test(t || '') ? '📞 <i>' + esc((t || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(t || '');
   /** Khối trích dẫn: quote_text dạng "Tên: nội dung" → tên đậm + nội dung. */
   function quoteHtml(q) { const i = q.indexOf(': '); const who = i > 0 && i < 60 ? q.slice(0, i) : ''; const text = who ? q.slice(i + 2) : q; return '<div class="quote">' + (who ? '<b>' + esc(who) + '</b>' : '') + '<span>' + esc(text) + '</span></div>'; }
+  const ICO = {
+    reply: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
+    forward: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>',
+    more: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+    like: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
+  };
   function bubble(m) {
     const c = chat.conv || {};
     const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
     const atts = (m.attachments || []);
     const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
     const rs = (m.reactions || []).slice().sort((a, b) => b.count - a.count); const total = rs.reduce((n, r) => n + r.count, 0); const mine = rs.some((r) => r.mine);
-    const reacts = rs.length ? '<div class="reacts"><span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + (total > 1 ? '<b>' + total + '</b>' : '') + '</span></div>' : '';
-    const canAct = !m.recalled && m.zalo_msg_id && !String(m.zalo_msg_id).startsWith('local-');
-    const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="react" title="Thả cảm xúc">😊</button><button type="button" data-act="reply" title="Trả lời">↩</button>' + (m.text ? '<button type="button" data-act="copy" title="Sao chép nội dung">⧉</button>' : '') + '</div>' : '';
+    const canAct = !m.recalled && m.zalo_msg_id && !/^(local|fwd)-/.test(String(m.zalo_msg_id));
+    // Pill cảm xúc + nút thả nhanh: bám góc dưới-phải của bong bóng/ảnh (như Zalo), nút chỉ hiện khi rê chuột.
+    const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + (total > 1 ? '<b>' + total + '</b>' : '') + '</span>' : '';
+    const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
+    const reacts = (pill || quick) ? '<div class="reacts">' + pill + quick + '</div>' : '';
+    const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
     const showAvatar = !!c.is_group && !m.is_outbound;
     const body = m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (m.text || atts.length ? callText(m.text) : '<i class="faint">[Nội dung không hiển thị được — ' + esc({ text: 'tin trống', image: 'ảnh', gif: 'ảnh động', sticker: 'sticker', video: 'video', audio: 'ghi âm', file: 'tệp', link: 'liên kết', location: 'vị trí', other: 'tin hệ thống' }[m.type] || m.type) + ']</i>');
-    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + (rs.length ? ' has-reacts' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
+    const time = '<div class="time">' + fmtClock(m.event_time) + '</div>';
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + (rs.length ? ' has-reacts' : '') + (mediaOnly ? ' is-media' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
       (showAvatar ? avatarHtml(null, who, 'xs') : '') +
-      '<div class="mcol"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
-      (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
-      (m.quote_text ? quoteHtml(m.quote_text) : '') +
-      body +
+      '<div class="mcol">' + (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
+      '<div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
+      (m.quote_text ? quoteHtml(m.quote_text) : '') + body +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>' + acts + '</div>';
+      (mediaOnly ? '' : time) + reacts + '</div>' + (mediaOnly ? time : '') + '</div>' + acts + '</div>';
   }
-  // Hành động trên tin: cảm xúc, trả lời, sao chép; bấm cảm xúc của mình để bỏ.
+  // Hành động trên tin: thả cảm xúc (nút nhanh + bảng 6 cảm xúc), trả lời, chuyển tiếp, thêm (sao chép, xem ảnh); bấm pill của mình để bỏ cảm xúc.
   const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));
+  function placePop(pop, anchor) {
+    pop.hidden = false; const ar = anchor.getBoundingClientRect(); const r = ar.width ? ar : anchor.closest('.msg').querySelector('.bubble').getBoundingClientRect(); const w = pop.offsetWidth || 240, h = pop.offsetHeight || 46;
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = (r.top - h - 8 < 8 ? r.bottom + 8 : r.top - h - 8) + 'px';
+  }
   function openReactPop(anchor, m) {
     const pop = $('#reactPop'); pop.dataset.msgid = m.zalo_msg_id;
     pop.innerHTML = REACT_SET.map(([code, e]) => '<button type="button" data-icon="' + esc(code) + '" title="' + esc(e) + '">' + e + '</button>').join('') + ((m.reactions || []).some((r) => r.mine) ? '<button type="button" data-icon="" class="none" title="Bỏ cảm xúc">✕</button>' : '');
-    pop.hidden = false; const ar = anchor.getBoundingClientRect(); const r = ar.width ? ar : anchor.closest(".msg").querySelector(".bubble").getBoundingClientRect(); const w = pop.offsetWidth || 240;
-    pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = (r.top - pop.offsetHeight - 8 < 8 ? r.bottom + 8 : r.top - pop.offsetHeight - 8) + 'px';
+    placePop(pop, anchor);
+  }
+  function openMorePop(anchor, m) {
+    const pop = $('#morePop'); pop.dataset.id = m.id; const img = (m.attachments || []).find((a) => ['image', 'gif', 'sticker'].includes(a.type) && a.url);
+    pop.innerHTML = (m.text ? '<button type="button" data-more="copy">⧉ Sao chép nội dung</button>' : '') + (img ? '<button type="button" data-more="view">🖼 Xem ảnh</button><button type="button" data-more="copyurl">🔗 Sao chép liên kết ảnh</button>' : '') + '<button type="button" data-more="reply">' + ICO.reply + ' Trả lời</button><button type="button" data-more="forward">' + ICO.forward + ' Chuyển tiếp</button>';
+    placePop(pop, anchor);
   }
   async function react(msgId, icon) {
     $('#reactPop').hidden = true;
@@ -308,10 +325,50 @@
     const m = msgById(b.closest('.msg')); if (!m) return;
     if (b.dataset.act === 'react') openReactPop(b, m);
     else if (b.dataset.act === 'reply') setQuote(m);
-    else if (b.dataset.act === 'copy') copyText(m.text || '', 'Đã sao chép nội dung tin.');
+    else if (b.dataset.act === 'forward') openForward(m);
+    else if (b.dataset.act === 'more') openMorePop(b, m);
   });
   $('#reactPop').addEventListener('click', (e) => { const b = e.target.closest('button[data-icon]'); if (!b) return; react($('#reactPop').dataset.msgid, b.dataset.icon); });
-  document.addEventListener('click', (e) => { if (!e.target.closest('#reactPop') && !e.target.closest('button[data-act="react"]')) $('#reactPop').hidden = true; if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true; });
+  $('#morePop').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-more]'); if (!b) return; const pop = $('#morePop'); pop.hidden = true;
+    const m = chat.items.find((x) => String(x.id) === String(pop.dataset.id)); if (!m) return;
+    if (b.dataset.more === 'copy') copyText(m.text || '', 'Đã sao chép nội dung tin.');
+    else if (b.dataset.more === 'view') { const el = $('#msgsList .msg[data-id="' + m.id + '"] [data-preview]'); if (el) openImage(el); }
+    else if (b.dataset.more === 'copyurl') { const a = (m.attachments || []).find((x) => x.url); if (a) copyText(a.url, 'Đã sao chép liên kết ảnh.'); }
+    else if (b.dataset.more === 'reply') setQuote(m);
+    else if (b.dataset.more === 'forward') openForward(m);
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#reactPop') && !e.target.closest('button[data-act="react"]')) $('#reactPop').hidden = true;
+    if (!e.target.closest('#morePop') && !e.target.closest('button[data-act="more"]')) $('#morePop').hidden = true;
+    if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true;
+  });
+  // Chuyển tiếp: chọn nhiều hội thoại (tìm theo tên), gửi văn bản của tin tới từng nơi.
+  const fwd = { msg: null, selected: new Set(), rows: [] };
+  async function openForward(m) {
+    if (!m.text) { toast('Chỉ chuyển tiếp được tin văn bản — ảnh, tệp, sticker hãy tải về rồi gửi lại.'); return; }
+    fwd.msg = m; fwd.selected = new Set(); $('#fwdSearch').value = '';
+    $('#fwdPreview').innerHTML = '<div class="fwd-q"><b>' + esc(m.is_outbound ? 'Bạn' : (m.sender_name || chat.conv?.name || '')) + '</b><span>' + esc((m.text || '').replace(/\s+/g, ' ').slice(0, 220)) + '</span></div>';
+    try { const r = await api('/api/conversations?includeGroups=true&limit=300'); fwd.rows = (r.rows || []).filter((c) => !(c.account_id === chat.accountId && c.thread_id === chat.threadId)); } catch (err) { toast(err.message); return; }
+    renderForwardList(); $('#dlgForward').showModal(); setTimeout(() => $('#fwdSearch').focus(), 50);
+  }
+  function renderForwardList() {
+    const q = $('#fwdSearch').value.trim().toLowerCase();
+    const rows = fwd.rows.filter((c) => !q || String(c.name || '').toLowerCase().includes(q) || String(c.phone || '').includes(q)).slice(0, 80);
+    $('#fwdList').innerHTML = rows.length ? rows.map((c) => { const k = c.account_id + '|' + c.thread_id; return '<label class="fwd-row' + (fwd.selected.has(k) ? ' on' : '') + '"><input type="checkbox" data-key="' + esc(k) + '"' + (fwd.selected.has(k) ? ' checked' : '') + '>' + avatarHtml(c.avatar_url, c.name, 'sm') + '<span class="nm">' + (c.is_group ? '👥 ' : '') + esc(c.name || c.thread_id) + '</span><span class="faint small">' + esc((c.last_message_preview || '').slice(0, 40)) + '</span></label>'; }).join('') : '<div class="empty small">Không có hội thoại nào khớp.</div>';
+    $('#fwdCount').textContent = fwd.selected.size ? 'Đã chọn ' + fwd.selected.size : 'Chọn một hoặc nhiều hội thoại';
+    $('#fwdSend').disabled = !fwd.selected.size;
+  }
+  $('#fwdSearch').addEventListener('input', renderForwardList);
+  $('#fwdList').addEventListener('change', (e) => { const cb = e.target.closest('input[type=checkbox]'); if (!cb) return; if (cb.checked) fwd.selected.add(cb.dataset.key); else fwd.selected.delete(cb.dataset.key); if (fwd.selected.size > 20) { cb.checked = false; fwd.selected.delete(cb.dataset.key); toast('Tối đa 20 hội thoại một lần.'); } renderForwardList(); });
+  $('#fwdSend').onclick = async () => {
+    if (!fwd.msg || !fwd.selected.size) return;
+    const targets = [...fwd.selected].map((k) => { const [a, t] = k.split('|'); const c = fwd.rows.find((x) => x.account_id === a && x.thread_id === t); return { threadId: t, isGroup: !!c?.is_group }; });
+    await busy($('#fwdSend'), 'Đang gửi…', async () => {
+      try { const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages/' + encodeURIComponent(fwd.msg.zalo_msg_id) + '/forward', { method: 'POST', body: { targets } }); $('#dlgForward').close(); toast('Đã chuyển tiếp tới ' + r.sent + ' hội thoại' + (r.failed ? ', ' + r.failed + ' lỗi' : '') + '.'); vlist.refresh(); }
+      catch (err) { toast('Không chuyển tiếp được: ' + err.message); }
+    });
+  };
   // Trả lời (trích dẫn) như Zalo
   function setQuote(m) {
     const c = chat.conv || {}; const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');

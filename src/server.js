@@ -226,6 +226,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null })));
   // Thả cảm xúc như Zalo: 6 cảm xúc chuẩn; icon rỗng = bỏ cảm xúc của mình.
   const REACTION_ICONS = ['/-heart', '/-strong', ':>', ':o', ':-((', ':-h'];
+  app.post('/api/conversations/:accountId/:threadId/messages/:msgId/forward', withUi(async (req) => manager.forwardMessage(req.params.accountId, req.params.threadId, req.params.msgId, req.body?.targets)));
   app.post('/api/conversations/:accountId/:threadId/messages/:msgId/react', withUi(async (req) => {
     const icon = String(req.body?.icon ?? '');
     if (icon && !REACTION_ICONS.includes(icon)) throw Object.assign(new Error('Cảm xúc không hợp lệ.'), { status: 400 });

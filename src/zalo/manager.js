@@ -558,6 +558,41 @@ export class ZaloManager extends EventEmitter {
     return { ok: true, msgId: msgId ? String(msgId) : null, eventTime: now };
   }
 
+  /**
+   * Chuyển tiếp một tin tới nhiều hội thoại (zca-js chỉ hỗ trợ VĂN BẢN; ảnh/tệp không chuyển tiếp được qua API này).
+   * targets: [{ threadId, isGroup }]. Trả { sent: n, failed: n, errors: [...] }.
+   */
+  async forwardMessage(id, threadId, msgId, targets) {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không chuyển tiếp được.');
+    const row = this.db.getMessageByMsgId(id, String(threadId), String(msgId));
+    if (!row) throw new Error('Không tìm thấy tin nhắn.');
+    const text = String(row.text ?? '').trim();
+    if (!text) throw new Error('Chỉ chuyển tiếp được tin văn bản — ảnh, tệp, sticker hãy tải về rồi gửi lại.');
+    const list = (Array.isArray(targets) ? targets : []).map((t) => ({ threadId: String(t.threadId ?? ''), isGroup: !!t.isGroup })).filter((t) => t.threadId);
+    if (!list.length) throw new Error('Chưa chọn hội thoại nhận.');
+    if (list.length > 20) throw new Error('Tối đa 20 hội thoại một lần.');
+    const reference = /^\d+$/.test(String(row.zalo_msg_id)) ? { id: String(row.zalo_msg_id), ts: Number(row.event_time), logSrcType: 1, fwLvl: 1 } : undefined;
+    const out = { sent: 0, failed: 0, errors: [] };
+    for (const isGroup of [false, true]) {
+      const ids = list.filter((t) => t.isGroup === isGroup).map((t) => t.threadId);
+      if (!ids.length) continue;
+      try {
+        const res = await live.api.forwardMessage({ message: text, reference }, ids, isGroup ? ThreadType.Group : ThreadType.User);
+        out.sent += res?.success?.length ?? 0; out.failed += res?.fail?.length ?? 0;
+        for (const f of (res?.fail ?? [])) out.errors.push(String(f.error_code ?? 'lỗi'));
+        const account = this.db.getAccount(id); const now = Date.now();
+        for (const tid of ids) {
+          const conv = this.db.getConversation(id, tid);
+          const rowOut = { account_id: id, thread_id: tid, is_group: isGroup, zalo_msg_id: `fwd-${now}-${tid}`, cli_msg_id: null, is_outbound: 1, sender_id: id, sender_name: account?.display_name ?? 'Tôi', type: 'text', text, attachments_json: null, quote_text: null, event_time: now, source: 'sent', raw_json: null, created_at: now, conv_name: conv?.name ?? null, conv_avatar: null, conv_phone: null, preview: previewOf({ type: 'text', text, attachments: [] }) };
+          if (this.db.insertMessage(rowOut)) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: rowOut.preview, eventTime: now, source: 'sent' });
+        }
+      } catch (err) { out.failed += ids.length; out.errors.push(err?.message ?? String(err)); }
+    }
+    this.log.info(`Chuyển tiếp tin: ${out.sent} thành công, ${out.failed} lỗi.`);
+    return out;
+  }
+
   /** Thả (icon là mã Zalo như '/-heart') hoặc bỏ (icon '') cảm xúc lên một tin. Ghi ngay vào bảng reactions cho chính mình. */
   async addReaction(id, threadId, msgId, icon) {
     const live = this.live.get(id);
