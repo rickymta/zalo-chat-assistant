@@ -26,11 +26,13 @@ route ở mục 2 — **không được đổi tên route, tên trường, mã l
   `/api/*`, `/downloads/*`, `/uploads/*` sang api.
 - JSON UTF-8. Lỗi: HTTP 4xx/5xx + body `{ "error": "<câu tiếng Việt cho người dùng>", "code"?: "<MA_LOI>" , ...trường phụ }`.
 - Xác thực: `Authorization: Bearer <accessToken>` (JWT HS256, payload `{ sub, email, role, iat, exp }`, hạn `ACCESS_TTL_SEC`
-  mặc định 900). Refresh token là chuỗi ngẫu nhiên 32 byte base64url, lưu **băm SHA-256** trong DB, xoay vòng mỗi lần refresh.
+  mặc định 900). Refresh token là chuỗi ngẫu nhiên 32 byte base64url, lưu **băm SHA-256 dạng hex** trong DB (đúng cách máy chủ cũ — để token đã
+  cấp vẫn dùng được sau khi migrate), xoay vòng mỗi lần refresh.
 - Vai trò: `user` | `admin`. Route `/api/admin/*` yêu cầu `admin` (403 nếu không). Admin đầu tiên: email trong biến môi trường
   `ADMIN_EMAILS` (phân tách dấu phẩy) được nâng quyền khi đăng nhập hoặc khi chạy migrate.
 - Mật khẩu: giữ ĐÚNG định dạng máy chủ cũ để người dùng cũ đăng nhập được:
-  `scrypt$<N>$<r>$<p>$<saltBase64>$<hashBase64>` (N=16384, r=8, p=1, keylen 64; maxmem 64 MB). Xem `server/src/security.js`.
+  `scrypt$<N>$<r>$<p>$<saltBase64>$<hashBase64>` — dữ liệu thật dùng **N=32768, r=8, p=1, keylen 32**, maxmem 64 MB (đọc tham số
+  từ chính chuỗi băm khi kiểm; xem `server/src/security.js`). Đính chính 05/09/2026: bản đầu của hợp đồng ghi 16384/64 là sai.
 - `user.id` là UUID **chuỗi**, phải GIỮ NGUYÊN giá trị cũ khi migrate — ứng dụng dẫn xuất khoá mã hoá từ `user.id` (HKDF salt),
   đổi id là mất khả năng đọc dữ liệu đã mã hoá trên máy người dùng.
 - Đối tượng `user` trả về: `{ id, email, name, role, createdAt, lastLoginAt }` (epoch ms).
@@ -49,7 +51,7 @@ route ở mục 2 — **không được đổi tên route, tên trường, mã l
 | `POST /api/auth/forgot-password` | `{ email }` | `{ ok: true, delivery: "email" \| "server-log" }` — luôn 200 kể cả email không tồn tại; mã 8 ký tự A-Z0-9 hạn `RESET_TTL_MIN`, tối đa 5 lần thử |
 | `POST /api/auth/reset-password` | `{ email, code, newPassword }` | `{ ok: true }`; thu hồi mọi refresh token; 400 mã sai/hết hạn |
 | `GET /api/me` 🔒 | — | `{ user, keyVersion }` |
-| `POST /api/me/change-password` 🔒 | `{ currentPassword, newPassword }` | `{ ok: true }`; 401 mật khẩu hiện tại sai |
+| `POST /api/me/change-password` 🔒 | `{ currentPassword, newPassword }` | `{ ok: true }`; **400** mật khẩu hiện tại sai (không dùng 401 vì `AuthClient.authed()` coi 401 là hết phiên và tự refresh rồi gọi lại) |
 | `GET /api/me/sessions` 🔒 (mới) | — | `{ items: [{ id, device, createdAt, expiresAt, current: bool }] }` (refresh token còn hiệu lực) |
 | `DELETE /api/me/sessions/:id` 🔒 (mới) | — | `{ ok: true }` |
 | `GET /api/keys` 🔒 | — | `{ current: { version, key }, versions: [{ version, key, source, createdAt }] }` (mới nhất trước) |
@@ -120,5 +122,5 @@ coverImageUrl?, tags: [string], kind: "post"|"page"|"changelog", pinned: bool, p
 
 `node scripts/migrate-from-sqlite.mjs --sqlite <đường dẫn .sqlite> --mongo <MONGO_URL> [--admin email]`:
 users (giữ `id`, `email`, `name`, `password_hash`, mốc thời gian, `disabled`), `client_keys` (user_id, version, key, source,
-created_at), `refresh_tokens` còn hiệu lực (token_hash — cùng cách băm SHA-256 base64url như `server/src/routes.js`, để app đang
+created_at), `refresh_tokens` còn hiệu lực (token_hash — cùng cách băm SHA-256 **hex** như `server/src/routes.js`, để app đang
 đăng nhập không phải đăng nhập lại). Idempotent (upsert theo id / (userId, version) / tokenHash).

@@ -1,0 +1,74 @@
+# Nền tảng web Zalo Chat Assistant: mongo + api (4789) + web (4790).
+# Chạy: cp .env.example .env → điền JWT_SECRET → docker compose up -d
+#
+# ⚠️ `docker compose up -d` KHÔNG tự kéo ảnh mới nếu máy đã có ảnh cùng tag.
+#    Triển khai luôn là hai bước: `docker compose pull <svc> && docker compose up -d <svc>`.
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: zca-mongo
+    restart: unless-stopped
+    command: ["--wiredTigerCacheSizeGB", "1"]
+    volumes:
+      - zca-mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    # Không mở cổng ra ngoài: chỉ api trong mạng nội bộ mới cần nói chuyện với Mongo.
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: zca-platform-api:latest
+    container_name: zca-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-4789}:4789"
+    environment:
+      PORT: 4789
+      MONGO_URL: ${MONGO_URL:-mongodb://mongo:27017/zca}
+      JWT_SECRET: ${JWT_SECRET:?Đặt JWT_SECRET trong .env (chuỗi ngẫu nhiên dài)}
+      ACCESS_TTL_SEC: ${ACCESS_TTL_SEC:-900}
+      REFRESH_TTL_DAYS: ${REFRESH_TTL_DAYS:-30}
+      RESET_TTL_MIN: ${RESET_TTL_MIN:-30}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      REGISTRATION_CODE: ${REGISTRATION_CODE:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4790}
+      RELEASES_DIR: /data/releases
+      UPLOADS_DIR: /data/uploads
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4790,http://localhost:5174}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      APP_NAME: ${APP_NAME:-Zalo Chat Assistant}
+    volumes:
+      - zca-data:/data
+
+  # Do nhóm web dựng (platform/web). nginx trong ảnh proxy /api, /downloads, /uploads sang api:4789.
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: zca-platform-web:latest
+    container_name: zca-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-4790}:80"
+
+volumes:
+  zca-mongo:
+  zca-data:
