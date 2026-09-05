@@ -45,7 +45,7 @@ function pickClaude(c) {
   const { relation, relationNote } = normRelation(c.relation, c.relationNote, c.kind === 'nhom' || /nh[oó]m/i.test(String(c.type ?? '')));
   const timeline = (Array.isArray(c.timeline) ? c.timeline : []).map((t) => (t && typeof t === 'object') ? { time: t.time ?? t.at ?? '', what: t.what ?? t.text ?? t.event ?? '' } : { time: '', what: String(t ?? '') }).filter((t) => t.what);
   const keyFacts = (Array.isArray(c.keyFacts) ? c.keyFacts : []).map((k) => String(k ?? '')).filter(Boolean);
-  return { relation, relationNote, summary: c.summary ?? '', topics: c.topics ?? [], keyFacts, timeline, decisions: c.decisions ?? [], tasksForYou: c.tasksForYou ?? [], openQuestions: c.openQuestions ?? [], sentiment: normSentiment(c.sentiment), kind: c.kind ?? null, source: c.source };
+  return { relation, relationNote, brief: typeof c.brief === 'string' ? c.brief.trim() : '', summary: c.summary ?? '', topics: c.topics ?? [], keyFacts, timeline, decisions: c.decisions ?? [], tasksForYou: c.tasksForYou ?? [], openQuestions: c.openQuestions ?? [], sentiment: normSentiment(c.sentiment), kind: c.kind ?? null, source: c.source };
 }
 // actionItems: chấp nhận cả kiểu {conversation, priority, file} Claude tự đặt; gắn threadId qua file → tên hội thoại.
 function normActionItems(items, conversations, byThread) {
@@ -137,6 +137,7 @@ export function loadReport(root, db, date) {
       tasksForYou: conversations.reduce((n, c) => n + (c.claude?.tasksForYou?.length ?? 0), 0),
       highlights: claude?.overview?.highlights ?? [],
       claudeSummary: claude?.overview?.summary ?? null,
+      claudeBrief: typeof claude?.overview?.brief === 'string' ? claude.overview.brief.trim() : null,
     },
     actionItems: Array.isArray(claude?.actionItems) && claude.actionItems.length
       ? normActionItems(claude.actionItems, conversations, byThread)

@@ -143,6 +143,7 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
   "date": "2026-09-05",
   "generatedAt": "2026-09-05T10:40:00+07:00",
   "overview": {
+    "brief": "2–3 câu cô đọng cả ngày — ứng dụng dùng cho mức xem 'Cô đọng'.",
     "summary": "6–10 câu, chia thành NHIỀU ĐOẠN — mỗi mảng việc/chủ đề một đoạn, các đoạn cách nhau bằng dòng trống (\\n\\n), đoạn đầu là 1–2 câu toàn cảnh. Mỗi đoạn: việc gì, ai liên quan, tiến độ tới đâu, mốc giờ/hạn/con số được nhắc, còn treo gì, ai đang chờ Bạn. Người không đọc hội thoại vẫn nắm được toàn cảnh ngày.",
     "highlights": ["Chị Lan (Invisalign) chờ báo giá từ sáng", "Nhóm CRM chốt lịch demo thứ 3", "Anh Hùng đổi giờ khám"]
   },
@@ -150,6 +151,7 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
     {
       "threadId": "1001", "accountId": "770338730752256045", "name": "Nguyễn Thị Lan",
       "relation": "khach-hang", "relationNote": "Khách hỏi giá niềng, chưa từng đến khám",
+      "brief": "Chị Lan hỏi giá Invisalign và cơ sở gần Thanh Xuân, đã gửi ảnh răng; hai câu hỏi chưa được trả lời từ 08:40.",
       "summary": "5–8 câu tường thuật DIỄN BIẾN theo thời gian: ai nói gì, Bạn phản hồi thế nào, số liệu/tên tài liệu/đường link/mốc giờ/hạn được nhắc, kết quả tới đâu, còn gì treo. Hội thoại trên 30 tin cho phép tới 10 câu. KHÔNG rút gọn thành 1–2 câu.",
       "topics": ["Giá Invisalign", "Cơ sở gần Thanh Xuân"],
       "timeline": [ { "time": "08:10", "what": "Chị Lan hỏi giá niềng trong suốt" }, { "time": "08:25", "what": "Bạn giới thiệu 2 phương pháp, xin ảnh" }, { "time": "08:40", "what": "Chị gửi ảnh răng + hỏi cơ sở gần Thanh Xuân — chưa được trả lời" } ],
@@ -176,7 +178,8 @@ chỉ nhận 5 mã `binh-thuong | tich-cuc | lo-lang | khong-hai-long | khan` (k
 câu nếu hội thoại dài), `timeline` 3–8 mốc chính trong ngày theo giờ, `keyFacts` 2–8 dòng ngắn gồm số liệu, tên người/tài
 liệu/đường link, hạn, quyết định — mọi con số và tên riêng xuất hiện trong hội thoại phải có mặt ở `summary` hoặc `keyFacts`.
 `topics` 2–6 mục. `overview.summary` 6–10 câu theo từng mảng việc. Thà dài mà đủ còn hơn ngắn mà thiếu; chỉ được cô đọng khi
-hội thoại chỉ có 1–2 tin xã giao.
+hội thoại chỉ có 1–2 tin xã giao. Ứng dụng hiện báo cáo ở BA MỨC từ cùng một JSON — Chi tiết (mọi trường), Vừa đủ (summary +
+việc/câu hỏi), Cô đọng (`brief`) — nên `brief` (1–2 câu cho mỗi hội thoại, 2–3 câu cho `overview.brief`) là BẮT BUỘC.
 
 **Khoảng trống dữ liệu:** nếu `du-lieu/.trang-thai.json` có mảng `gaps` (máy tính ngủ / mất kết nối; cũng được ghi ở cuối
 `du-lieu/README-DU-LIEU.md`) thì (1) nêu trong `overview.summary` một câu "tin trong khoảng HH:MM–HH:MM có thể thiếu";

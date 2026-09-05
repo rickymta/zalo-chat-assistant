@@ -410,7 +410,12 @@
   .report-dlg { width: 980px; }
   .report-dlg .settings-head { flex-wrap: nowrap; }
   #rpSource { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .settings-tools { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 22px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+  .settings-tools { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 22px; border-bottom: 1px solid var(--line); background: #fbfcfe; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .seg button { height: 30px; padding: 0 12px; border: 0; border-radius: 0; font-size: 13px; font-weight: 500; background: transparent; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.active { background: var(--primary); color: #fff; }
+  .rp-conv.brief { padding: 8px 6px; } .rp-conv.brief .rp-sum { margin-top: 2px; }
   .settings-foot { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 22px; border-top: 1px solid var(--line); background: var(--panel); }
   .ws-line #wsLine { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ws-line .grow { display: none; }
@@ -632,7 +637,7 @@
 <!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
 <dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
   <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
-  <div class="settings-tools"><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
+  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
   <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
 </div></dialog>
 
@@ -1138,7 +1143,14 @@
   // ── Báo cáo ngày ─────────────────────────────────────────────────────────
   const REL = { 'khach-hang': 'Khách hàng', 'dong-nghiep': 'Đồng nghiệp', 'doi-tac': 'Đối tác', 'ban-be': 'Bạn bè', 'nhom': 'Nhóm', 'khac': 'Khác' };
   const SENT = { 'binh-thuong': ['', 'Bình thường'], 'trung-tinh': ['', 'Bình thường'], 'tich-cuc': ['ok', 'Tích cực'], 'lo-lang': ['warn', 'Lo lắng'], 'khong-hai-long': ['bad', 'Không hài lòng'], 'khan': ['bad', 'Khẩn'] };
-  const report = { dates: [], today: null, date: null, data: null };
+  const report = { dates: [], today: null, date: null, data: null, level: 'full' };
+  try { const lv = localStorage.getItem('zca.reportLevel'); if (['full', 'medium', 'brief'].includes(lv)) report.level = lv; } catch { /* bỏ qua */ }
+  const LEVEL_LABEL = { full: 'Chi tiết — mọi mục: diễn biến, mốc chính, thông tin đáng nhớ, đã chốt, việc, câu hỏi', medium: 'Vừa đủ — diễn biến + đã chốt + việc của Bạn + câu chưa trả lời', brief: 'Cô đọng — mỗi hội thoại 1–2 câu' };
+  const paras = (t) => esc(t).split(/\n\s*\n/).map((p) => '<p>' + p.replace(/\n+/g, '<br>') + '</p>').join('');
+  const firstSentences = (t, n) => { const m = String(t || '').replace(/\s+/g, ' ').match(/[^.!?…]+[.!?…]+(\s|$)/g); return m ? m.slice(0, n).join('').trim() : String(t || ''); };
+  const briefOf = (cl) => cl?.brief || firstSentences(cl?.summary, 2);
+  function renderLevelSeg() { $$('#rpLevel button').forEach((b) => { b.classList.toggle('active', b.dataset.level === report.level); b.title = LEVEL_LABEL[b.dataset.level]; }); }
+  $('#rpLevel').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (!b) return; report.level = b.dataset.level; try { localStorage.setItem('zca.reportLevel', report.level); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data) renderReportBody(report.data); });
   const fmtDate = (d) => d.split('-').reverse().join('/');
   async function openReport() {
     $('#dlgReport').showModal(); $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
@@ -1155,22 +1167,34 @@
     const srcText = r.hasClaude ? 'Tổng hợp bởi Claude lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp của Claude cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
     $('#rpSource').textContent = srcText; $('#rpSource').title = srcText;
     $('#rpOpenMd').hidden = !r.mdPath; $('#rpOpenMd').onclick = () => api('/api/open', { method: 'POST', body: { path: r.mdPath } }).catch((e) => toast(e.message));
-    const o = r.overview;
+    renderLevelSeg(); renderReportBody(r);
+  }
+  /** Vẽ thân báo cáo theo mức: full = mọi mục; medium = diễn biến + đã chốt + việc + câu hỏi; brief = 1–2 câu mỗi hội thoại. */
+  function renderReportBody(r) {
+    const lv = report.level; const o = r.overview;
     const tiles = '<div class="rp-tiles"><div class="tile"><div class="v">' + num(o.conversations) + '</div><div class="l">Hội thoại có tin</div></div><div class="tile"><div class="v">' + num(o.messages) + '</div><div class="l">Tin nhắn · ' + num(o.inbound) + ' đến / ' + num(o.outbound) + ' đi</div></div><div class="tile ' + (o.needReply ? 'hot' : '') + '"><div class="v">' + num(o.needReply) + '</div><div class="l">Chưa trả lời</div></div><div class="tile ' + (o.tasksForYou ? 'hot' : '') + '"><div class="v">' + num(o.tasksForYou) + '</div><div class="l">Việc cần làm</div></div></div>';
-    const overview = (o.claudeSummary || (o.highlights || []).length) ? '<div class="card"><h2>Tổng quan</h2>' + (o.claudeSummary ? '<div class="rp-sum">' + esc(o.claudeSummary).split(/\n\s*\n/).map((p) => '<p>' + p.replace(/\n+/g, '<br>') + '</p>').join('') + '</div>' : '') + ((o.highlights || []).length ? '<ul class="rp-hl">' + o.highlights.map((h) => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + '</div>' : '';
+    const ovText = lv === 'brief' ? (o.claudeBrief || firstSentences(o.claudeSummary, 3)) : o.claudeSummary;
+    const overview = (ovText || (o.highlights || []).length) ? '<div class="card"><h2>Tổng quan</h2>' + (ovText ? '<div class="rp-sum">' + paras(ovText) + '</div>' : '') + ((o.highlights || []).length ? '<ul class="rp-hl">' + o.highlights.map((h) => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + '</div>' : '';
     const accOf = (a) => a.accountId || r.conversations.find((c) => c.threadId === String(a.threadId))?.accountId || '';
     const actions = (r.actionItems || []).length ? '<div class="card"><h2>✅ Việc cần làm (' + r.actionItems.length + ')</h2><ul class="rp-actions">' + r.actionItems.map((a) => '<li>' + (a.priority ? '<span class="pill ' + (a.priority === 'P1' ? 'bad' : a.priority === 'P2' ? 'warn' : '') + '">' + esc(a.priority) + '</span> ' : '') + (a.threadId ? '<a href="#" data-openconv="' + esc(accOf(a) + '|' + a.threadId) + '"><b>' + esc(a.name || '') + '</b></a>' : '<b>' + esc(a.name || '') + '</b>') + ' — ' + esc(a.task || '') + (a.due ? ' <span class="faint">(' + esc(a.due) + ')</span>' : '') + '</li>').join('') + '</ul></div>' : '';
     const convs = r.conversations.length ? '<div class="card"><h2>Từng hội thoại (' + r.conversations.length + ')</h2>' + r.conversations.map((c) => {
       const cl = c.claude; const [scls, slabel] = cl?.sentiment ? (SENT[cl.sentiment] || ['', cl.sentiment]) : ['', ''];
-      return '<div class="rp-conv" data-openconv="' + esc((c.accountId || '') + '|' + c.threadId) + '">' + avatarHtml(c.avatarUrl, c.name, 'sm') + '<div class="rp-body"><div class="rp-top"><b>' + (c.isGroup ? '👥 ' : '') + esc(c.name || c.threadId) + '</b>' + (cl?.relation ? '<span class="pill" title="' + esc(cl.relationNote || '') + '">' + esc(REL[cl.relation] || cl.relation) + '</span>' : '') + (slabel ? '<span class="pill ' + scls + '">' + slabel + '</span>' : '') + (c.unread ? '<span class="badge-unread">' + c.unread + '</span>' : '') + '<span class="grow"></span><span class="faint small">' + (c.messages ? num(c.messages) + ' tin (' + num(c.inbound) + ' đến/' + num(c.outbound) + ' đi) · ' + fmtClock(c.firstAt) + '–' + fmtClock(c.lastAt) : 'không có tin trong ngày') + '</span></div>' +
-        (cl?.summary ? '<div class="rp-sum">' + esc(cl.summary).replace(/\n+/g, '<br>') + '</div>' : '<div class="rp-sum faint">Chưa có tóm tắt của Claude — tin cuối: ' + esc(c.lastPreview || '') + (c.lastOutbound ? ' (Bạn)' : '') + '</div>') +
-        ((cl?.timeline || []).length ? '<ul class="rp-tl">' + cl.timeline.map((t) => '<li>' + (t.time ? '<b>' + esc(t.time) + '</b> ' : '') + esc(t.what) + '</li>').join('') + '</ul>' : '') +
-        ((cl?.keyFacts || []).length ? '<div class="rp-list facts"><b>Thông tin đáng nhớ:</b> ' + cl.keyFacts.map(esc).join(' · ') + '</div>' : '') +
-        ((cl?.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
-        ((cl?.decisions || []).length ? '<div class="rp-list"><b>Đã chốt:</b> ' + cl.decisions.map(esc).join(' · ') + '</div>' : '') +
-        ((cl?.tasksForYou || []).length ? '<div class="rp-list todo"><b>Việc của Bạn:</b> ' + cl.tasksForYou.map(esc).join(' · ') + '</div>' : '') +
-        ((cl?.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b> ' + cl.openQuestions.map(esc).join(' · ') + '</div>' : '') +
-        '</div></div>';
+      const head = '<div class="rp-top"><b>' + (c.isGroup ? '👥 ' : '') + esc(c.name || c.threadId) + '</b>' + (cl?.relation ? '<span class="pill" title="' + esc(cl.relationNote || '') + '">' + esc(REL[cl.relation] || cl.relation) + '</span>' : '') + (slabel ? '<span class="pill ' + scls + '">' + slabel + '</span>' : '') + (c.unread ? '<span class="badge-unread">' + c.unread + '</span>' : '') + '<span class="grow"></span><span class="faint small">' + (c.messages ? num(c.messages) + ' tin (' + num(c.inbound) + ' đến/' + num(c.outbound) + ' đi) · ' + fmtClock(c.firstAt) + '–' + fmtClock(c.lastAt) : 'không có tin trong ngày') + '</span></div>';
+      const noSum = '<div class="rp-sum faint">Chưa có tóm tắt của Claude — tin cuối: ' + esc(c.lastPreview || '') + (c.lastOutbound ? ' (Bạn)' : '') + '</div>';
+      let body;
+      if (lv === 'brief') {
+        const nT = (cl?.tasksForYou || []).length, nQ = (cl?.openQuestions || []).length;
+        body = (cl ? '<div class="rp-sum">' + esc(briefOf(cl)) + (nT || nQ ? ' <span class="faint small">· ' + [nT ? nT + ' việc của Bạn' : '', nQ ? nQ + ' câu chưa trả lời' : ''].filter(Boolean).join(' · ') + '</span>' : '') + '</div>' : noSum);
+      } else {
+        body = (cl?.summary ? '<div class="rp-sum">' + paras(cl.summary) + '</div>' : noSum) +
+          (lv === 'full' && (cl?.timeline || []).length ? '<ul class="rp-tl">' + cl.timeline.map((t) => '<li>' + (t.time ? '<b>' + esc(t.time) + '</b> ' : '') + esc(t.what) + '</li>').join('') + '</ul>' : '') +
+          (lv === 'full' && (cl?.keyFacts || []).length ? '<div class="rp-list facts"><b>Thông tin đáng nhớ:</b> ' + cl.keyFacts.map(esc).join(' · ') + '</div>' : '') +
+          (lv === 'full' && (cl?.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
+          ((cl?.decisions || []).length ? '<div class="rp-list"><b>Đã chốt:</b> ' + cl.decisions.map(esc).join(' · ') + '</div>' : '') +
+          ((cl?.tasksForYou || []).length ? '<div class="rp-list todo"><b>Việc của Bạn:</b> ' + cl.tasksForYou.map(esc).join(' · ') + '</div>' : '') +
+          ((cl?.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b> ' + cl.openQuestions.map(esc).join(' · ') + '</div>' : '');
+      }
+      return '<div class="rp-conv' + (lv === 'brief' ? ' brief' : '') + '" data-openconv="' + esc((c.accountId || '') + '|' + c.threadId) + '">' + avatarHtml(c.avatarUrl, c.name, 'sm') + '<div class="rp-body">' + head + body + '</div></div>';
     }).join('') + '</div>' : '<div class="card"><div class="empty">Không có hội thoại nào có tin trong ngày này.</div></div>';
     $('#rpBody').innerHTML = tiles + overview + actions + convs;
   }
@@ -1181,8 +1205,20 @@
   $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; $('#dlgReport').close(); openConversation(key); });
   $('#rpCopy').onclick = async () => {
     const r = report.data; if (!r) return;
-    const lines = ['# Báo cáo ngày ' + fmtDate(r.date), '', r.overview.claudeSummary || '', ...(r.overview.highlights || []).map((h) => '- ' + h), '', 'Hội thoại có tin: ' + r.overview.conversations + ' · Tin: ' + r.overview.messages + ' · Chưa trả lời: ' + r.overview.needReply + ' · Việc cần làm: ' + r.overview.tasksForYou, ''];
-    for (const c of r.conversations) { lines.push('## ' + (c.isGroup ? '[Nhóm] ' : '') + (c.name || c.threadId) + (c.messages ? ' — ' + c.messages + ' tin' : '')); if (c.claude?.summary) lines.push(c.claude.summary); if (c.claude?.timeline?.length) lines.push(...c.claude.timeline.map((t) => '- ' + (t.time ? t.time + ' ' : '') + t.what)); if (c.claude?.keyFacts?.length) lines.push('Thông tin đáng nhớ: ' + c.claude.keyFacts.join('; ')); if (c.claude?.decisions?.length) lines.push('Đã chốt: ' + c.claude.decisions.join('; ')); if (c.claude?.tasksForYou?.length) lines.push('Việc của Bạn: ' + c.claude.tasksForYou.join('; ')); if (c.claude?.openQuestions?.length) lines.push('Chưa trả lời: ' + c.claude.openQuestions.join('; ')); lines.push(''); }
+    const lv = report.level; const o = r.overview;
+    const lines = ['# Báo cáo ngày ' + fmtDate(r.date) + ' (' + { full: 'chi tiết', medium: 'vừa đủ', brief: 'cô đọng' }[lv] + ')', '', (lv === 'brief' ? (o.claudeBrief || firstSentences(o.claudeSummary, 3)) : o.claudeSummary) || '', ...(o.highlights || []).map((h) => '- ' + h), '', 'Hội thoại có tin: ' + o.conversations + ' · Tin: ' + o.messages + ' · Chưa trả lời: ' + o.needReply + ' · Việc cần làm: ' + o.tasksForYou, ''];
+    if ((r.actionItems || []).length) { lines.push('## Việc cần làm'); for (const a of r.actionItems) lines.push('- ' + (a.priority ? '[' + a.priority + '] ' : '') + (a.name ? a.name + ': ' : '') + a.task + (a.due ? ' (' + a.due + ')' : '')); lines.push(''); }
+    for (const c of r.conversations) {
+      const cl = c.claude; lines.push('## ' + (c.isGroup ? '[Nhóm] ' : '') + (c.name || c.threadId) + (c.messages ? ' — ' + c.messages + ' tin' : ''));
+      if (lv === 'brief') { if (cl) lines.push(briefOf(cl)); lines.push(''); continue; }
+      if (cl?.summary) lines.push(cl.summary);
+      if (lv === 'full' && cl?.timeline?.length) lines.push(...cl.timeline.map((t) => '- ' + (t.time ? t.time + ' ' : '') + t.what));
+      if (lv === 'full' && cl?.keyFacts?.length) lines.push('Thông tin đáng nhớ: ' + cl.keyFacts.join('; '));
+      if (cl?.decisions?.length) lines.push('Đã chốt: ' + cl.decisions.join('; '));
+      if (cl?.tasksForYou?.length) lines.push('Việc của Bạn: ' + cl.tasksForYou.join('; '));
+      if (cl?.openQuestions?.length) lines.push('Chưa trả lời: ' + cl.openQuestions.join('; '));
+      lines.push('');
+    }
     await copyText(lines.join('\n'), 'Đã sao chép báo cáo.');
   };
 
