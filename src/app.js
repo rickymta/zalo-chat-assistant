@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  ROOT_DIR, DATA_DIR, SESSIONS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -31,7 +31,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   const log = createLogger(LOG_PATH);
   const db = openDb(DB_PATH);
   const settings = { load: loadSettings, save: saveSettings };
-  const manager = new ZaloManager({ db, log, sessionsDir: SESSIONS_DIR, getSettings: loadSettings });
+  const manager = new ZaloManager({ db, log, sessionsDir: SESSIONS_DIR, sentDir: SENT_DIR, getSettings: loadSettings });
   const auth = new AuthClient({ authFile: AUTH_FILE, log, defaultServerUrl: DEFAULT_SERVER_URL });
   const cipher = new Cipher();
   cipher.onWarn = (m) => log.warn(`Mã hoá: ${m}`);
@@ -239,7 +239,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   };
   power.load();
 
-  const paths = { dataDir: DATA_DIR, workspaceDir: WORKSPACE_DIR, coworkDir: COWORK_DIR, uiDir: UI_DIR };
+  const paths = { dataDir: DATA_DIR, workspaceDir: WORKSPACE_DIR, coworkDir: COWORK_DIR, uiDir: UI_DIR, sentDir: SENT_DIR };
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });

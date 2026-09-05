@@ -346,6 +346,8 @@
     if (!e.target.closest('#reactPop') && !e.target.closest('[data-act="react"]')) $('#reactPop').hidden = true;
     if (!e.target.closest('#morePop') && !e.target.closest('[data-act="more"]')) $('#morePop').hidden = true;
     if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true;
+    if (!e.target.closest('#stickerPop') && !e.target.closest('#btnSticker')) $('#stickerPop').hidden = true;
+    if (!e.target.closest('#gifPop') && !e.target.closest('#btnGif')) $('#gifPop').hidden = true;
   });
   // Chuyển tiếp: chọn nhiều hội thoại (tìm theo tên), gửi văn bản của tin tới từng nơi.
   const fwd = { msg: null, selected: new Set(), rows: [] };
@@ -385,7 +387,65 @@
   // Biểu cảm nhanh
   const EMOJIS = ['😊', '😂', '🤣', '😍', '😘', '🥰', '😁', '😉', '😅', '🙂', '😢', '😭', '😡', '😮', '😴', '🤔', '🙏', '👍', '👌', '👏', '💪', '❤️', '💙', '💔', '🔥', '🎉', '✅', '❌', '⭐', '🌹', '☕', '🍰', '📞', '📅', '📎', '🦷', '😷', '💊', '🏥', '🩺'];
   $('#emojiPop').innerHTML = EMOJIS.map((e) => '<button type="button">' + e + '</button>').join('');
-  $('#btnEmoji').onclick = () => { const p = $('#emojiPop'); p.hidden = !p.hidden; };
+  $('#btnEmoji').onclick = () => { const p = $('#emojiPop'); const was = p.hidden; closeToolPops(); p.hidden = !was; };
+  // ── Sticker Zalo · GIF · Ảnh/Tệp từ máy ────────────────────────────────────
+  const closeToolPops = () => { $('#emojiPop').hidden = true; $('#stickerPop').hidden = true; $('#gifPop').hidden = true; };
+  const STICKER_KEYS = ['hi', 'cảm ơn', 'ok', 'haha', 'yêu', 'buồn', 'chúc mừng', 'ngủ ngon', 'làm việc', 'chờ', 'ăn', 'tức'];
+  const stickerRecent = () => { try { return JSON.parse(localStorage.getItem('zca.stickerRecent') || '[]'); } catch { return []; } };
+  const rememberSticker = (st) => { const list = [st, ...stickerRecent().filter((x) => x.id !== st.id)].slice(0, 16); try { localStorage.setItem('zca.stickerRecent', JSON.stringify(list)); } catch { /* bỏ qua */ } };
+  let stickerTimer = null;
+  async function loadStickers(q) {
+    const grid = $('#stickerGrid'); if (!chat.accountId) { grid.innerHTML = '<div class="empty small">Chọn một hội thoại trước.</div>'; return; }
+    grid.innerHTML = '<div class="empty small">Đang tải…</div>';
+    try {
+      const r = await api('/api/accounts/' + encodeURIComponent(chat.accountId) + '/stickers?q=' + encodeURIComponent(q || 'hi'));
+      const recent = q ? [] : stickerRecent();
+      grid.innerHTML = (recent.length ? '<div class="tp-sec">Gần đây</div><div class="tp-row">' + recent.map((s) => '<img class="stk" src="' + esc(s.url) + '" data-st="' + esc(JSON.stringify(s)) + '" loading="lazy" alt="">').join('') + '</div>' : '') +
+        (r.items.length ? '<div class="tp-sec">' + esc(q || 'Gợi ý') + '</div><div class="tp-row">' + r.items.map((s) => '<img class="stk" src="' + esc(s.url) + '" data-st="' + esc(JSON.stringify(s)) + '" loading="lazy" alt="">').join('') + '</div>' : '<div class="empty small">Không có sticker nào cho "' + esc(q) + '".</div>');
+    } catch (err) { grid.innerHTML = '<div class="empty small">' + esc(err.message) + '</div>'; }
+  }
+  $('#stickerChips').innerHTML = STICKER_KEYS.map((k) => '<button type="button" class="chip" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('');
+  $('#stickerChips').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (!b) return; $('#stickerQ').value = b.dataset.k; loadStickers(b.dataset.k); });
+  $('#stickerQ').addEventListener('input', () => { clearTimeout(stickerTimer); stickerTimer = setTimeout(() => loadStickers($('#stickerQ').value.trim()), 350); });
+  $('#btnSticker').onclick = () => { const p = $('#stickerPop'); const was = p.hidden; closeToolPops(); p.hidden = !was; if (!p.hidden) { loadStickers($('#stickerQ').value.trim()); setTimeout(() => $('#stickerQ').focus(), 50); } };
+  $('#stickerGrid').addEventListener('click', async (e) => {
+    const img = e.target.closest('img.stk'); if (!img || !chat.key) return;
+    let st; try { st = JSON.parse(img.dataset.st); } catch { return; }
+    closeToolPops();
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/sticker', { method: 'POST', body: st }); rememberSticker(st); await refreshOpenChat(); vlist.refresh(); }
+    catch (err) { toast('Không gửi được sticker: ' + err.message); }
+  });
+  let gifTimer = null;
+  async function loadGifs(q) {
+    const grid = $('#gifGrid'); grid.innerHTML = '<div class="empty small">Đang tải…</div>';
+    try {
+      const r = await api('/api/gifs?q=' + encodeURIComponent(q || ''));
+      if (r.needsKey) { grid.innerHTML = '<div class="empty small">Chưa có khoá Tenor API. Vào <b>Cài đặt → Khoá Tenor API</b> để bật tìm GIF (miễn phí). Trong lúc đó dùng <b>🖼 Ảnh</b> để gửi GIF có sẵn trên máy.</div>'; return; }
+      grid.innerHTML = r.items.length ? r.items.map((g) => '<img class="gif" src="' + esc(g.preview) + '" data-url="' + esc(g.url) + '" loading="lazy" alt="">').join('') : '<div class="empty small">Không tìm thấy GIF.</div>';
+    } catch (err) { grid.innerHTML = '<div class="empty small">' + esc(err.message) + '</div>'; }
+  }
+  $('#gifQ').addEventListener('input', () => { clearTimeout(gifTimer); gifTimer = setTimeout(() => loadGifs($('#gifQ').value.trim()), 400); });
+  $('#btnGif').onclick = () => { const p = $('#gifPop'); const was = p.hidden; closeToolPops(); p.hidden = !was; if (!p.hidden) { loadGifs($('#gifQ').value.trim()); setTimeout(() => $('#gifQ').focus(), 50); } };
+  $('#gifGrid').addEventListener('click', async (e) => {
+    const img = e.target.closest('img.gif'); if (!img || !chat.key) return; closeToolPops();
+    toast('Đang gửi GIF…');
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/gif', { method: 'POST', body: { url: img.dataset.url } }); await refreshOpenChat(); vlist.refresh(); }
+    catch (err) { toast('Không gửi được GIF: ' + err.message); }
+  });
+  async function pickAndSend(kind) {
+    if (!chat.key) { toast('Chọn một hội thoại trước.'); return; }
+    try {
+      const r = await api('/api/pick-files', { method: 'POST', body: { kind } });
+      if (!r.paths?.length) return;
+      const caption = $('#composeText').value.trim();
+      toast('Đang gửi ' + r.paths.length + ' tệp…');
+      await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/attachments', { method: 'POST', body: { paths: r.paths, caption } });
+      $('#composeText').value = ''; await refreshOpenChat(); vlist.refresh();
+    } catch (err) { toast('Không gửi được: ' + err.message); }
+  }
+  $('#btnImage').onclick = () => pickAndSend('image');
+  $('#btnFile').onclick = () => pickAndSend('file');
+  $$('.compose-tools .tool').forEach((a) => a.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); a.click(); } }));
   $('#emojiPop').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const t = $('#composeText'); const s = t.selectionStart ?? t.value.length, en = t.selectionEnd ?? s; t.value = t.value.slice(0, s) + b.textContent + t.value.slice(en); t.focus(); t.setSelectionRange(s + b.textContent.length, s + b.textContent.length); });
   function renderMessages(scrollBottom) {
     const box = $('#msgs'), list = $('#msgsList');
@@ -596,6 +656,7 @@
     $('#setWaitingHours').value = s.waitingHours ?? 2; $('#setGroupCount').value = s.groupHistoryCount ?? 300;
     const supportsAuto = state.platform && state.platform.autoStart !== null && state.platform.autoStart !== undefined;
     $('#setAutoStartRow').hidden = !supportsAuto; if (supportsAuto) $('#setAutoStart').checked = !!state.platform.autoStart;
+    $('#setGifKey').value = s.gifApiKey || '';
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
     renderUpdateSettings();
@@ -650,7 +711,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim() };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, gifApiKey: $('#setGifKey').value.trim(), autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim() };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }

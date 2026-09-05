@@ -52,11 +52,13 @@ export class ZaloManager extends EventEmitter {
   /**
    * @param {{ db: any, log: any, sessionsDir: string, getSettings: () => any }} deps
    */
-  constructor({ db, log, sessionsDir, getSettings }) {
+  constructor({ db, log, sessionsDir, sentDir = null, getSettings }) {
     super();
     this.db = db;
     this.log = log;
     this.sessionsDir = sessionsDir;
+    this.sentDir = sentDir;
+    this.stickerCache = new Map(); // từ khoá → { at, items }
     this.getSettings = getSettings;
     this.live = new Map();      // accountId → { api, startedAt }
     this.qr = new Map();        // key → trạng thái đăng nhập QR đang chờ
@@ -556,6 +558,90 @@ export class ZaloManager extends EventEmitter {
     if (inserted) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: row.preview, eventTime: now, source: 'sent' });
     this.log.info(`Đã gửi tin tới ${conv?.name ? '[hội thoại]' : tid} (${body.length} ký tự${quote ? ', có trích dẫn' : ''}).`);
     return { ok: true, msgId: msgId ? String(msgId) : null, eventTime: now };
+  }
+
+  // ── Sticker Zalo, ảnh/GIF/tệp từ máy ─────────────────────────────────────────
+
+  /** Tìm sticker Zalo theo từ khoá (API tìm của Zalo, cache 10 phút). Trả [{ id, cateId, type, url }]. */
+  async searchStickers(id, keyword) {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối.');
+    const q = String(keyword ?? '').trim().toLowerCase().slice(0, 40) || 'hi';
+    const hit = this.stickerCache.get(q);
+    if (hit && Date.now() - hit.at < 10 * 60e3) return hit.items;
+    const ids = (await live.api.getStickers(q)) ?? [];
+    const pick = (Array.isArray(ids) ? ids : []).slice(0, 40);
+    const details = pick.length ? await live.api.getStickersDetail(pick) : [];
+    const items = (Array.isArray(details) ? details : []).map((d) => ({ id: Number(d.id), cateId: Number(d.cateId), type: Number(d.type), url: d.stickerWebpUrl || d.stickerUrl || null })).filter((x) => x.id && x.url);
+    for (const it of items) this.profiles.stickers.set(it.id, it.url);
+    this.stickerCache.set(q, { at: Date.now(), items });
+    return items;
+  }
+
+  /** Gửi một sticker Zalo (id/cateId/type từ searchStickers). */
+  async sendSticker(id, threadId, sticker) {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không gửi được.');
+    const st = { id: Number(sticker?.id), cateId: Number(sticker?.cateId), type: Number(sticker?.type) };
+    if (!st.id || !Number.isFinite(st.cateId) || !Number.isFinite(st.type)) throw new Error('Sticker không hợp lệ.');
+    const tid = String(threadId); const conv = this.db.getConversation(id, tid); const isGroup = !!conv?.is_group;
+    const res = await live.api.sendSticker(st, tid, isGroup ? ThreadType.Group : ThreadType.User);
+    const url = sticker?.url || this.profiles.stickers.get(st.id) || null;
+    const account = this.db.getAccount(id); const now = Date.now(); const msgId = res?.msgId ?? null;
+    const atts = [{ type: 'sticker', url, name: '[Sticker]', id: String(st.id) }];
+    const row = { account_id: id, thread_id: tid, is_group: isGroup, zalo_msg_id: msgId ? String(msgId) : `local-${now}`, cli_msg_id: null, is_outbound: 1, sender_id: id, sender_name: account?.display_name ?? 'Tôi', type: 'sticker', text: null, attachments_json: JSON.stringify(atts), quote_text: null, event_time: now, source: 'sent', raw_json: null, created_at: now, conv_name: null, conv_avatar: null, conv_phone: null, preview: '[Sticker]' };
+    if (this.db.insertMessage(row)) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: row.preview, eventTime: now, source: 'sent' });
+    if (msgId) this.db.bumpLastMsgId(id, isGroup, String(msgId));
+    return { ok: true, msgId: msgId ? String(msgId) : null };
+  }
+
+  /**
+   * Gửi ảnh/GIF/video/tệp từ máy (đường dẫn tuyệt đối). Mỗi tệp được chép vào data/sent/ để ứng dụng hiển thị lại qua
+   * /files/sent/<tên>. zca-js tự xử lý GIF riêng. Giới hạn 10 tệp, mỗi tệp ≤ 50 MB.
+   */
+  async sendAttachments(id, threadId, filePaths, caption = '') {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không gửi được.');
+    const list = (Array.isArray(filePaths) ? filePaths : []).map(String).filter(Boolean);
+    if (!list.length) throw new Error('Chưa chọn tệp.');
+    if (list.length > 10) throw new Error('Tối đa 10 tệp một lần.');
+    const IMG = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic']), VID = new Set(['.mp4', '.mov', '.m4v']), AUD = new Set(['.mp3', '.m4a', '.aac', '.wav']);
+    const sent = [];
+    for (const p of list) {
+      if (!path.isAbsolute(p) || !fs.existsSync(p)) throw new Error(`Không thấy tệp: ${path.basename(p)}`);
+      const st = fs.statSync(p); if (!st.isFile()) throw new Error(`Không phải tệp: ${path.basename(p)}`);
+      if (st.size > 50 * 1024 * 1024) throw new Error(`Tệp quá lớn (> 50 MB): ${path.basename(p)}`);
+      const ext = path.extname(p).toLowerCase();
+      const type = ext === '.gif' ? 'gif' : IMG.has(ext) ? 'image' : VID.has(ext) ? 'video' : AUD.has(ext) ? 'audio' : 'file';
+      let url = null;
+      if (this.sentDir) { const name = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${path.basename(p).replace(/[^\w.\-]+/g, '_')}`; try { fs.copyFileSync(p, path.join(this.sentDir, name)); url = `/files/sent/${name}`; } catch { url = null; } }
+      sent.push({ type, url, name: path.basename(p), size: st.size, path: p });
+    }
+    const tid = String(threadId); const conv = this.db.getConversation(id, tid); const isGroup = !!conv?.is_group;
+    const body = String(caption ?? '').trim();
+    const res = await live.api.sendMessage({ msg: body, attachments: list }, tid, isGroup ? ThreadType.Group : ThreadType.User);
+    const msgId = res?.message?.msgId ?? res?.attachment?.[0]?.msgId ?? null;
+    const account = this.db.getAccount(id); const now = Date.now();
+    const atts = sent.map(({ type, url, name }) => ({ type, url, name }));
+    const type = atts.every((a) => a.type === 'image' || a.type === 'gif') ? atts[0].type : (atts.every((a) => a.type === 'video') ? 'video' : 'file');
+    const row = { account_id: id, thread_id: tid, is_group: isGroup, zalo_msg_id: msgId ? String(msgId) : `local-${now}`, cli_msg_id: null, is_outbound: 1, sender_id: id, sender_name: account?.display_name ?? 'Tôi', type, text: body || null, attachments_json: JSON.stringify(atts), quote_text: null, event_time: now, source: 'sent', raw_json: null, created_at: now, conv_name: null, conv_avatar: null, conv_phone: null, preview: previewOf({ type, text: body, attachments: atts }) };
+    if (this.db.insertMessage(row)) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: row.preview, eventTime: now, source: 'sent' });
+    if (msgId) this.db.bumpLastMsgId(id, isGroup, String(msgId));
+    this.log.info(`Đã gửi ${sent.length} tệp đính kèm (${sent.map((s) => s.type).join(',')}).`);
+    return { ok: true, msgId: msgId ? String(msgId) : null, count: sent.length };
+  }
+
+  /** Gửi GIF từ URL (kho Tenor): tải về data/sent/ rồi gửi như tệp GIF. */
+  async sendGifFromUrl(id, threadId, url) {
+    if (!/^https:\/\//.test(String(url ?? ''))) throw new Error('Địa chỉ GIF không hợp lệ.');
+    if (!this.sentDir) throw new Error('Chưa có thư mục lưu tệp gửi.');
+    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`Không tải được GIF (${res.status}).`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > 15 * 1024 * 1024) throw new Error('GIF quá lớn (> 15 MB).');
+    const p = path.join(this.sentDir, `${Date.now()}-tenor.gif`);
+    fs.writeFileSync(p, buf);
+    return this.sendAttachments(id, threadId, [p], '');
   }
 
   /**

@@ -46,6 +46,10 @@ const platform = {
     return this.getKeepAwake();
   },
   getKeepAwake() { return this.blockerId != null && powerSaveBlocker.isStarted(this.blockerId); },
+  async pickFiles({ filters, multi } = {}) {
+    const r = await dialog.showOpenDialog(win ?? undefined, { properties: ['openFile', ...(multi ? ['multiSelections'] : [])], filters: Array.isArray(filters) ? filters : undefined });
+    return r.canceled ? [] : r.filePaths;
+  },
   setAutoStart(v) { try { app.setLoginItemSettings({ openAtLogin: !!v, openAsHidden: true }); } catch { /* bỏ qua */ } return this.getAutoStart(); },
 };
 

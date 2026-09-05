@@ -141,9 +141,27 @@ const css = `
   .emoji-pop button { width: 32px; height: 32px; border: 0; background: transparent; border-radius: 8px; font-size: 20px; padding: 0; }
   .emoji-pop button:hover { background: #f1f5fb; }
   .composer { position: relative; flex-direction: column; align-items: stretch; gap: 6px; }
+  /* Thanh công cụ soạn kiểu Zalo: Sticker · GIF · Ảnh · Tệp · Biểu cảm */
+  .compose-tools { display: flex; gap: 4px; align-items: center; }
+  .compose-tools .tool { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; text-decoration: none; user-select: none; }
+  .compose-tools .tool:hover { background: #eef2f7; color: var(--primary); }
+  .tool-pop { position: absolute; left: 10px; bottom: 100%; margin-bottom: 6px; width: 420px; max-height: 360px; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 5; }
+  .tool-pop .tp-head { padding: 8px; border-bottom: 1px solid var(--line); }
+  .tool-pop .tp-head input { width: 100%; height: 32px; }
+  .tool-pop .tp-chips { display: flex; gap: 4px; flex-wrap: wrap; padding: 6px 8px 0; }
+  .tool-pop .tp-chips .chip { height: 24px; padding: 0 9px; font-size: 12px; }
+  .tool-pop .tp-grid { flex: 1; overflow: auto; padding: 8px; }
+  .tool-pop .tp-sec { font-size: 12px; color: var(--muted); font-weight: 600; margin: 4px 2px 6px; }
+  .tool-pop .tp-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .tool-pop img.stk { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; cursor: pointer; background: #f6f8fb; }
+  .tool-pop img.stk:hover { background: #e9eef6; }
+  .tool-pop .tp-grid.gif { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-content: start; }
+  .tool-pop img.gif { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; cursor: pointer; background: #f6f8fb; }
+  .tool-pop img.gif:hover { outline: 2px solid var(--primary); }
+  .tool-pop .empty.small { grid-column: 1 / -1; padding: 16px 10px; font-size: 13.5px; line-height: 1.5; }
   .compose-row { display: flex; gap: 8px; align-items: flex-end; }
   .compose-row textarea { flex: 1; }
-  .emoji-btn { width: 40px; height: 40px; font-size: 20px; flex: none; border-radius: 50%; }
+
   .quote-bar { display: flex; align-items: center; gap: 10px; background: #f1f5fb; border-radius: 10px; padding: 6px 8px 6px 0; }
   .quote-bar .qb-line { width: 3px; align-self: stretch; background: var(--primary); border-radius: 2px; margin-left: 8px; }
   .quote-bar .qb-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

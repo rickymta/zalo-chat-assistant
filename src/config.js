@@ -15,6 +15,8 @@ export const DATA_DIR = process.env.ZCA_DATA_DIR
   ? path.resolve(process.env.ZCA_DATA_DIR)
   : path.join(ROOT_DIR, 'data');
 export const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+/** Ảnh/GIF/tệp người dùng gửi đi từ máy — bản sao để hiển thị lại trong ứng dụng (phục vụ qua /files/sent/). */
+export const SENT_DIR = path.join(DATA_DIR, 'sent');
 export const EXPORTS_DIR = process.env.ZCA_EXPORTS_DIR
   ? path.resolve(process.env.ZCA_EXPORTS_DIR)
   : path.join(DATA_DIR, 'exports');   // Electron đặt vào ~/Documents/Zalo Chat Assistant
@@ -49,6 +51,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   autoUpdateMinutes: 30,
   /** Cập nhật gói N phút sau TIN NHẮN CUỐI (yên lặng N phút thì chạy; có tin tiếp thì đếm lại). 0 = tắt. */
   quietMinutes: 3,
+  /** Khoá Tenor API v2 (Google Cloud) để tìm GIF trong ô soạn; để trống = tắt tìm GIF, vẫn gửi được GIF từ máy. */
+  gifApiKey: '',
   /** Giữ máy không tự ngủ khi ứng dụng chạy (màn hình vẫn tắt/khoá được). Máy ngủ = Zalo mất kết nối; tin đến lúc đó chỉ có lại nếu Zalo gửi bù. */
   keepAwake: true,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
@@ -64,7 +68,7 @@ const DEFAULT_SETTINGS = Object.freeze({
 });
 
 export function ensureDirs() {
-  for (const dir of [DATA_DIR, SESSIONS_DIR, EXPORTS_DIR]) {
+  for (const dir of [DATA_DIR, SESSIONS_DIR, EXPORTS_DIR, SENT_DIR]) {
     fs.mkdirSync(dir, { recursive: true });
   }
   // Thư mục phiên chứa cookie đăng nhập thật — chỉ chủ máy đọc được.

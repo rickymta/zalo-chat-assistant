@@ -31,8 +31,11 @@
       <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
       <div class="composer" id="composer" hidden>
         <div class="quote-bar" id="quoteBar" hidden><div class="qb-line"></div><div class="qb-text"><b id="quoteWho"></b><span id="quoteText"></span></div><button type="button" class="sm icon" id="quoteClear" title="Bỏ trích dẫn">✕</button></div>
-        <div class="compose-row"><button type="button" class="icon emoji-btn" id="btnEmoji" title="Biểu cảm">😊</button><textarea id="composeText" rows="2" placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)"></textarea><button class="primary" id="btnSend">Gửi</button></div>
+        <div class="compose-tools"><a class="tool" role="button" tabindex="0" id="btnSticker" title="Sticker Zalo">🙂 Sticker</a><a class="tool" role="button" tabindex="0" id="btnGif" title="GIF">GIF</a><a class="tool" role="button" tabindex="0" id="btnImage" title="Gửi ảnh/GIF từ máy">🖼 Ảnh</a><a class="tool" role="button" tabindex="0" id="btnFile" title="Gửi tệp từ máy">📎 Tệp</a><a class="tool" role="button" tabindex="0" id="btnEmoji" title="Biểu cảm">😊</a></div>
+        <div class="compose-row"><textarea id="composeText" rows="2" placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)"></textarea><button class="primary" id="btnSend">Gửi</button></div>
         <div class="emoji-pop" id="emojiPop" hidden></div>
+        <div class="tool-pop" id="stickerPop" hidden><div class="tp-head"><input type="search" id="stickerQ" placeholder="Tìm sticker (hi, cảm ơn, haha…)"></div><div class="tp-chips" id="stickerChips"></div><div class="tp-grid" id="stickerGrid"><div class="empty small">Đang tải…</div></div></div>
+        <div class="tool-pop" id="gifPop" hidden><div class="tp-head"><input type="search" id="gifQ" placeholder="Tìm GIF…"></div><div class="tp-grid gif" id="gifGrid"><div class="empty small">Đang tải…</div></div></div>
       </div>
       <div class="react-pop" id="reactPop" hidden></div>
       <div class="more-pop" id="morePop" hidden></div>
@@ -128,6 +131,7 @@
     <div class="card">
       <h2>Tuỳ chọn</h2>
       <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Khoá Tenor API để tìm GIF</b><span>Tạo khoá miễn phí tại Google Cloud (Tenor API v2). Để trống thì nút GIF chỉ báo hướng dẫn; gửi GIF từ máy vẫn dùng được.</span></div><input type="text" id="setGifKey" placeholder="AIza…" style="width:220px"></div>
       <div class="setting" id="setKeepAwakeRow"><div class="txt"><b>Giữ máy không ngủ khi ứng dụng chạy</b><span>Màn hình vẫn tắt/khoá được, nhưng máy không tự ngủ nên Zalo không mất kết nối và lịch Claude vẫn chạy. Gập MacBook vẫn ngủ theo hệ điều hành. <span id="keepAwakeState" class="muted"></span></span></div><label class="switch"><input type="checkbox" id="setKeepAwake"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng thử lấy lịch sử gần đây của các nhóm (Zalo có thể không cấp).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>

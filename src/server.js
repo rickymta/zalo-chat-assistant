@@ -227,6 +227,38 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null })));
   // Thả cảm xúc như Zalo: 6 cảm xúc chuẩn; icon rỗng = bỏ cảm xúc của mình.
   const REACTION_ICONS = ['/-heart', '/-strong', ':>', ':o', ':-((', ':-h'];
+  // Sticker Zalo, ảnh/GIF/tệp từ máy, GIF Tenor
+  app.get('/api/accounts/:id/stickers', withUi(async (req) => ({ items: await manager.searchStickers(req.params.id, req.query?.q) })));
+  app.post('/api/conversations/:accountId/:threadId/sticker', withUi(async (req) => manager.sendSticker(req.params.accountId, req.params.threadId, req.body ?? {})));
+  app.post('/api/conversations/:accountId/:threadId/attachments', withUi(async (req) => manager.sendAttachments(req.params.accountId, req.params.threadId, req.body?.paths, req.body?.caption)));
+  app.post('/api/conversations/:accountId/:threadId/gif', withUi(async (req) => manager.sendGifFromUrl(req.params.accountId, req.params.threadId, req.body?.url)));
+  app.post('/api/pick-files', withUi(async (req) => {
+    if (typeof platform.pickFiles !== 'function') throw Object.assign(new Error('Chọn tệp chỉ có trong ứng dụng cài đặt (Electron).'), { status: 501 });
+    const kind = req.body?.kind === 'image' ? 'image' : 'file';
+    const filters = kind === 'image' ? [{ name: 'Ảnh & GIF', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'] }] : [{ name: 'Mọi tệp', extensions: ['*'] }];
+    const paths = await platform.pickFiles({ filters, multi: true });
+    return { paths: Array.isArray(paths) ? paths : [] };
+  }));
+  app.get('/api/gifs', withUi(async (req) => {
+    const key = String(settings.load().gifApiKey ?? '').trim();
+    if (!key) return { items: [], needsKey: true };
+    const q = String(req.query?.q ?? '').trim();
+    const u = q ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}&limit=24&media_filter=gif,tinygif&locale=vi_VN` : `https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(key)}&limit=24&media_filter=gif,tinygif&locale=vi_VN`;
+    const res = await fetch(u, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`Tenor trả lỗi ${res.status} — kiểm tra khoá API trong Cài đặt.`);
+    const j = await res.json();
+    return { items: (j.results ?? []).map((r) => ({ id: r.id, preview: r.media_formats?.tinygif?.url ?? r.media_formats?.gif?.url, url: r.media_formats?.gif?.url, w: r.media_formats?.tinygif?.dims?.[0], h: r.media_formats?.tinygif?.dims?.[1] })).filter((x) => x.url) };
+  }));
+  // Tệp đã gửi từ máy (bản sao trong data/sent/) — chỉ tên tệp, không đường dẫn.
+  app.get('/files/sent/:name', async (req, reply) => {
+    const name = path.basename(String(req.params.name ?? ''));
+    const p = path.join(paths.sentDir ?? path.join(paths.dataDir, 'sent'), name);
+    if (!name || !fs.existsSync(p)) return reply.code(404).send({ error: 'Không có tệp.' });
+    const ext = path.extname(name).toLowerCase();
+    const mime = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.pdf': 'application/pdf' }[ext] ?? 'application/octet-stream';
+    reply.header('Cache-Control', 'private, max-age=86400').type(mime);
+    return reply.send(fs.createReadStream(p));
+  });
   app.post('/api/conversations/:accountId/:threadId/messages/:msgId/forward', withUi(async (req) => manager.forwardMessage(req.params.accountId, req.params.threadId, req.params.msgId, req.body?.targets)));
   app.post('/api/conversations/:accountId/:threadId/messages/:msgId/react', withUi(async (req) => {
     const icon = String(req.body?.icon ?? '');
@@ -345,6 +377,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     power?.applyKeepAwake();
     // Đổi máy chủ cập nhật / công tắc tự kiểm tra ⇒ đặt lại chu kỳ (không kiểm tra ngay, để người dùng tự bấm).
     if (patch.updateServerUrl !== undefined || patch.autoCheckUpdates !== undefined) updater?.schedule({ initial: false });
+    if (typeof body.gifApiKey === 'string') { const k = body.gifApiKey.trim().slice(0, 120); settings.save({ gifApiKey: k }); }
     if (typeof body.autoStart === 'boolean') platform.setAutoStart(body.autoStart);
     return { ...saved, autoStart: platform.getAutoStart() };
   });
