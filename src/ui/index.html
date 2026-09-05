@@ -36,7 +36,7 @@
   /* ── Khung ứng dụng ── */
   .app { display: grid; grid-template-columns: 236px 1fr; height: 100vh; }
   .sidebar { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 14px; gap: 6px; }
-  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 16px 8px 18px; -webkit-app-region: drag; }
   .brand .logo { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
   .brand b { font-size: 16px; line-height: 1.2; display: block; }
   .nav button { width: 100%; justify-content: flex-start; border: 0; background: transparent; height: 48px; font-size: 16px; font-weight: 600; color: var(--muted); padding: 0 12px; }
@@ -51,8 +51,10 @@
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; margin-right: 6px; }
   .dot.ok { background: var(--ok); } .dot.warn { background: #f59e0b; } .dot.bad { background: var(--bad); }
 
-  main { overflow: auto; padding: 28px 32px 48px; }
-  .view { display: flex; flex-direction: column; gap: 20px; max-width: 1180px; margin: 0 auto; }
+  main { overflow: auto; padding: 28px 32px 48px; display: flex; flex-direction: column; min-height: 0; }
+  main.fixed { overflow: hidden; padding-bottom: 24px; }
+  .view { display: flex; flex-direction: column; gap: 20px; max-width: 1180px; width: 100%; margin: 0 auto; }
+  #view-chats { flex: 1; min-height: 0; gap: 14px; }
   .view[hidden] { display: none; }
   .view-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
   .view-head p { margin-top: 4px; }
@@ -108,7 +110,7 @@
   .empty .big { font-size: 40px; margin-bottom: 8px; }
 
   /* ── Màn Hội thoại: chia đôi ── */
-  .split { display: grid; grid-template-columns: 400px 1fr; gap: 18px; height: calc(100vh - 150px); min-height: 480px; }
+  .split { display: grid; grid-template-columns: 400px 1fr; gap: 18px; }
   .pane { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
   .pane .toolbar { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .pane .toolbar input[type=search] { flex: 1; min-width: 150px; }
@@ -250,13 +252,15 @@
   .strip .chipstat { background: #f1f5fb; border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
   .strip .chipstat b { color: var(--warn); }
   .strip select { height: 44px; }
-  .ws-line { font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .ws-line { font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: none; }
   .ws-line code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; }
   .topbar-warn { background: var(--warn-soft); border: 1px solid #fbd9a5; border-radius: 12px; padding: 10px 14px; font-size: 14px; }
   .kv { display: grid; grid-template-columns: 180px 1fr; gap: 6px 14px; font-size: 15px; }
   .kv div:nth-child(odd) { color: var(--muted); }
   .kv code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
-  .split { height: calc(100vh - 230px); }
+  .split { flex: 1; min-height: 0; height: auto; }
+  .pane { min-height: 0; }
+  #reencryptBar { width: 100%; flex: none; }
 </style>
 </head>
 <body>
@@ -533,8 +537,8 @@
     $('#btnWsUpdate').onclick = () => updateWorkspace({ preset: $('#presetSel').value }, $('#btnWsUpdate'));
     const ws = state.workspace || {};
     $('#wsLine').innerHTML = ws.hasData && ws.status
-      ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtTime(ws.status.updatedAt) + ' · <code>' + esc(ws.root) + '</code> · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>'
-      : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>. Thư mục: <code>' + esc(ws.root || '') + '</code>';
+      ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) + ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>'
+      : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.';
     const au = state.automation;
     if (au) $('#wsLine').innerHTML += au.minutes ? ' · 🔄 tự cập nhật mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ', lần tới ' + fmtClock(au.nextRunAt) : '') : ' · tự cập nhật: tắt';
     const cp = $('#btnCopyPrompt2'); if (cp) cp.onclick = copyPrompt;
@@ -564,6 +568,7 @@
     state.view = view;
     $$('.view').forEach((v) => { v.hidden = v.id !== 'view-' + view; });
     $$('.nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+    $('main').classList.toggle('fixed', view === 'chats');   // Hội thoại: trang không cuộn, chỉ hai cột cuộn
     location.hash = view;
     if (view === 'chats') loadConversations();
     if (view === 'settings') renderSettings();
