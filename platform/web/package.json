@@ -1,0 +1,27 @@
+{
+  "name": "zca-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Website + admin CMS của nền tảng Zalo Chat Assistant (React 19 + Vite, JavaScript thuần)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort",
+    "mock": "node scripts/mock-api.mjs",
+    "dev:all": "node scripts/dev-all.mjs",
+    "build": "vite build",
+    "preview": "vite preview --port 5174 --strictPort"
+  },
+  "dependencies": {
+    "marked": "^15.0.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.1.0"
+  }
+}
