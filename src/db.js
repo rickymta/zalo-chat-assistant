@@ -372,6 +372,11 @@ export function openDb(dbPath) {
     },
 
     /** N tin gần nhất của một hội thoại, trả về theo thứ tự thời gian tăng dần (cho màn xem). */
+    /** Một tin theo mã Zalo (để trả lời trích dẫn / thả cảm xúc). */
+    getMessageByMsgId(accountId, threadId, zaloMsgId) {
+      const row = db.prepare(`SELECT * FROM messages WHERE account_id = ? AND thread_id = ? AND zalo_msg_id = ?`).get(accountId, threadId, String(zaloMsgId));
+      return row ? decMessage(row) : null;
+    },
     getRecentMessages(accountId, threadId, { limit = 300, before = null } = {}) {
       const rows = db.prepare(`
         SELECT * FROM messages

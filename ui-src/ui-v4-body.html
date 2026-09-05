@@ -30,9 +30,11 @@
       <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden title="Đưa riêng hội thoại này vào gói dữ liệu cho Claude">📁 Cho Claude</button><button class="sm" id="btnSideToggle" title="Bật/tắt cột trợ lý Claude">💡 Trợ lý</button></div>
       <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
       <div class="composer" id="composer" hidden>
-        <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
-        <button class="primary" id="btnSend">Gửi</button>
+        <div class="quote-bar" id="quoteBar" hidden><div class="qb-line"></div><div class="qb-text"><b id="quoteWho"></b><span id="quoteText"></span></div><button type="button" class="sm icon" id="quoteClear" title="Bỏ trích dẫn">✕</button></div>
+        <div class="compose-row"><button type="button" class="icon emoji-btn" id="btnEmoji" title="Biểu cảm">😊</button><textarea id="composeText" rows="2" placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)"></textarea><button class="primary" id="btnSend">Gửi</button></div>
+        <div class="emoji-pop" id="emojiPop" hidden></div>
       </div>
+      <div class="react-pop" id="reactPop" hidden></div>
     </section>
     <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 

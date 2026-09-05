@@ -513,7 +513,11 @@ export class ZaloManager extends EventEmitter {
    * lưu ngay (mã hoá như mọi tin khác); listener với selfListen cũng sẽ dội lại tin này — chống trùng theo msgId.
    * Không có gửi tự động/hàng loạt: mỗi lời gọi là một lần người dùng bấm Gửi.
    */
-  async sendMessage(id, threadId, text) {
+  /**
+   * Gửi tin văn bản; `quoteMsgId` = mã Zalo của tin được trả lời (trích dẫn như Zalo). Với tin người khác gửi, quote dựng lại từ
+   * raw_json đã lưu (đúng content/msgType/propertyExt Zalo cần); tin của chính mình (không có raw) dùng dạng webchat văn bản.
+   */
+  async sendMessage(id, threadId, text, { quoteMsgId = null } = {}) {
     const live = this.live.get(id);
     if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không gửi được.');
     const body = String(text ?? '').trim();
@@ -522,7 +526,18 @@ export class ZaloManager extends EventEmitter {
     const tid = String(threadId);
     const conv = this.db.getConversation(id, tid);
     const isGroup = !!conv?.is_group;
-    const res = await live.api.sendMessage({ msg: body }, tid, isGroup ? ThreadType.Group : ThreadType.User);
+    let quote = null, quoteText = null;
+    if (quoteMsgId) {
+      const q = this.db.getMessageByMsgId(id, tid, String(quoteMsgId));
+      if (!q) throw new Error('Tin được trả lời không còn trong máy.');
+      let d = null; try { d = q.raw_json ? JSON.parse(q.raw_json)?.data ?? null : null; } catch { d = null; }
+      quote = d
+        ? { content: d.content, msgType: d.msgType, propertyExt: d.propertyExt, uidFrom: String(d.uidFrom ?? q.sender_id ?? ''), msgId: String(d.msgId ?? q.zalo_msg_id), cliMsgId: String(d.cliMsgId ?? q.cli_msg_id ?? '0'), ts: String(d.ts ?? q.event_time), ttl: Number(d.ttl ?? 0) }
+        : { content: String(q.text ?? ''), msgType: 'webchat', propertyExt: undefined, uidFrom: String(q.is_outbound ? id : (q.sender_id ?? '')), msgId: String(q.zalo_msg_id), cliMsgId: String(q.cli_msg_id ?? '0'), ts: String(q.event_time), ttl: 0 };
+      let atts = []; try { atts = q.attachments_json ? JSON.parse(q.attachments_json) : []; } catch { atts = []; }
+      quoteText = `${q.is_outbound ? 'Bạn' : (q.sender_name || conv?.name || '')}: ${String(q.text || previewOf({ type: q.type, text: q.text, attachments: atts })).slice(0, 200)}`;
+    }
+    const res = await live.api.sendMessage({ msg: body, ...(quote ? { quote } : {}) }, tid, isGroup ? ThreadType.Group : ThreadType.User);
     // sendMessage trả { message: { msgId } | null, attachment: [...] } — KHÔNG phải { msgId } phẳng (bài học từ CRM).
     const msgId = res?.message?.msgId ?? res?.attachment?.[0]?.msgId ?? null;
     const account = this.db.getAccount(id);
@@ -531,7 +546,7 @@ export class ZaloManager extends EventEmitter {
       account_id: id, thread_id: tid, is_group: isGroup,
       zalo_msg_id: msgId ? String(msgId) : `local-${now}`, cli_msg_id: null,
       is_outbound: 1, sender_id: id, sender_name: account?.display_name ?? 'Tôi',
-      type: 'text', text: body, attachments_json: null, quote_text: null,
+      type: 'text', text: body, attachments_json: null, quote_text: quoteText,
       event_time: now, source: 'sent', raw_json: null, created_at: now,
       conv_name: null, conv_avatar: null, conv_phone: null,
       preview: previewOf({ type: 'text', text: body, attachments: [] }),
@@ -539,8 +554,22 @@ export class ZaloManager extends EventEmitter {
     const inserted = this.db.insertMessage(row);
     if (msgId) this.db.bumpLastMsgId(id, isGroup, String(msgId));
     if (inserted) this.emit('message', { accountId: id, threadId: tid, isGroup, isOutbound: true, preview: row.preview, eventTime: now, source: 'sent' });
-    this.log.info(`Đã gửi tin tới ${conv?.name ? '[hội thoại]' : tid} (${body.length} ký tự).`);
+    this.log.info(`Đã gửi tin tới ${conv?.name ? '[hội thoại]' : tid} (${body.length} ký tự${quote ? ', có trích dẫn' : ''}).`);
     return { ok: true, msgId: msgId ? String(msgId) : null, eventTime: now };
+  }
+
+  /** Thả (icon là mã Zalo như '/-heart') hoặc bỏ (icon '') cảm xúc lên một tin. Ghi ngay vào bảng reactions cho chính mình. */
+  async addReaction(id, threadId, msgId, icon) {
+    const live = this.live.get(id);
+    if (!live) throw new Error('Tài khoản Zalo chưa kết nối — không thả cảm xúc được.');
+    const tid = String(threadId);
+    const row = this.db.getMessageByMsgId(id, tid, String(msgId));
+    if (!row) throw new Error('Không tìm thấy tin nhắn.');
+    const conv = this.db.getConversation(id, tid);
+    await live.api.addReaction(icon || '', { data: { msgId: String(row.zalo_msg_id), cliMsgId: String(row.cli_msg_id ?? '0') }, threadId: tid, type: conv?.is_group ? ThreadType.Group : ThreadType.User });
+    this.db.setReaction({ accountId: id, threadId: tid, msgId: String(row.zalo_msg_id), reactorId: id, icon: icon || '', ts: Date.now() });
+    this.emit('message', { accountId: id, threadId: tid, reaction: true });
+    return { ok: true, icon: icon || '' };
   }
 
   // ── Dừng / đăng xuất ─────────────────────────────────────────────────────────

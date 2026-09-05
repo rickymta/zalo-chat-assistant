@@ -237,7 +237,7 @@
   const chat = { key: null, accountId: null, threadId: null, items: [], hasMore: false, loadingOlder: false, conv: null };
   const PAGE_MSG = 60;
   async function openConversation(key) {
-    state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false;
+    state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false; if (chat.quote) clearQuote(); $('#reactPop').hidden = true;
     $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === key));
     const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
     if (chat.key !== key) return;
@@ -265,19 +265,65 @@
     if (a.type === 'link') return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">🔗 ' + esc(a.name || url) + '</a>' : '';
     return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">📄 ' + esc(a.name || a.type) + '</a>' : '<span class="att-chip">' + esc(a.name || a.type) + '</span>';
   }
+  const REACT_SET = [['/-heart', '❤️'], ['/-strong', '👍'], [':>', '😆'], [':o', '😮'], [':-((', '😢'], [':-h', '😠']];
+  const callText = (t) => /^sendBubbleMessage\b/.test(t || '') ? '📞 <i>' + esc((t || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(t || '');
+  /** Khối trích dẫn: quote_text dạng "Tên: nội dung" → tên đậm + nội dung. */
+  function quoteHtml(q) { const i = q.indexOf(': '); const who = i > 0 && i < 60 ? q.slice(0, i) : ''; const text = who ? q.slice(i + 2) : q; return '<div class="quote">' + (who ? '<b>' + esc(who) + '</b>' : '') + '<span>' + esc(text) + '</span></div>'; }
   function bubble(m) {
     const c = chat.conv || {};
-    const who = m.is_outbound ? 'Bạn' : esc(m.sender_name || c.name || '');
+    const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
     const atts = (m.attachments || []);
     const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
-    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
-    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + '" data-id="' + m.id + '"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
-      (c.is_group && !m.is_outbound ? '<div class="meta">' + who + '</div>' : '') +
-      (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') +
-      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (/^sendBubbleMessage\b/.test(m.text || '') ? '📞 <i>' + esc((m.text || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(m.text || ''))) +
+    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '" data-icon="' + esc(r.icon) + '" title="' + (r.mine ? 'Bấm để bỏ cảm xúc của Bạn' : esc(emo(r.icon))) + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
+    const canAct = !m.recalled && m.zalo_msg_id && !String(m.zalo_msg_id).startsWith('local-');
+    const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="react" title="Thả cảm xúc">😊</button><button type="button" data-act="reply" title="Trả lời">↩</button>' + (m.text ? '<button type="button" data-act="copy" title="Sao chép nội dung">⧉</button>' : '') + '</div>' : '';
+    const showAvatar = !!c.is_group && !m.is_outbound;
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
+      (showAvatar ? avatarHtml(null, who, 'xs') : '') +
+      '<div class="mcol"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
+      (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
+      (m.quote_text ? quoteHtml(m.quote_text) : '') +
+      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : callText(m.text)) +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>';
+      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>' + acts + '</div>';
   }
+  // Hành động trên tin: cảm xúc, trả lời, sao chép; bấm cảm xúc của mình để bỏ.
+  const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));
+  function openReactPop(anchor, m) {
+    const pop = $('#reactPop'); pop.dataset.msgid = m.zalo_msg_id;
+    pop.innerHTML = REACT_SET.map(([code, e]) => '<button type="button" data-icon="' + esc(code) + '" title="' + esc(e) + '">' + e + '</button>').join('') + ((m.reactions || []).some((r) => r.mine) ? '<button type="button" data-icon="" class="none" title="Bỏ cảm xúc">✕</button>' : '');
+    pop.hidden = false; const ar = anchor.getBoundingClientRect(); const r = ar.width ? ar : anchor.closest(".msg").querySelector(".bubble").getBoundingClientRect(); const w = pop.offsetWidth || 240;
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = (r.top - pop.offsetHeight - 8 < 8 ? r.bottom + 8 : r.top - pop.offsetHeight - 8) + 'px';
+  }
+  async function react(msgId, icon) {
+    $('#reactPop').hidden = true;
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages/' + encodeURIComponent(msgId) + '/react', { method: 'POST', body: { icon } }); await refreshOpenChat(); }
+    catch (err) { toast('Không thả được cảm xúc: ' + err.message); }
+  }
+  $('#msgsList').addEventListener('click', (e) => {
+    const chip = e.target.closest('.react.mine'); if (chip) { const m = msgById(chip.closest('.msg')); if (m) react(m.zalo_msg_id, ''); return; }
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const m = msgById(b.closest('.msg')); if (!m) return;
+    if (b.dataset.act === 'react') openReactPop(b, m);
+    else if (b.dataset.act === 'reply') setQuote(m);
+    else if (b.dataset.act === 'copy') copyText(m.text || '', 'Đã sao chép nội dung tin.');
+  });
+  $('#reactPop').addEventListener('click', (e) => { const b = e.target.closest('button[data-icon]'); if (!b) return; react($('#reactPop').dataset.msgid, b.dataset.icon); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#reactPop') && !e.target.closest('button[data-act="react"]')) $('#reactPop').hidden = true; if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true; });
+  // Trả lời (trích dẫn) như Zalo
+  function setQuote(m) {
+    const c = chat.conv || {}; const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
+    const text = m.text || ((m.attachments || [])[0] ? '[' + ({ image: 'Ảnh', gif: 'Ảnh động', sticker: 'Sticker', video: 'Video', audio: 'Ghi âm', file: 'Tệp', link: 'Liên kết' }[m.attachments[0].type] || 'Đính kèm') + ']' : '');
+    chat.quote = { msgId: m.zalo_msg_id, who, text };
+    $('#quoteWho').textContent = 'Trả lời ' + who; $('#quoteText').textContent = text.replace(/\s+/g, ' ').slice(0, 140); $('#quoteBar').hidden = false; $('#composeText').focus();
+  }
+  function clearQuote() { chat.quote = null; $('#quoteBar').hidden = true; }
+  $('#quoteClear').onclick = clearQuote;
+  // Biểu cảm nhanh
+  const EMOJIS = ['😊', '😂', '🤣', '😍', '😘', '🥰', '😁', '😉', '😅', '🙂', '😢', '😭', '😡', '😮', '😴', '🤔', '🙏', '👍', '👌', '👏', '💪', '❤️', '💙', '💔', '🔥', '🎉', '✅', '❌', '⭐', '🌹', '☕', '🍰', '📞', '📅', '📎', '🦷', '😷', '💊', '🏥', '🩺'];
+  $('#emojiPop').innerHTML = EMOJIS.map((e) => '<button type="button">' + e + '</button>').join('');
+  $('#btnEmoji').onclick = () => { const p = $('#emojiPop'); p.hidden = !p.hidden; };
+  $('#emojiPop').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const t = $('#composeText'); const s = t.selectionStart ?? t.value.length, en = t.selectionEnd ?? s; t.value = t.value.slice(0, s) + b.textContent + t.value.slice(en); t.focus(); t.setSelectionRange(s + b.textContent.length, s + b.textContent.length); });
   function renderMessages(scrollBottom) {
     const box = $('#msgs'), list = $('#msgsList');
     const prevH = box.scrollHeight, prevTop = box.scrollTop;
@@ -371,12 +417,12 @@
     if (!chat.key) return;
     const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
     await busy($('#btnSend'), 'Đang gửi…', async () => {
-      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; await refreshOpenChat(); vlist.refresh(); }
+      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text, quoteMsgId: chat.quote?.msgId || null } }); t.value = ''; clearQuote(); await refreshOpenChat(); vlist.refresh(); }
       catch (err) { toast('Không gửi được: ' + err.message); }
     });
   }
   $('#btnSend').onclick = sendCurrent;
-  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } });
+  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } else if (e.key === 'Escape' && chat.quote) { e.preventDefault(); clearQuote(); } });
 
   // ── Cột trợ lý: tóm tắt của Claude cho hội thoại đang mở + tin nhắn mẫu ───
   const prefill = (text) => { if (!chat.key) { toast('Chọn một hội thoại trước.'); return; } const t = $('#composeText'); t.value = text; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };

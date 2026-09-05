@@ -223,7 +223,14 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/conversations/:accountId/:threadId/read', async (req) => { const changed = db.markRead(req.params.accountId, req.params.threadId); if (changed) broadcast('status', { read: true }); return { ok: true }; });
 
   // ── Gửi tin & gợi ý của Claude ───────────────────────────────────────────────
-  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text)));
+  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null })));
+  // Thả cảm xúc như Zalo: 6 cảm xúc chuẩn; icon rỗng = bỏ cảm xúc của mình.
+  const REACTION_ICONS = ['/-heart', '/-strong', ':>', ':o', ':-((', ':-h'];
+  app.post('/api/conversations/:accountId/:threadId/messages/:msgId/react', withUi(async (req) => {
+    const icon = String(req.body?.icon ?? '');
+    if (icon && !REACTION_ICONS.includes(icon)) throw Object.assign(new Error('Cảm xúc không hợp lệ.'), { status: 400 });
+    return manager.addReaction(req.params.accountId, req.params.threadId, req.params.msgId, icon);
+  }));
   app.get('/api/suggestions', async () => suggestions?.all() ?? { count: 0, items: [] });
   app.post('/api/suggestions/refresh', async () => suggestions?.refresh() ?? { count: 0 });
   app.get('/api/conversations/:accountId/:threadId/suggestions', async (req) => suggestions?.forThread(req.params.accountId, req.params.threadId) ?? []);

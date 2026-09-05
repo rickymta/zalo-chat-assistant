@@ -379,14 +379,41 @@
   .sugdot { flex: none; font-size: 13px; filter: saturate(1.2); }
   .sugdot.none { filter: grayscale(1); opacity: .5; }
   .conv.skeleton .avatar { background: #eef2f7; } .conv .sk { height: 12px; border-radius: 6px; background: #eef2f7; width: 70%; } .conv .sk.short { width: 40%; }
-  .chatcol { display: flex; flex-direction: column; min-height: 0; background: #f6f8fc; }
+  .chatcol { display: flex; flex-direction: column; min-height: 0; background: #ebeef3; }
   .chatcol .chat-head { background: var(--panel); }
   .msgs { flex: 1; overflow-y: auto; padding: 12px 20px 16px; display: flex; flex-direction: column; }
   .msgs-top { text-align: center; color: var(--faint); font-size: 12px; padding: 4px 0 10px; flex: none; }
   #msgsList { display: flex; flex-direction: column; gap: 6px; }
-  .msg { display: flex; flex-direction: column; align-items: flex-start; content-visibility: auto; contain-intrinsic-size: auto 56px; }
-  .msg.out { align-items: flex-end; }
-  .msg .bubble { max-width: 70%; position: relative; padding: 8px 12px 6px; border-radius: 14px; background: #fff; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
+  /* Tin nhắn kiểu Zalo: hàng ngang (avatar nhỏ ở nhóm) + cột bong bóng; hành động hiện khi rê chuột; cảm xúc bám góc bong bóng. */
+  .msg { display: flex; flex-direction: row; align-items: flex-end; gap: 6px; content-visibility: auto; contain-intrinsic-size: auto 56px; padding: 1px 0; }
+  .msg.out { justify-content: flex-end; }
+  .msg .mcol { display: flex; flex-direction: column; align-items: flex-start; max-width: 74%; min-width: 0; }
+  .msg.out .mcol { align-items: flex-end; }
+  .msg .avatar.xs { width: 28px; height: 28px; font-size: 11px; margin-bottom: 18px; flex: none; }
+  .msg-acts { display: none; gap: 2px; align-self: center; margin-bottom: 8px; }
+  .msg:hover .msg-acts { display: inline-flex; }
+  .msg.out .msg-acts { order: -1; }
+  .msg-acts button { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 13px; line-height: 1; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .msg-acts button:hover { background: #eef4ff; border-color: #c7dcff; }
+  .react-pop, .emoji-pop { position: fixed; z-index: 60; display: flex; gap: 4px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+  .react-pop button { width: 34px; height: 34px; border: 0; background: transparent; border-radius: 50%; font-size: 20px; padding: 0; transition: transform .1s; }
+  .react-pop button:hover { transform: scale(1.25); background: #f1f5fb; }
+  .react-pop button.none { font-size: 13px; color: var(--muted); }
+  .emoji-pop { position: absolute; left: 10px; bottom: 100%; margin-bottom: 6px; flex-wrap: wrap; width: 340px; border-radius: 12px; max-height: 200px; overflow: auto; }
+  .emoji-pop button { width: 32px; height: 32px; border: 0; background: transparent; border-radius: 8px; font-size: 20px; padding: 0; }
+  .emoji-pop button:hover { background: #f1f5fb; }
+  .composer { position: relative; flex-direction: column; align-items: stretch; gap: 6px; }
+  .compose-row { display: flex; gap: 8px; align-items: flex-end; }
+  .compose-row textarea { flex: 1; }
+  .emoji-btn { width: 40px; height: 40px; font-size: 20px; flex: none; border-radius: 50%; }
+  .quote-bar { display: flex; align-items: center; gap: 10px; background: #f1f5fb; border-radius: 10px; padding: 6px 8px 6px 0; }
+  .quote-bar .qb-line { width: 3px; align-self: stretch; background: var(--primary); border-radius: 2px; margin-left: 8px; }
+  .quote-bar .qb-text { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quote-bar .qb-text b { display: block; color: var(--primary); font-size: 12.5px; }
+  .msg .bubble .quote { display: flex; flex-direction: column; border-left: 3px solid var(--primary); background: rgba(10,102,255,.06); border-radius: 6px; padding: 4px 8px; margin-bottom: 6px; white-space: normal; }
+  .msg .bubble .quote b { font-size: 12px; color: var(--primary); }
+  .msg .bubble .quote span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .msg .bubble { max-width: 100%; position: relative; padding: 8px 12px 6px; border-radius: 14px; background: #fff; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
   .msg.out .bubble { background: #e5efff; border-color: #c7dcff; }
   .msg .bubble.media { background: transparent; border: 0; padding: 0; }
   .msg .bubble.media .time { position: static; margin-top: 2px; }
@@ -401,9 +428,11 @@
   .att-audio { width: 260px; }
   .att-chip { display: inline-flex; align-items: center; gap: 6px; background: #f1f5fb; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; text-decoration: none; color: var(--text); }
   .att-chip.file { color: var(--primary); }
-  .reacts { display: flex; gap: 4px; margin-top: -4px; padding: 0 6px; }
-  .react { background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; padding: 1px 7px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-  .react.mine { border-color: var(--primary); background: var(--primary-soft); }
+  .reacts { display: flex; gap: 4px; margin-top: -10px; padding: 0 8px; position: relative; z-index: 1; }
+  .msg.out .reacts { justify-content: flex-end; }
+  .react { background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; padding: 1px 7px; box-shadow: 0 1px 3px rgba(0,0,0,.12); cursor: default; }
+  .react.mine { border-color: var(--primary); background: var(--primary-soft); cursor: pointer; }
+  .react.mine:hover { background: #fee2e2; border-color: #fca5a5; }
   .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
   .settings-dlg { width: 860px; max-width: min(94vw, 1100px); padding: 0; }
   .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; position: relative; }
@@ -515,7 +544,7 @@
   .zapp .chat-head button { flex: none; white-space: nowrap; }
   .zapp .chat-head .avatar { width: 40px; height: 40px; font-size: 14px; }
   .msgs { padding: 10px 14px 12px; }
-  .zapp .chatcol .bubble { font-size: 14px; padding: 8px 12px; border-radius: 14px; max-width: 78%; }
+  .zapp .chatcol .bubble { font-size: 14px; padding: 8px 12px 6px; border-radius: 12px; max-width: 100%; }
   .zapp .chatcol .bubble .meta { font-size: 11.5px; } .zapp .chatcol .bubble .time { font-size: 11px; } .zapp .chatcol .bubble .quote { font-size: 13px; }
   .day-sep { font-size: 12px; }
   .composer { padding: 8px 10px; }
@@ -648,9 +677,11 @@
       <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden title="Đưa riêng hội thoại này vào gói dữ liệu cho Claude">📁 Cho Claude</button><button class="sm" id="btnSideToggle" title="Bật/tắt cột trợ lý Claude">💡 Trợ lý</button></div>
       <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
       <div class="composer" id="composer" hidden>
-        <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
-        <button class="primary" id="btnSend">Gửi</button>
+        <div class="quote-bar" id="quoteBar" hidden><div class="qb-line"></div><div class="qb-text"><b id="quoteWho"></b><span id="quoteText"></span></div><button type="button" class="sm icon" id="quoteClear" title="Bỏ trích dẫn">✕</button></div>
+        <div class="compose-row"><button type="button" class="icon emoji-btn" id="btnEmoji" title="Biểu cảm">😊</button><textarea id="composeText" rows="2" placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)"></textarea><button class="primary" id="btnSend">Gửi</button></div>
+        <div class="emoji-pop" id="emojiPop" hidden></div>
       </div>
+      <div class="react-pop" id="reactPop" hidden></div>
     </section>
     <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 
@@ -1039,7 +1070,7 @@
   const chat = { key: null, accountId: null, threadId: null, items: [], hasMore: false, loadingOlder: false, conv: null };
   const PAGE_MSG = 60;
   async function openConversation(key) {
-    state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false;
+    state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false; if (chat.quote) clearQuote(); $('#reactPop').hidden = true;
     $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === key));
     const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
     if (chat.key !== key) return;
@@ -1067,19 +1098,65 @@
     if (a.type === 'link') return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">🔗 ' + esc(a.name || url) + '</a>' : '';
     return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">📄 ' + esc(a.name || a.type) + '</a>' : '<span class="att-chip">' + esc(a.name || a.type) + '</span>';
   }
+  const REACT_SET = [['/-heart', '❤️'], ['/-strong', '👍'], [':>', '😆'], [':o', '😮'], [':-((', '😢'], [':-h', '😠']];
+  const callText = (t) => /^sendBubbleMessage\b/.test(t || '') ? '📞 <i>' + esc((t || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(t || '');
+  /** Khối trích dẫn: quote_text dạng "Tên: nội dung" → tên đậm + nội dung. */
+  function quoteHtml(q) { const i = q.indexOf(': '); const who = i > 0 && i < 60 ? q.slice(0, i) : ''; const text = who ? q.slice(i + 2) : q; return '<div class="quote">' + (who ? '<b>' + esc(who) + '</b>' : '') + '<span>' + esc(text) + '</span></div>'; }
   function bubble(m) {
     const c = chat.conv || {};
-    const who = m.is_outbound ? 'Bạn' : esc(m.sender_name || c.name || '');
+    const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
     const atts = (m.attachments || []);
     const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
-    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
-    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + '" data-id="' + m.id + '"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
-      (c.is_group && !m.is_outbound ? '<div class="meta">' + who + '</div>' : '') +
-      (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') +
-      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (/^sendBubbleMessage\b/.test(m.text || '') ? '📞 <i>' + esc((m.text || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(m.text || ''))) +
+    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '" data-icon="' + esc(r.icon) + '" title="' + (r.mine ? 'Bấm để bỏ cảm xúc của Bạn' : esc(emo(r.icon))) + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
+    const canAct = !m.recalled && m.zalo_msg_id && !String(m.zalo_msg_id).startsWith('local-');
+    const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="react" title="Thả cảm xúc">😊</button><button type="button" data-act="reply" title="Trả lời">↩</button>' + (m.text ? '<button type="button" data-act="copy" title="Sao chép nội dung">⧉</button>' : '') + '</div>' : '';
+    const showAvatar = !!c.is_group && !m.is_outbound;
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
+      (showAvatar ? avatarHtml(null, who, 'xs') : '') +
+      '<div class="mcol"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
+      (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
+      (m.quote_text ? quoteHtml(m.quote_text) : '') +
+      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : callText(m.text)) +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>';
+      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>' + acts + '</div>';
   }
+  // Hành động trên tin: cảm xúc, trả lời, sao chép; bấm cảm xúc của mình để bỏ.
+  const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));
+  function openReactPop(anchor, m) {
+    const pop = $('#reactPop'); pop.dataset.msgid = m.zalo_msg_id;
+    pop.innerHTML = REACT_SET.map(([code, e]) => '<button type="button" data-icon="' + esc(code) + '" title="' + esc(e) + '">' + e + '</button>').join('') + ((m.reactions || []).some((r) => r.mine) ? '<button type="button" data-icon="" class="none" title="Bỏ cảm xúc">✕</button>' : '');
+    pop.hidden = false; const ar = anchor.getBoundingClientRect(); const r = ar.width ? ar : anchor.closest(".msg").querySelector(".bubble").getBoundingClientRect(); const w = pop.offsetWidth || 240;
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = (r.top - pop.offsetHeight - 8 < 8 ? r.bottom + 8 : r.top - pop.offsetHeight - 8) + 'px';
+  }
+  async function react(msgId, icon) {
+    $('#reactPop').hidden = true;
+    try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages/' + encodeURIComponent(msgId) + '/react', { method: 'POST', body: { icon } }); await refreshOpenChat(); }
+    catch (err) { toast('Không thả được cảm xúc: ' + err.message); }
+  }
+  $('#msgsList').addEventListener('click', (e) => {
+    const chip = e.target.closest('.react.mine'); if (chip) { const m = msgById(chip.closest('.msg')); if (m) react(m.zalo_msg_id, ''); return; }
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const m = msgById(b.closest('.msg')); if (!m) return;
+    if (b.dataset.act === 'react') openReactPop(b, m);
+    else if (b.dataset.act === 'reply') setQuote(m);
+    else if (b.dataset.act === 'copy') copyText(m.text || '', 'Đã sao chép nội dung tin.');
+  });
+  $('#reactPop').addEventListener('click', (e) => { const b = e.target.closest('button[data-icon]'); if (!b) return; react($('#reactPop').dataset.msgid, b.dataset.icon); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#reactPop') && !e.target.closest('button[data-act="react"]')) $('#reactPop').hidden = true; if (!e.target.closest('#emojiPop') && !e.target.closest('#btnEmoji')) $('#emojiPop').hidden = true; });
+  // Trả lời (trích dẫn) như Zalo
+  function setQuote(m) {
+    const c = chat.conv || {}; const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
+    const text = m.text || ((m.attachments || [])[0] ? '[' + ({ image: 'Ảnh', gif: 'Ảnh động', sticker: 'Sticker', video: 'Video', audio: 'Ghi âm', file: 'Tệp', link: 'Liên kết' }[m.attachments[0].type] || 'Đính kèm') + ']' : '');
+    chat.quote = { msgId: m.zalo_msg_id, who, text };
+    $('#quoteWho').textContent = 'Trả lời ' + who; $('#quoteText').textContent = text.replace(/\s+/g, ' ').slice(0, 140); $('#quoteBar').hidden = false; $('#composeText').focus();
+  }
+  function clearQuote() { chat.quote = null; $('#quoteBar').hidden = true; }
+  $('#quoteClear').onclick = clearQuote;
+  // Biểu cảm nhanh
+  const EMOJIS = ['😊', '😂', '🤣', '😍', '😘', '🥰', '😁', '😉', '😅', '🙂', '😢', '😭', '😡', '😮', '😴', '🤔', '🙏', '👍', '👌', '👏', '💪', '❤️', '💙', '💔', '🔥', '🎉', '✅', '❌', '⭐', '🌹', '☕', '🍰', '📞', '📅', '📎', '🦷', '😷', '💊', '🏥', '🩺'];
+  $('#emojiPop').innerHTML = EMOJIS.map((e) => '<button type="button">' + e + '</button>').join('');
+  $('#btnEmoji').onclick = () => { const p = $('#emojiPop'); p.hidden = !p.hidden; };
+  $('#emojiPop').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const t = $('#composeText'); const s = t.selectionStart ?? t.value.length, en = t.selectionEnd ?? s; t.value = t.value.slice(0, s) + b.textContent + t.value.slice(en); t.focus(); t.setSelectionRange(s + b.textContent.length, s + b.textContent.length); });
   function renderMessages(scrollBottom) {
     const box = $('#msgs'), list = $('#msgsList');
     const prevH = box.scrollHeight, prevTop = box.scrollTop;
@@ -1173,12 +1250,12 @@
     if (!chat.key) return;
     const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
     await busy($('#btnSend'), 'Đang gửi…', async () => {
-      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; await refreshOpenChat(); vlist.refresh(); }
+      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text, quoteMsgId: chat.quote?.msgId || null } }); t.value = ''; clearQuote(); await refreshOpenChat(); vlist.refresh(); }
       catch (err) { toast('Không gửi được: ' + err.message); }
     });
   }
   $('#btnSend').onclick = sendCurrent;
-  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } });
+  $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } else if (e.key === 'Escape' && chat.quote) { e.preventDefault(); clearQuote(); } });
 
   // ── Cột trợ lý: tóm tắt của Claude cho hội thoại đang mở + tin nhắn mẫu ───
   const prefill = (text) => { if (!chat.key) { toast('Chọn một hội thoại trước.'); return; } const t = $('#composeText'); t.value = text; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
