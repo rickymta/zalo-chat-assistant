@@ -1163,7 +1163,7 @@
     const rs = (m.reactions || []).slice().sort((a, b) => b.count - a.count); const total = rs.reduce((n, r) => n + r.count, 0); const mine = rs.some((r) => r.mine);
     const canAct = !m.recalled && m.zalo_msg_id && !/^(local|fwd)-/.test(String(m.zalo_msg_id));
     // Pill cảm xúc + nút thả nhanh bám góc dưới-phải của bong bóng/thẻ ảnh (như Zalo); nút chỉ hiện khi rê chuột.
-    const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + (total > 1 ? '<b>' + total + '</b>' : '') + '</span>' : '';
+    const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + '<b>' + total + '</b>' + '</span>' : '';
     const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
     const reacts = (pill ? '<div class="reacts">' + pill + '</div>' : '') + quick;
     const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
