@@ -44,6 +44,10 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
    Claude ghi kết quả vào `ket-qua/` (bản `.md` cho người đọc **và** `de-xuat.json` cho máy đọc). Ứng dụng theo dõi thư mục
    này: hội thoại có gợi ý hiện nhãn **💡 Có gợi ý**; mở hội thoại thấy thẻ gợi ý (ưu tiên, tóm tắt, câu trả lời, ghi chú)
    → bấm **Dùng gợi ý này** để điền vào ô soạn → sửa → **Gửi**. Gợi ý cũ hơn tin mới nhất được cảnh báo "có tin mới sau gợi ý".
+4b. **Trong khung chat như Zalo**: rê chuột lên tin hiện 👍 (thả cảm xúc — 6 cảm xúc chuẩn, bấm pill của Bạn để bỏ) và ba nút
+   Trả lời (trích dẫn), Chuyển tiếp (chọn nhiều hội thoại, chỉ tin văn bản — giới hạn của zca-js), Thêm (sao chép, xem ảnh).
+   Ảnh/GIF/sticker mở hộp xem trong ứng dụng (← → chuyển ảnh, Esc đóng). Ô soạn có bảng biểu cảm. Mọi thao tác gửi đi
+   (tin, trích dẫn, cảm xúc, chuyển tiếp) vẫn là do người dùng bấm, ứng dụng không tự gửi gì.
 5. **📊 Báo cáo ngày** (nút ở thanh trên): một hộp thoại tổng hợp **toàn bộ hội thoại trong ngày** — số hội thoại/tin đến/tin
    đi/chưa trả lời/việc cần làm (đếm từ dữ liệu trên máy), phần *Tổng quan* và *Việc cần làm* do Claude viết, rồi từng hội
    thoại một thẻ: quan hệ (khách hàng/đồng nghiệp/đối tác/bạn bè/nhóm), tóm tắt, chủ đề, đã chốt, việc của Bạn, câu chưa trả
