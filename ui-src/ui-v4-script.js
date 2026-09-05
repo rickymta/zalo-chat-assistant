@@ -1,7 +1,7 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
-  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, automation: null, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, tab: 'login', sugByKey: {}, sugUnresolved: 0 };
+  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, automation: null, update: null, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, tab: 'login', sugByKey: {}, sugUnresolved: 0 };
   const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại.';
   const EMO = { '/-strong': '👍', '/-heart': '❤️', ':>': '😆', ':o': '😮', ':-((': '😢', ':-h': '😠', ':-*': '😘', ":')": '😂', '/-rose': '🌹', '/-break': '💔', '/-weak': '👎', ';xx': '😍', ';-/': '😕', ';-)': '😉', '/-ok': '👌', '/-v': '✌️', '/-thanks': '🙏', '/-punch': '👊', '_()_': '🙏', '/-no': '🚫', '/-loveu': '🥰', ':((': '😭', 'x-)': '😎', ';-d': '😁', 'b-)': '😎', ':-o': '😲', ':))': '🤣', '/-beer': '🍺', ':-)': '🙂', ':-(': '🙁', ':-D': '😀', ':-P': '😛', ':)': '🙂', ':(': '🙁', ':D': '😀' };
   const emo = (code) => EMO[code] || code;
@@ -12,6 +12,7 @@
   const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(ms));
   const fmtRel = (ms) => { if (!ms) return ''; const d = Date.now() - ms; if (d < 60e3) return 'vừa xong'; if (d < 3600e3) return Math.floor(d / 60e3) + ' phút'; if (d < 86400e3) return fmtClock(ms); if (d < 7 * 86400e3) return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' }).format(new Date(ms)); return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit' }).format(new Date(ms)); };
   const num = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0));
+  const fmtBytes = (b) => { const n = Number(b || 0); if (!n) return ''; if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(0) + ' KB'; if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB'; return (n / 1073741824).toFixed(2) + ' GB'; };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const initials = (name) => (name || '?').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
   const avatarHtml = (url, name, cls = '') => url ? '<img class="avatar ' + cls + '" src="' + esc(url) + '" alt="" loading="lazy">' : '<div class="avatar ' + cls + '">' + esc(initials(name)) + '</div>';
@@ -60,13 +61,13 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
     if (justUnlocked && !state.templates?.length) void loadTemplates();
     try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
-    renderTop(); renderReencrypt(); renderPower();
+    renderTop(); renderReencrypt(); renderPower(); renderUpdate();
     if ($('#dlgSettings').open) renderSettings();
   }
   function renderTop() {
@@ -108,6 +109,67 @@
     }
     bar.hidden = true;
   }
+
+  // ── Bản cập nhật ─────────────────────────────────────────────────────────
+  /** Mở địa chỉ web bằng trình duyệt mặc định (ứng dụng không tự tải/tự cài). */
+  const openUrl = async (url) => { if (!url) return toast('Bản này chưa có đường dẫn tải.'); try { await api('/api/open-url', { method: 'POST', body: { url } }); toast('Đã mở trang tải trong trình duyệt.'); } catch (err) { toast('Không mở được liên kết: ' + err.message); } };
+  /**
+   * Ghi chú phát hành đến từ máy chủ cập nhật — máy chủ đã lọc, nhưng đây là NỘI DUNG NGOÀI nên vẫn
+   * gỡ thêm một lớp: bỏ script/style/iframe, bỏ mọi thuộc tính on*, chỉ giữ liên kết http(s).
+   */
+  function safeNotesHtml(html) {
+    const t = document.createElement('template');
+    t.innerHTML = String(html || '');
+    t.content.querySelectorAll('script, style, iframe, object, embed, link, form, input, meta').forEach((el) => el.remove());
+    t.content.querySelectorAll('*').forEach((el) => {
+      for (const a of [...el.attributes]) {
+        const n = a.name.toLowerCase();
+        if (n.startsWith('on') || (['href', 'src'].includes(n) && !/^https?:\/\//i.test(a.value.trim()))) el.removeAttribute(a.name);
+      }
+      if (el.tagName === 'A') { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noreferrer'); }
+    });
+    return t.innerHTML;
+  }
+  function renderUpdate() {
+    const u = state.update; const bar = $('#updateBar'); const l = u?.latest;
+    if (!u?.available || !l) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = '<div class="' + (u.mandatory ? 'topbar-warn' : 'topbar-info') + '">🆕 Có bản cập nhật <b>' + esc(l.version) + '</b>' + (l.fileSize ? ' (' + fmtBytes(l.fileSize) + ')' : '') + (u.mandatory ? ' — <b>bắt buộc cập nhật</b>' : '') +
+      ' · <button class="link" data-upd="download">Tải về</button> · <button class="link" data-upd="notes">Xem thay đổi</button>' + (u.mandatory ? '' : ' · <button class="link" data-upd="skip">Bỏ qua bản này</button>') + '</div>';
+  }
+  $('#updateBar').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-upd]'); if (!btn) return;
+    const l = state.update?.latest; if (!l) return;
+    if (btn.dataset.upd === 'download') return openUrl(l.downloadUrl);
+    if (btn.dataset.upd === 'notes') return openUpdateDialog();
+    if (btn.dataset.upd === 'skip') {
+      if (!confirm('Bỏ qua bản ' + l.version + '?\nỨng dụng sẽ không nhắc bản này nữa; bản mới hơn vẫn được báo. Kiểm tra lại bất cứ lúc nào ở Cài đặt → Phiên bản & cập nhật.')) return;
+      try { const r = await api('/api/updates/skip', { method: 'POST', body: { version: l.version } }); state.update = r; renderUpdate(); toast('Đã bỏ qua bản ' + l.version + '.'); }
+      catch (err) { toast(err.message); }
+    }
+  });
+  function openUpdateDialog() {
+    const u = state.update; const l = u?.latest;
+    if (!l) { toast('Chưa có thông tin bản cập nhật.'); return; }
+    $('#updDlgSub').textContent = 'Đang dùng phiên bản ' + (u.current || '?');
+    $('#updDlgKv').innerHTML = '<div>Phiên bản mới</div><div><b>' + esc(l.version) + '</b>' + (u.mandatory ? ' <span class="pill bad">Bắt buộc</span>' : (u.skippedVersion === l.version ? ' <span class="pill">Bạn đã bỏ qua</span>' : '')) + '</div>' +
+      (l.publishedAt ? '<div>Ngày phát hành</div><div>' + fmtTime(l.publishedAt) + '</div>' : '') +
+      (l.fileSize ? '<div>Kích thước</div><div>' + fmtBytes(l.fileSize) + '</div>' : '') +
+      (l.sha256 ? '<div>SHA-256</div><div><code class="hash">' + esc(l.sha256) + '</code></div>' : '');
+    const box = $('#updDlgNotes');
+    if (l.notesHtml) { box.className = 'upd-notes'; box.innerHTML = safeNotesHtml(l.notesHtml); }
+    else if (l.notes) { box.className = 'upd-notes plain'; box.textContent = l.notes; }
+    else { box.className = 'upd-notes'; box.innerHTML = '<div class="empty small">Bản này không kèm mô tả thay đổi.</div>'; }
+    $('#btnUpdSkip').hidden = !!u.mandatory;
+    $('#dlgUpdate').showModal();
+  }
+  $('#btnUpdDownload').onclick = () => openUrl(state.update?.latest?.downloadUrl);
+  $('#btnUpdSkip').onclick = async () => {
+    const l = state.update?.latest; if (!l) return;
+    try { const r = await api('/api/updates/skip', { method: 'POST', body: { version: l.version } }); state.update = r; renderUpdate(); $('#dlgUpdate').close(); toast('Đã bỏ qua bản ' + l.version + '.'); }
+    catch (err) { toast(err.message); }
+  };
+
   $('#zaloStrip').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     if (btn.dataset.act === 'qr') return openQr();
@@ -394,9 +456,39 @@
     $('#setAutoStartRow').hidden = !supportsAuto; if (supportsAuto) $('#setAutoStart').checked = !!state.platform.autoStart;
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
+    renderUpdateSettings();
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
+  /** Thẻ "Phiên bản & cập nhật" trong Cài đặt. */
+  function renderUpdateSettings() {
+    const s = state.settings; const u = state.update || {}; const l = u.latest;
+    let result;
+    if (u.checking) result = '⏳ Đang kiểm tra…';
+    else if (u.lastError) result = '⚠️ Không kiểm tra được: ' + esc(u.lastError);
+    else if (u.newer && l) result = '🆕 Có bản <b>' + esc(l.version) + '</b>' + (u.mandatory ? ' <span class="pill bad">Bắt buộc</span>' : (u.skippedVersion === l.version ? ' <span class="pill">Bạn đã bỏ qua bản này</span>' : ''));
+    else if (u.lastCheckAt) result = '✅ Đang dùng bản mới nhất.';
+    else result = 'Chưa kiểm tra lần nào.';
+    $('#updKv').innerHTML = '<div>Phiên bản hiện tại</div><div><b>' + esc(u.current || state.platform?.version || '—') + '</b>' + (state.platform?.name === 'node' ? ' <span class="muted small">(đang chạy bằng Node)</span>' : '') + '</div>' +
+      '<div>Lần kiểm tra gần nhất</div><div>' + (u.lastCheckAt ? fmtTime(u.lastCheckAt) : 'chưa kiểm tra') + '</div>' +
+      '<div>Kết quả</div><div>' + result + '</div>' +
+      '<div>Máy chủ đang dùng</div><div><code>' + esc(s.updateServerUrl || state.auth?.serverUrl || '') + '</code>' + (s.updateServerUrl ? ' <span class="muted small">(đặt riêng)</span>' : '') + '</div>';
+    $('#btnUpdNotes').hidden = !(u.newer && l);
+    $('#setAutoCheckUpdates').checked = s.autoCheckUpdates !== false;
+    $('#setUpdateServerUrl').value = s.updateServerUrl || '';
+    $('#updServerHint').textContent = state.auth?.serverUrl || 'chưa có';
+  }
+  $('#btnUpdCheck').onclick = async () => {
+    $('#updMsg').textContent = '';
+    await busy($('#btnUpdCheck'), 'Đang kiểm tra…', async () => {
+      try {
+        const r = await api('/api/updates/check', { method: 'POST' });
+        state.update = r; renderUpdate(); renderUpdateSettings();
+        $('#updMsg').textContent = r.lastError ? '❌ ' + r.lastError : (r.newer ? '🆕 Có bản ' + r.latest.version + '.' : '✅ Bạn đang dùng bản mới nhất.');
+      } catch (err) { $('#updMsg').textContent = '❌ ' + err.message; }
+    });
+  };
+  $('#btnUpdNotes').onclick = openUpdateDialog;
   function openSettings() { renderSettings(); $('#dlgSettings').showModal(); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -416,7 +508,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim() };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
@@ -554,7 +646,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

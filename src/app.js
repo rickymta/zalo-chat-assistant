@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  DATA_DIR, SESSIONS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -24,6 +24,7 @@ import { Cipher } from './crypto/cipher.js';
 import { ensureWorkspace, updateWorkspaceData } from './workspace.js';
 import { presetParams } from './server.js';
 import { SuggestionStore } from './suggestions.js';
+import { createUpdater } from './updates.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -239,13 +240,18 @@ export async function startApp({ platform, port = PORT } = {}) {
   power.load();
 
   const paths = { dataDir: DATA_DIR, workspaceDir: WORKSPACE_DIR, coworkDir: COWORK_DIR, uiDir: UI_DIR };
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power });
+  // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
+  const appVersion = platform?.appVersion || readPackageVersion();
+  const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
   log.info(`Zalo Chat Assistant đang chạy tại ${url} — dữ liệu ở ${DATA_DIR} — thư mục Claude: ${WORKSPACE_DIR}`);
 
   power.applyKeepAwake();
+  // Kiểm tra bản cập nhật không cần đăng nhập/mở khoá: 20 giây sau khi khởi động rồi mỗi 6 giờ.
+  updater.schedule();
 
   // Mở khoá SAU khi HTTP đã sẵn sàng để giao diện lên ngay; Zalo chỉ khôi phục khi đã có khoá.
   if (auth.isLoggedIn) void security.unlock();
@@ -259,10 +265,17 @@ export async function startApp({ platform, port = PORT } = {}) {
     automation.stop();
     suggestions.stop();
     power.stop();
+    updater.stop();
     manager.stopAll();
     try { await Promise.race([server.close(), new Promise((r) => setTimeout(r, 3000))]); } catch { /* bỏ qua */ }
     try { db.close(); } catch { /* bỏ qua */ }
   }
 
-  return { url, stop, log, db, manager, auth, security, power };
+  return { url, stop, log, db, manager, auth, security, power, updater };
+}
+
+/** Phiên bản khi chạy bằng Node (không có app.getVersion() của Electron). */
+function readPackageVersion() {
+  try { return String(JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')).version || '0.0.0'); }
+  catch { return '0.0.0'; }
 }

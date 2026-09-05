@@ -34,6 +34,8 @@ const platform = {
   name: 'electron',
   appVersion: app.getVersion(),
   revealPath(p) { shell.openPath(p); },
+  /** Mở liên kết bằng trình duyệt mặc định (nút "Tải về" của thanh cập nhật) — không mở trong cửa sổ ứng dụng. */
+  openExternal(url) { shell.openExternal(url); },
   copyText(t) { clipboard.writeText(String(t ?? '')); return true; },
   getAutoStart() { try { return !!app.getLoginItemSettings().openAtLogin; } catch { return false; } },
   blockerId: null,

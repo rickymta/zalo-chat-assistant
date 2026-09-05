@@ -311,6 +311,17 @@
   .ws-line { flex: none; padding: 5px 16px; font-size: 13px; color: var(--muted); background: #fbfcfe; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-height: 32px; }
   .zapp.mac .ws-line { padding-left: 16px; }
   #reencryptBar { flex: none; padding: 8px 16px 0; }
+  /* Thanh báo có bản cập nhật — nền xanh nhạt cho bản thường, dùng .topbar-warn (nền cảnh báo) cho bản bắt buộc. */
+  #updateBar { flex: none; padding: 8px 16px 0; }
+  .topbar-info { background: var(--primary-soft); border: 1px solid #c7dcff; border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+  .upd-dlg { width: 720px; }
+  .upd-notes { font-size: 14px; line-height: 1.6; margin-top: 10px; overflow-wrap: anywhere; }
+  .upd-notes.plain { white-space: pre-wrap; }
+  .upd-notes h1, .upd-notes h2, .upd-notes h3 { font-size: 15px; margin: 12px 0 6px; }
+  .upd-notes ul, .upd-notes ol { margin: 6px 0; padding-left: 22px; }
+  .upd-notes p { margin: 0 0 8px; }
+  .upd-notes code { background: #f1f5fb; border-radius: 6px; padding: 1px 5px; }
+  .hash { font-size: 12px; overflow-wrap: anywhere; }
   /* Lưới 3 cột + 2 thanh kéo; độ rộng cột 1 và 3 là biến CSS do JS đặt (kéo được, nhớ theo máy); cột giữa minmax(0,1fr) để không bao giờ đẩy cột 3 ra ngoài cửa sổ. */
   .cols { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr) 6px var(--c3, 340px); }
   .cols.noside { grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr); }
@@ -602,6 +613,7 @@
   <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
   <div id="reencryptBar" hidden></div>
   <div id="powerBar" hidden></div>
+  <div id="updateBar" hidden></div>
 
   <div class="cols">
     <aside class="convcol">
@@ -706,6 +718,15 @@
     </div>
 
     <div class="card">
+      <h2>Phiên bản &amp; cập nhật</h2>
+      <p class="desc">Ứng dụng chỉ <b>báo</b> khi có bản mới và mở trang tải bằng trình duyệt — không tự tải, không tự cài (bản chưa ký, macOS/Windows sẽ chặn). Cài bản mới giống lần đầu: mở file tải về rồi kéo vào Applications.</p>
+      <div class="kv" id="updKv"></div>
+      <div class="row" style="margin-top:12px"><button id="btnUpdCheck">🔄 Kiểm tra cập nhật</button><button class="sm" id="btnUpdNotes" hidden>Xem thay đổi</button><span class="small muted" id="updMsg"></span></div>
+      <div class="setting"><div class="txt"><b>Tự kiểm tra cập nhật khi khởi động và mỗi 6 giờ</b><span>Tắt thì chỉ kiểm tra khi bạn bấm nút ở trên.</span></div><label class="switch"><input type="checkbox" id="setAutoCheckUpdates"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Máy chủ cập nhật</b><span>Để trống = dùng máy chủ tài khoản (<span id="updServerHint" class="muted"></span>).</span></div><input type="text" id="setUpdateServerUrl" placeholder="http://…" style="width:260px"></div>
+    </div>
+
+    <div class="card">
       <h2>Nơi lưu dữ liệu</h2>
       <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
       <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
@@ -723,6 +744,18 @@
     <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
   </div>
   <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+</div></dialog>
+
+<!-- ═══════════ BẢN CẬP NHẬT (hộp thoại xem thay đổi) ═══════════ -->
+<dialog id="dlgUpdate" class="settings-dlg upd-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>🆕 Bản cập nhật</h2><span class="muted small" id="updDlgSub"></span></div>
+  <div class="settings-body">
+    <div class="card">
+      <div class="kv" id="updDlgKv"></div>
+      <div class="upd-notes" id="updDlgNotes"></div>
+    </div>
+  </div>
+  <div class="settings-foot"><button class="primary" id="btnUpdDownload">⬇️ Tải về</button><button class="sm" id="btnUpdSkip" hidden>Bỏ qua bản này</button><span class="grow"></span><span class="muted small">Tải xong: mở file và cài đè như lần đầu — dữ liệu trên máy được giữ nguyên.</span></div>
 </div></dialog>
 
 <dialog id="dlgQr"><div class="dlg">
@@ -744,7 +777,7 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
-  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, automation: null, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, tab: 'login', sugByKey: {}, sugUnresolved: 0 };
+  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, automation: null, update: null, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, tab: 'login', sugByKey: {}, sugUnresolved: 0 };
   const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại.';
   const EMO = { '/-strong': '👍', '/-heart': '❤️', ':>': '😆', ':o': '😮', ':-((': '😢', ':-h': '😠', ':-*': '😘', ":')": '😂', '/-rose': '🌹', '/-break': '💔', '/-weak': '👎', ';xx': '😍', ';-/': '😕', ';-)': '😉', '/-ok': '👌', '/-v': '✌️', '/-thanks': '🙏', '/-punch': '👊', '_()_': '🙏', '/-no': '🚫', '/-loveu': '🥰', ':((': '😭', 'x-)': '😎', ';-d': '😁', 'b-)': '😎', ':-o': '😲', ':))': '🤣', '/-beer': '🍺', ':-)': '🙂', ':-(': '🙁', ':-D': '😀', ':-P': '😛', ':)': '🙂', ':(': '🙁', ':D': '😀' };
   const emo = (code) => EMO[code] || code;
@@ -755,6 +788,7 @@
   const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(ms));
   const fmtRel = (ms) => { if (!ms) return ''; const d = Date.now() - ms; if (d < 60e3) return 'vừa xong'; if (d < 3600e3) return Math.floor(d / 60e3) + ' phút'; if (d < 86400e3) return fmtClock(ms); if (d < 7 * 86400e3) return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' }).format(new Date(ms)); return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit' }).format(new Date(ms)); };
   const num = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0));
+  const fmtBytes = (b) => { const n = Number(b || 0); if (!n) return ''; if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(0) + ' KB'; if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB'; return (n / 1073741824).toFixed(2) + ' GB'; };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const initials = (name) => (name || '?').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
   const avatarHtml = (url, name, cls = '') => url ? '<img class="avatar ' + cls + '" src="' + esc(url) + '" alt="" loading="lazy">' : '<div class="avatar ' + cls + '">' + esc(initials(name)) + '</div>';
@@ -803,13 +837,13 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
     if (justUnlocked && !state.templates?.length) void loadTemplates();
     try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
-    renderTop(); renderReencrypt(); renderPower();
+    renderTop(); renderReencrypt(); renderPower(); renderUpdate();
     if ($('#dlgSettings').open) renderSettings();
   }
   function renderTop() {
@@ -851,6 +885,67 @@
     }
     bar.hidden = true;
   }
+
+  // ── Bản cập nhật ─────────────────────────────────────────────────────────
+  /** Mở địa chỉ web bằng trình duyệt mặc định (ứng dụng không tự tải/tự cài). */
+  const openUrl = async (url) => { if (!url) return toast('Bản này chưa có đường dẫn tải.'); try { await api('/api/open-url', { method: 'POST', body: { url } }); toast('Đã mở trang tải trong trình duyệt.'); } catch (err) { toast('Không mở được liên kết: ' + err.message); } };
+  /**
+   * Ghi chú phát hành đến từ máy chủ cập nhật — máy chủ đã lọc, nhưng đây là NỘI DUNG NGOÀI nên vẫn
+   * gỡ thêm một lớp: bỏ script/style/iframe, bỏ mọi thuộc tính on*, chỉ giữ liên kết http(s).
+   */
+  function safeNotesHtml(html) {
+    const t = document.createElement('template');
+    t.innerHTML = String(html || '');
+    t.content.querySelectorAll('script, style, iframe, object, embed, link, form, input, meta').forEach((el) => el.remove());
+    t.content.querySelectorAll('*').forEach((el) => {
+      for (const a of [...el.attributes]) {
+        const n = a.name.toLowerCase();
+        if (n.startsWith('on') || (['href', 'src'].includes(n) && !/^https?:\/\//i.test(a.value.trim()))) el.removeAttribute(a.name);
+      }
+      if (el.tagName === 'A') { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noreferrer'); }
+    });
+    return t.innerHTML;
+  }
+  function renderUpdate() {
+    const u = state.update; const bar = $('#updateBar'); const l = u?.latest;
+    if (!u?.available || !l) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = '<div class="' + (u.mandatory ? 'topbar-warn' : 'topbar-info') + '">🆕 Có bản cập nhật <b>' + esc(l.version) + '</b>' + (l.fileSize ? ' (' + fmtBytes(l.fileSize) + ')' : '') + (u.mandatory ? ' — <b>bắt buộc cập nhật</b>' : '') +
+      ' · <button class="link" data-upd="download">Tải về</button> · <button class="link" data-upd="notes">Xem thay đổi</button>' + (u.mandatory ? '' : ' · <button class="link" data-upd="skip">Bỏ qua bản này</button>') + '</div>';
+  }
+  $('#updateBar').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-upd]'); if (!btn) return;
+    const l = state.update?.latest; if (!l) return;
+    if (btn.dataset.upd === 'download') return openUrl(l.downloadUrl);
+    if (btn.dataset.upd === 'notes') return openUpdateDialog();
+    if (btn.dataset.upd === 'skip') {
+      if (!confirm('Bỏ qua bản ' + l.version + '?\nỨng dụng sẽ không nhắc bản này nữa; bản mới hơn vẫn được báo. Kiểm tra lại bất cứ lúc nào ở Cài đặt → Phiên bản & cập nhật.')) return;
+      try { const r = await api('/api/updates/skip', { method: 'POST', body: { version: l.version } }); state.update = r; renderUpdate(); toast('Đã bỏ qua bản ' + l.version + '.'); }
+      catch (err) { toast(err.message); }
+    }
+  });
+  function openUpdateDialog() {
+    const u = state.update; const l = u?.latest;
+    if (!l) { toast('Chưa có thông tin bản cập nhật.'); return; }
+    $('#updDlgSub').textContent = 'Đang dùng phiên bản ' + (u.current || '?');
+    $('#updDlgKv').innerHTML = '<div>Phiên bản mới</div><div><b>' + esc(l.version) + '</b>' + (u.mandatory ? ' <span class="pill bad">Bắt buộc</span>' : (u.skippedVersion === l.version ? ' <span class="pill">Bạn đã bỏ qua</span>' : '')) + '</div>' +
+      (l.publishedAt ? '<div>Ngày phát hành</div><div>' + fmtTime(l.publishedAt) + '</div>' : '') +
+      (l.fileSize ? '<div>Kích thước</div><div>' + fmtBytes(l.fileSize) + '</div>' : '') +
+      (l.sha256 ? '<div>SHA-256</div><div><code class="hash">' + esc(l.sha256) + '</code></div>' : '');
+    const box = $('#updDlgNotes');
+    if (l.notesHtml) { box.className = 'upd-notes'; box.innerHTML = safeNotesHtml(l.notesHtml); }
+    else if (l.notes) { box.className = 'upd-notes plain'; box.textContent = l.notes; }
+    else { box.className = 'upd-notes'; box.innerHTML = '<div class="empty small">Bản này không kèm mô tả thay đổi.</div>'; }
+    $('#btnUpdSkip').hidden = !!u.mandatory;
+    $('#dlgUpdate').showModal();
+  }
+  $('#btnUpdDownload').onclick = () => openUrl(state.update?.latest?.downloadUrl);
+  $('#btnUpdSkip').onclick = async () => {
+    const l = state.update?.latest; if (!l) return;
+    try { const r = await api('/api/updates/skip', { method: 'POST', body: { version: l.version } }); state.update = r; renderUpdate(); $('#dlgUpdate').close(); toast('Đã bỏ qua bản ' + l.version + '.'); }
+    catch (err) { toast(err.message); }
+  };
+
   $('#zaloStrip').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     if (btn.dataset.act === 'qr') return openQr();
@@ -1137,9 +1232,39 @@
     $('#setAutoStartRow').hidden = !supportsAuto; if (supportsAuto) $('#setAutoStart').checked = !!state.platform.autoStart;
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
+    renderUpdateSettings();
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
+  /** Thẻ "Phiên bản & cập nhật" trong Cài đặt. */
+  function renderUpdateSettings() {
+    const s = state.settings; const u = state.update || {}; const l = u.latest;
+    let result;
+    if (u.checking) result = '⏳ Đang kiểm tra…';
+    else if (u.lastError) result = '⚠️ Không kiểm tra được: ' + esc(u.lastError);
+    else if (u.newer && l) result = '🆕 Có bản <b>' + esc(l.version) + '</b>' + (u.mandatory ? ' <span class="pill bad">Bắt buộc</span>' : (u.skippedVersion === l.version ? ' <span class="pill">Bạn đã bỏ qua bản này</span>' : ''));
+    else if (u.lastCheckAt) result = '✅ Đang dùng bản mới nhất.';
+    else result = 'Chưa kiểm tra lần nào.';
+    $('#updKv').innerHTML = '<div>Phiên bản hiện tại</div><div><b>' + esc(u.current || state.platform?.version || '—') + '</b>' + (state.platform?.name === 'node' ? ' <span class="muted small">(đang chạy bằng Node)</span>' : '') + '</div>' +
+      '<div>Lần kiểm tra gần nhất</div><div>' + (u.lastCheckAt ? fmtTime(u.lastCheckAt) : 'chưa kiểm tra') + '</div>' +
+      '<div>Kết quả</div><div>' + result + '</div>' +
+      '<div>Máy chủ đang dùng</div><div><code>' + esc(s.updateServerUrl || state.auth?.serverUrl || '') + '</code>' + (s.updateServerUrl ? ' <span class="muted small">(đặt riêng)</span>' : '') + '</div>';
+    $('#btnUpdNotes').hidden = !(u.newer && l);
+    $('#setAutoCheckUpdates').checked = s.autoCheckUpdates !== false;
+    $('#setUpdateServerUrl').value = s.updateServerUrl || '';
+    $('#updServerHint').textContent = state.auth?.serverUrl || 'chưa có';
+  }
+  $('#btnUpdCheck').onclick = async () => {
+    $('#updMsg').textContent = '';
+    await busy($('#btnUpdCheck'), 'Đang kiểm tra…', async () => {
+      try {
+        const r = await api('/api/updates/check', { method: 'POST' });
+        state.update = r; renderUpdate(); renderUpdateSettings();
+        $('#updMsg').textContent = r.lastError ? '❌ ' + r.lastError : (r.newer ? '🆕 Có bản ' + r.latest.version + '.' : '✅ Bạn đang dùng bản mới nhất.');
+      } catch (err) { $('#updMsg').textContent = '❌ ' + err.message; }
+    });
+  };
+  $('#btnUpdNotes').onclick = openUpdateDialog;
   function openSettings() { renderSettings(); $('#dlgSettings').showModal(); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -1159,7 +1284,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim() };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
@@ -1297,7 +1422,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

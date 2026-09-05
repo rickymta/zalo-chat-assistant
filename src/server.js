@@ -51,7 +51,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -74,10 +74,11 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('workspace', (d) => broadcast('workspace', d));
   events.on('suggestions', (d) => broadcast('suggestions', d));
   events.on('power', (d) => broadcast('power', d));
+  events.on('update', (d) => broadcast('update', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
-  const OPEN_PREFIXES = ['/api/auth/', '/api/events', '/api/logs', '/api/state', '/api/settings'];
+  const OPEN_PREFIXES = ['/api/auth/', '/api/events', '/api/logs', '/api/state', '/api/settings', '/api/updates/', '/api/open-url'];
   app.addHook('onRequest', async (req, reply) => {
     if (security.unlocked) return;
     const url = req.url.split('?')[0];
@@ -122,6 +123,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       workspace: unlocked ? workspaceInfo(paths.workspaceDir) : { root: paths.workspaceDir, hasData: false },
       automation: automation?.status() ?? null,
       power: power?.status() ?? null,
+      update: updater?.status() ?? null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -260,6 +262,25 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     return { ok: true };
   });
 
+  /** Mở một địa chỉ web bằng trình duyệt mặc định (nút "Tải về" của thanh cập nhật). CHỈ nhận http(s). */
+  app.post('/api/open-url', async (req, reply) => {
+    const url = String(req.body?.url ?? '').trim();
+    if (!/^https?:\/\/[^\s]+$/i.test(url) || url.length > 2048) return reply.code(400).send({ ok: false, error: 'Địa chỉ không hợp lệ (chỉ mở được http:// hoặc https://).' });
+    if (typeof platform.openExternal === 'function') { platform.openExternal(url); return { ok: true, via: 'electron' }; }
+    if (process.platform === 'darwin') { spawn('open', [url], { stdio: 'ignore', detached: true }).unref(); return { ok: true, via: 'open' }; }
+    return reply.code(501).send({ ok: false, error: 'Máy này chưa mở được liên kết từ ứng dụng — hãy chép địa chỉ và dán vào trình duyệt.' });
+  });
+
+  // ── Kiểm tra bản cập nhật ────────────────────────────────────────────────────
+  app.post('/api/updates/check', withUi(async () => {
+    if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
+    return updater.check({ manual: true });
+  }));
+  app.post('/api/updates/skip', withUi(async (req) => {
+    if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
+    return updater.skip(req.body?.version);
+  }));
+
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {
     const text = String(req.body?.text ?? '');
@@ -296,10 +317,15 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
 
   // ── Thiết lập / nhật ký ─────────────────────────────────────────────────────
   app.get('/api/settings', async () => settings.load());
-  app.post('/api/settings', async (req) => {
+  app.post('/api/settings', async (req, reply) => {
     const body = req.body ?? {};
     const patch = {};
-    for (const k of ['includeGroups', 'syncOldOnConnect', 'includeExcel', 'keepAwake']) if (typeof body[k] === 'boolean') patch[k] = body[k];
+    for (const k of ['includeGroups', 'syncOldOnConnect', 'includeExcel', 'keepAwake', 'autoCheckUpdates']) if (typeof body[k] === 'boolean') patch[k] = body[k];
+    if (typeof body.updateServerUrl === 'string') {
+      const u = body.updateServerUrl.trim().replace(/\/+$/, '');
+      if (u && !/^https?:\/\/[^\s]+$/.test(u)) return reply.code(400).send({ error: 'Địa chỉ máy chủ cập nhật không hợp lệ (để trống, hoặc bắt đầu bằng http:// hoặc https://).' });
+      patch.updateServerUrl = u;
+    }
     if (Number.isFinite(Number(body.waitingHours))) patch.waitingHours = Math.max(0, Number(body.waitingHours));
     if (Number.isFinite(Number(body.groupHistoryCount))) patch.groupHistoryCount = Math.min(Math.max(Number(body.groupHistoryCount), 20), 2000);
     if (typeof body.defaultPreset === 'string' && ['waiting', 'today', 'week', 'groups', 'all'].includes(body.defaultPreset)) patch.defaultPreset = body.defaultPreset;
@@ -308,6 +334,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const saved = settings.save(patch);
     automation?.schedule();
     power?.applyKeepAwake();
+    // Đổi máy chủ cập nhật / công tắc tự kiểm tra ⇒ đặt lại chu kỳ (không kiểm tra ngay, để người dùng tự bấm).
+    if (patch.updateServerUrl !== undefined || patch.autoCheckUpdates !== undefined) updater?.schedule({ initial: false });
     if (typeof body.autoStart === 'boolean') platform.setAutoStart(body.autoStart);
     return { ...saved, autoStart: platform.getAutoStart() };
   });

@@ -13,6 +13,7 @@
   <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
   <div id="reencryptBar" hidden></div>
   <div id="powerBar" hidden></div>
+  <div id="updateBar" hidden></div>
 
   <div class="cols">
     <aside class="convcol">
@@ -117,6 +118,15 @@
     </div>
 
     <div class="card">
+      <h2>Phiên bản &amp; cập nhật</h2>
+      <p class="desc">Ứng dụng chỉ <b>báo</b> khi có bản mới và mở trang tải bằng trình duyệt — không tự tải, không tự cài (bản chưa ký, macOS/Windows sẽ chặn). Cài bản mới giống lần đầu: mở file tải về rồi kéo vào Applications.</p>
+      <div class="kv" id="updKv"></div>
+      <div class="row" style="margin-top:12px"><button id="btnUpdCheck">🔄 Kiểm tra cập nhật</button><button class="sm" id="btnUpdNotes" hidden>Xem thay đổi</button><span class="small muted" id="updMsg"></span></div>
+      <div class="setting"><div class="txt"><b>Tự kiểm tra cập nhật khi khởi động và mỗi 6 giờ</b><span>Tắt thì chỉ kiểm tra khi bạn bấm nút ở trên.</span></div><label class="switch"><input type="checkbox" id="setAutoCheckUpdates"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Máy chủ cập nhật</b><span>Để trống = dùng máy chủ tài khoản (<span id="updServerHint" class="muted"></span>).</span></div><input type="text" id="setUpdateServerUrl" placeholder="http://…" style="width:260px"></div>
+    </div>
+
+    <div class="card">
       <h2>Nơi lưu dữ liệu</h2>
       <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
       <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
@@ -134,6 +144,18 @@
     <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
   </div>
   <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+</div></dialog>
+
+<!-- ═══════════ BẢN CẬP NHẬT (hộp thoại xem thay đổi) ═══════════ -->
+<dialog id="dlgUpdate" class="settings-dlg upd-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>🆕 Bản cập nhật</h2><span class="muted small" id="updDlgSub"></span></div>
+  <div class="settings-body">
+    <div class="card">
+      <div class="kv" id="updDlgKv"></div>
+      <div class="upd-notes" id="updDlgNotes"></div>
+    </div>
+  </div>
+  <div class="settings-foot"><button class="primary" id="btnUpdDownload">⬇️ Tải về</button><button class="sm" id="btnUpdSkip" hidden>Bỏ qua bản này</button><span class="grow"></span><span class="muted small">Tải xong: mở file và cài đè như lần đầu — dữ liệu trên máy được giữ nguyên.</span></div>
 </div></dialog>
 
 <dialog id="dlgQr"><div class="dlg">

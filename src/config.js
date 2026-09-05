@@ -55,6 +55,12 @@ const DEFAULT_SETTINGS = Object.freeze({
   syncOldOnConnect: true,
   /** Hội thoại có tin cuối là của KHÁCH và đã quá số giờ này ⇒ đánh dấu "quá hạn trả lời". */
   waitingHours: 2,
+  /** Máy chủ kiểm tra bản cập nhật. Để TRỐNG = dùng máy chủ tài khoản (auth.serverUrl). */
+  updateServerUrl: '',
+  /** Phiên bản người dùng đã bấm "Bỏ qua bản này" — không báo lại bản đó nữa (trừ bản bắt buộc). */
+  skippedVersion: '',
+  /** Tự kiểm tra bản cập nhật lúc khởi động (sau 20 giây) và mỗi 6 giờ. */
+  autoCheckUpdates: true,
 });
 
 export function ensureDirs() {

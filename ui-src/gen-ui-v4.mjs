@@ -28,6 +28,17 @@ const css = `
   .ws-line { flex: none; padding: 5px 16px; font-size: 13px; color: var(--muted); background: #fbfcfe; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-height: 32px; }
   .zapp.mac .ws-line { padding-left: 16px; }
   #reencryptBar { flex: none; padding: 8px 16px 0; }
+  /* Thanh báo có bản cập nhật — nền xanh nhạt cho bản thường, dùng .topbar-warn (nền cảnh báo) cho bản bắt buộc. */
+  #updateBar { flex: none; padding: 8px 16px 0; }
+  .topbar-info { background: var(--primary-soft); border: 1px solid #c7dcff; border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+  .upd-dlg { width: 720px; }
+  .upd-notes { font-size: 14px; line-height: 1.6; margin-top: 10px; overflow-wrap: anywhere; }
+  .upd-notes.plain { white-space: pre-wrap; }
+  .upd-notes h1, .upd-notes h2, .upd-notes h3 { font-size: 15px; margin: 12px 0 6px; }
+  .upd-notes ul, .upd-notes ol { margin: 6px 0; padding-left: 22px; }
+  .upd-notes p { margin: 0 0 8px; }
+  .upd-notes code { background: #f1f5fb; border-radius: 6px; padding: 1px 5px; }
+  .hash { font-size: 12px; overflow-wrap: anywhere; }
   /* Lưới 3 cột + 2 thanh kéo; độ rộng cột 1 và 3 là biến CSS do JS đặt (kéo được, nhớ theo máy); cột giữa minmax(0,1fr) để không bao giờ đẩy cột 3 ra ngoài cửa sổ. */
   .cols { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr) 6px var(--c3, 340px); }
   .cols.noside { grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr); }

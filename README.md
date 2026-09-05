@@ -66,6 +66,20 @@ Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 | `du-lieu/` | Ứng dụng (nút Cập nhật) | Hội thoại đã **giải mã**: `00-INDEX.md`, `hoi-thoai/*.md`, CSV, Excel (tuỳ chọn) — **ghi đè** mỗi lần |
 | `ket-qua/` | Claude | `bao-cao/YYYY-MM-DD.json|.md` (báo cáo ngày — nguồn của nút 📊), `de-xuat.json` (gợi ý), `YYYY-MM-DD-tong-hop.md` |
 
+### Kiểm tra bản cập nhật
+
+Ứng dụng tự hỏi máy chủ xem có bản mới không: **20 giây sau khi mở** rồi **mỗi 6 giờ**. Có bản mới thì hiện một thanh ở đầu
+màn hình — *🆕 Có bản cập nhật `<phiên bản>` (`<kích thước>`)* kèm ba nút: **Tải về** (mở trang tải bằng trình duyệt),
+**Xem thay đổi** (danh sách thay đổi, ngày phát hành, SHA-256), **Bỏ qua bản này** (không nhắc bản đó nữa; bản mới hơn vẫn
+được báo). Bản đánh dấu **bắt buộc** hiện nền cảnh báo và **không có** nút bỏ qua.
+
+**Ứng dụng KHÔNG tự tải và KHÔNG tự cài** — bản chưa ký nên macOS/Windows sẽ chặn. Cài bản mới giống lần đầu: mở file tải về,
+kéo vào Applications, cài đè; dữ liệu và phiên đăng nhập trên máy được giữ nguyên.
+
+*Cài đặt → Phiên bản & cập nhật* cho biết phiên bản đang chạy, lần kiểm tra gần nhất và kết quả (đang dùng bản mới nhất / có
+bản `x.y.z` / lỗi kết nối), kèm nút **Kiểm tra cập nhật** để hỏi ngay, công tắc **Tự kiểm tra cập nhật** và ô **Máy chủ cập
+nhật** (để trống = dùng máy chủ tài khoản). Máy chủ không kết nối được thì lỗi chỉ hiện ở đó — ứng dụng vẫn chạy bình thường.
+
 ### Dùng thử trên máy khác không có Docker
 
 Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá
