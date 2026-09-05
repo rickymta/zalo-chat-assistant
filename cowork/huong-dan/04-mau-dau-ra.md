@@ -149,7 +149,7 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
   "conversations": [
     {
       "threadId": "1001", "accountId": "770338730752256045", "name": "Nguyễn Thị Lan",
-      "relation": "khach-hang",
+      "relation": "khach-hang", "relationNote": "Khách hỏi giá niềng, chưa từng đến khám",
       "summary": "2–4 câu tóm tắt DIỄN BIẾN hội thoại trong ngày (ai nói gì, kết quả tới đâu).",
       "topics": ["Giá Invisalign", "Cơ sở gần Thanh Xuân"],
       "decisions": ["Chị Lan sẽ qua khám thứ 7"],
@@ -159,11 +159,15 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
       "kind": "tra-loi"
     }
   ],
-  "actionItems": [ { "threadId": "1001", "name": "Nguyễn Thị Lan", "task": "Gửi bảng giá tham khảo Invisalign", "due": "hôm nay" } ]
+  "actionItems": [ { "threadId": "1001", "name": "Nguyễn Thị Lan", "task": "Gửi bảng giá tham khảo Invisalign", "due": "hôm nay", "priority": "P2" } ]
 }
 ```
 
-Quy tắc: `relation` ∈ `khach-hang | dong-nghiep | doi-tac | ban-be | nhom | khac` (suy từ nội dung); `sentiment` ∈
-`binh-thuong | tich-cuc | lo-lang | khong-hai-long | khan`; `kind` như mục E. Mỗi hội thoại CÓ TIN trong ngày là một mục;
+Quy tắc: `relation` PHẢI là đúng MỘT trong 6 mã `khach-hang | dong-nghiep | doi-tac | ban-be | nhom | khac` (suy từ nội
+dung; đồng nghiệp/nội bộ/cấp trên/cấp dưới → `dong-nghiep`; nhóm toàn đồng nghiệp cũng ghi `dong-nghiep`, `nhom` chỉ cho
+nhóm hỗn hợp/cộng đồng) — KHÔNG viết câu vào trường này; muốn giải thích thì thêm `"relationNote": "≤ 1 câu"`. `sentiment`
+chỉ nhận 5 mã `binh-thuong | tich-cuc | lo-lang | khong-hai-long | khan` (không dùng `trung-tinh`). `kind` như mục E.
+`generatedAt` bắt buộc (ISO 8601 có +07:00). Mỗi mục `actionItems` gồm đúng các khoá `threadId`, `name`, `task`, và tuỳ chọn
+`due`, `priority` (P1/P2/P3) — không đổi tên khoá (ví dụ không dùng `conversation` thay `name`). Mỗi hội thoại CÓ TIN trong ngày là một mục;
 hội thoại không có tin mới trong ngày thì không đưa vào. `actionItems` gom mọi việc của Bạn từ các hội thoại, ưu tiên
 theo độ khẩn. File `.md` cùng tên là bản người đọc: tiêu đề ngày, đoạn tổng quan, điểm nổi bật, rồi mỗi hội thoại một mục.
