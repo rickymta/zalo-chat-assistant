@@ -7,6 +7,14 @@
  * chỉ là ĐẦU RA xuất theo yêu cầu (xem src/export/).
  */
 import Database from 'better-sqlite3';
+import { versionOf } from './crypto/cipher.js';
+
+/** Cột NỘI DUNG được mã hoá theo trường. Khoá/thời gian/cờ (thread_id, event_time, is_group, counts…) giữ nguyên để lọc/sắp. */
+const ENC = {
+  messages: ['sender_name', 'text', 'attachments_json', 'quote_text', 'raw_json'],
+  conversations: ['name', 'avatar_url', 'phone', 'last_message_preview', 'last_message_sender', 'note'],
+  contacts: ['display_name', 'zalo_name', 'avatar_url', 'phone'],
+};
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS accounts (
@@ -95,6 +103,13 @@ function idGreater(a, b) {
 
 export function openDb(dbPath) {
   const db = new Database(dbPath);
+  /** Bộ mã hoá hiện tại — null = chưa mở khoá (mọi thao tác ghi nội dung sẽ ném lỗi). */
+  let cipher = null;
+  const enc = (v) => { if (v === null || v === undefined) return null; if (!cipher?.ready) throw new Error('Chưa mở khoá mã hoá — không thể ghi dữ liệu.'); return cipher.encrypt(String(v)); };
+  const dec = (v) => (cipher ? cipher.decrypt(v) : v);
+  const decRow = (row, cols) => { if (!row) return row; const out = { ...row }; for (const c of cols) if (c in out) out[c] = dec(out[c]); return out; };
+  const decMessage = (r) => decRow(r, ENC.messages);
+  const decConversation = (r) => decRow(r, ENC.conversations);
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = NORMAL');
   db.pragma('busy_timeout = 5000');
@@ -197,19 +212,23 @@ export function openDb(dbPath) {
    * Trả true nếu tin mới, false nếu đã có (trùng zalo_msg_id) — bên gọi dựa vào đó để không đếm đúp.
    */
   const insertMessageTx = db.transaction((row) => {
-    const res = st.insertMessage.run(row);
+    const res = st.insertMessage.run({
+      ...row,
+      sender_name: enc(row.sender_name), text: enc(row.text), attachments_json: enc(row.attachments_json),
+      quote_text: enc(row.quote_text), raw_json: enc(row.raw_json),
+    });
     if (res.changes === 0) return false;
     st.upsertConversation.run({
       account_id: row.account_id,
       thread_id: row.thread_id,
       is_group: row.is_group ? 1 : 0,
-      name: row.conv_name ?? null,
-      avatar_url: row.conv_avatar ?? null,
-      phone: row.conv_phone ?? null,
+      name: enc(row.conv_name ?? null),
+      avatar_url: enc(row.conv_avatar ?? null),
+      phone: enc(row.conv_phone ?? null),
       event_time: row.event_time,
-      preview: row.preview ?? null,
+      preview: enc(row.preview ?? null),
       is_outbound: row.is_outbound ? 1 : 0,
-      sender: row.sender_name ?? null,
+      sender: enc(row.sender_name ?? null),
       inbound: row.is_outbound ? 0 : 1,
       outbound: row.is_outbound ? 1 : 0,
     });
@@ -228,10 +247,7 @@ export function openDb(dbPath) {
     else if (!p.includeGroups) where.push('c.is_group = 0');
     // "Đang chờ trả lời" chỉ có nghĩa với hội thoại 1-1 — trong nhóm không phải tin nào cũng cần mình trả lời.
     if (p.onlyWaiting) where.push('c.last_message_outbound = 0 AND c.is_group = 0');
-    if (p.q) {
-      where.push(`(c.name LIKE @q OR c.phone LIKE @q OR c.thread_id LIKE @q OR c.last_message_preview LIKE @q)`);
-      params.q = `%${p.q}%`;
-    }
+    // p.q KHÔNG lọc trong SQL: name/phone/preview đã mã hoá. Lọc bằng JS sau khi giải mã (xem applyQ).
     if (p.threadIds?.length) {
       where.push(`c.thread_id IN (${p.threadIds.map((_, i) => `@th${i}`).join(',')})`);
       p.threadIds.forEach((id, i) => { params[`th${i}`] = id; });
@@ -246,8 +262,17 @@ export function openDb(dbPath) {
     return { where: where.join(' AND '), params };
   }
 
+  const applyQ = (rows, q) => {
+    if (!q) return rows;
+    const needle = String(q).toLowerCase();
+    return rows.filter((c) => [c.name, c.phone, c.thread_id, c.last_message_preview, c.last_message_sender].some((v) => v && String(v).toLowerCase().includes(needle)));
+  };
+
   return {
     raw: db,
+    setCipher(c) { cipher = c; },
+    get cipher() { return cipher; },
+    get unlocked() { return !!cipher?.ready; },
 
     // ── Tài khoản ──────────────────────────────────────────────────────────────
     upsertAccount(a) {
@@ -279,20 +304,21 @@ export function openDb(dbPath) {
       return st.markRecalled.run(accountId, globalMsgId || null, cliMsgId || null).changes;
     },
     updateConversationMeta(accountId, threadId, { name, avatarUrl, phone }) {
-      st.updateConversationMeta.run(name ?? null, avatarUrl ?? null, phone ?? null, accountId, threadId);
+      st.updateConversationMeta.run(enc(name ?? null), enc(avatarUrl ?? null), enc(phone ?? null), accountId, threadId);
     },
-    getConversation(accountId, threadId) { return st.getConversation.get(accountId, threadId); },
+    getConversation(accountId, threadId) { return decConversation(st.getConversation.get(accountId, threadId)); },
 
     listConversations(p = {}) {
       const { where, params } = conversationFilter(p);
       const limit = Math.min(Number(p.limit ?? 200), 5000);
       const offset = Number(p.offset ?? 0);
-      const rows = db.prepare(`
-        SELECT c.*, a.display_name AS account_name
-        FROM conversations c LEFT JOIN accounts a ON a.id = c.account_id
-        WHERE ${where}
-        ORDER BY c.last_message_at DESC
-        LIMIT @limit OFFSET @offset`).all({ ...params, limit, offset });
+      const base = `SELECT c.*, a.display_name AS account_name FROM conversations c LEFT JOIN accounts a ON a.id = c.account_id WHERE ${where} ORDER BY c.last_message_at DESC`;
+      if (p.q) {
+        // Tìm kiếm trên cột mã hoá: giải mã toàn bộ rồi lọc — vài nghìn hội thoại vẫn dưới trăm ms.
+        const all = applyQ(db.prepare(base).all(params).map(decConversation), p.q);
+        return { rows: all.slice(offset, offset + limit), total: all.length };
+      }
+      const rows = db.prepare(`${base} LIMIT @limit OFFSET @offset`).all({ ...params, limit, offset }).map(decConversation);
       const total = db.prepare(`SELECT COUNT(*) AS n FROM conversations c WHERE ${where}`).get(params).n;
       return { rows, total };
     },
@@ -300,11 +326,11 @@ export function openDb(dbPath) {
     /** Toàn bộ hội thoại khớp bộ lọc (không phân trang) — dùng cho xuất. */
     selectConversationsForExport(p = {}) {
       const { where, params } = conversationFilter(p);
-      return db.prepare(`
+      return applyQ(db.prepare(`
         SELECT c.*, a.display_name AS account_name
         FROM conversations c LEFT JOIN accounts a ON a.id = c.account_id
         WHERE ${where}
-        ORDER BY c.last_message_at DESC`).all(params);
+        ORDER BY c.last_message_at DESC`).all(params).map(decConversation), p.q);
     },
 
     /** Thống kê tin trong khoảng cho một hội thoại — phục vụ sheet Tổng quan. */
@@ -327,17 +353,18 @@ export function openDb(dbPath) {
         WHERE account_id = ? AND thread_id = ? AND (? IS NULL OR event_time < ?)
         ORDER BY event_time DESC, id DESC LIMIT ?`)
         .all(accountId, threadId, before, before, Math.min(Number(limit), 2000));
-      return rows.reverse();
+      return rows.reverse().map(decMessage);
     },
 
     /** Duyệt lần lượt (không nạp hết vào RAM) mọi tin của một hội thoại trong khoảng — dùng cho xuất. */
-    iterateMessages(accountId, threadId, from = null, to = null) {
-      return db.prepare(`
+    *iterateMessages(accountId, threadId, from = null, to = null) {
+      const it = db.prepare(`
         SELECT * FROM messages
         WHERE account_id = ? AND thread_id = ?
           AND (? IS NULL OR event_time >= ?) AND (? IS NULL OR event_time < ?)
         ORDER BY event_time ASC, id ASC`)
         .iterate(accountId, threadId, from, from, to, to);
+      for (const r of it) yield decMessage(r);
     },
 
     stats(accountIds = null) {
@@ -368,10 +395,10 @@ export function openDb(dbPath) {
           st.upsertContact.run({
             account_id: accountId,
             user_id: String(c.userId ?? ''),
-            display_name: c.displayName ?? null,
-            zalo_name: c.zaloName ?? null,
-            avatar_url: c.avatar ?? null,
-            phone: c.phoneNumber ?? null,
+            display_name: enc(c.displayName ?? null),
+            zalo_name: enc(c.zaloName ?? null),
+            avatar_url: enc(c.avatar ?? null),
+            phone: enc(c.phoneNumber ?? null),
             now,
           });
         }
@@ -379,7 +406,52 @@ export function openDb(dbPath) {
       });
       tx(contacts.filter((c) => c?.userId));
     },
-    getContact(accountId, userId) { return st.getContact.get(accountId, userId); },
+    getContact(accountId, userId) { return decRow(st.getContact.get(accountId, userId), ENC.contacts); },
+
+    // ── Mã hoá lại ───────────────────────────────────────────────────────────
+    /** Số dòng còn giá trị chưa mã hoá hoặc mã hoá bằng phiên bản khác phiên bản hiện tại. */
+    countNeedingReencrypt() {
+      if (!cipher?.ready) return 0;
+      const v = `enc:v${cipher.version}:%`;
+      let n = 0;
+      for (const [table, cols] of Object.entries(ENC)) {
+        const cond = cols.map((c) => `(${c} IS NOT NULL AND ${c} NOT LIKE @v)`).join(' OR ');
+        n += db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${cond}`).get({ v }).n;
+      }
+      return n;
+    },
+    /**
+     * Mã hoá lại mọi dòng chưa ở phiên bản hiện tại — theo lô 300 dòng/transaction, nhường event loop giữa các lô.
+     * Chạy lại bao nhiêu lần cũng được (dòng đã đúng phiên bản bị bỏ qua). onProgress({ table, done, total }).
+     */
+    async reencryptAll({ onProgress } = {}) {
+      if (!cipher?.ready) throw new Error('Chưa mở khoá mã hoá.');
+      const v = `enc:v${cipher.version}:%`;
+      const summary = {};
+      for (const [table, cols] of Object.entries(ENC)) {
+        const pk = table === 'messages' ? ['id'] : table === 'conversations' ? ['account_id', 'thread_id'] : ['account_id', 'user_id'];
+        const cond = cols.map((c) => `(${c} IS NOT NULL AND ${c} NOT LIKE @v)`).join(' OR ');
+        const total = db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${cond}`).get({ v }).n;
+        const select = db.prepare(`SELECT ${[...pk, ...cols].join(', ')} FROM ${table} WHERE ${cond} LIMIT 300`);
+        const update = db.prepare(`UPDATE ${table} SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE ${pk.map((k) => `${k} = @${k}`).join(' AND ')}`);
+        const batch = db.transaction((rows) => { for (const r of rows) { const next = { ...r }; for (const c of cols) next[c] = r[c] === null ? null : enc(dec(r[c])); update.run(next); } });
+        let done = 0;
+        for (let guard = 0; guard < 100000; guard++) {
+          const rows = select.all({ v });
+          if (!rows.length) break;
+          // Dòng có khoá thiếu → dec trả chuỗi đánh dấu → sẽ bị mã hoá thành chuỗi đó. Tránh: bỏ qua dòng không giải mã được.
+          const ok = rows.filter((r) => cols.every((c) => r[c] === null || cipher.hasVersion(versionOf(r[c]))));
+          if (!ok.length) break;   // toàn dòng thiếu khoá — dừng, không phá dữ liệu
+          batch(ok);
+          done += ok.length;
+          onProgress?.({ table, done, total });
+          if (ok.length < rows.length) break;
+          await new Promise((r) => setImmediate(r));
+        }
+        summary[table] = { done, total };
+      }
+      return summary;
+    },
 
     // ── Lịch sử xuất ──────────────────────────────────────────────────────────
     recordExport({ format, dir, conversations, messages, params }) {

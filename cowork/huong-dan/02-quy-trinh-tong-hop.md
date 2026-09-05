@@ -13,7 +13,7 @@ nhóm "Không cần trả lời") những hội thoại mà tin cuối của kh�
 |---|---|
 | **Khách** | Tên hiển thị; cách xưng hô đã dùng (anh/chị/cô/chú); SĐT nếu có; cơ sở khách nhắc tới |
 | **Nhu cầu chính** | Một trong: hỏi giá · đặt/đổi/huỷ lịch · hỏi chuyên môn (triệu chứng, quy trình) · theo dõi sau điều trị · khiếu nại/phàn nàn · thanh toán/hoá đơn · ưu đãi · khác |
-| **Dịch vụ quan tâm** | Tên dịch vụ đúng theo `du-lieu/dich-vu.md` (niềng răng, Implant, răng sứ, nhổ răng khôn, tẩy trắng, trẻ em…) |
+| **Dịch vụ quan tâm** | Tên dịch vụ đúng theo `huong-dan/tham-chieu-meddental/dich-vu.md` (niềng răng, Implant, răng sứ, nhổ răng khôn, tẩy trắng, trẻ em…) |
 | **Giai đoạn** | Mới hỏi lần đầu · đang được tư vấn · đã có lịch hẹn · đã điều trị / đang theo dõi · đã kết thúc |
 | **Câu hỏi chưa được trả lời** | Liệt kê từng câu của KHÁCH sau tin MÌNH cuối cùng; câu nào đã trả lời một phần thì nói rõ phần thiếu |
 | **Việc MÌNH đã hứa** | "Em gửi bảng giá sau", "để em hỏi bác sĩ", "mai em gọi"… kèm thời điểm; đã thực hiện chưa (nhìn các tin sau) |
@@ -51,7 +51,7 @@ Trong cùng mức, xếp theo thời gian chờ giảm dần (chờ lâu hơn l�
 ## 6. Tự soát trước khi bàn giao
 
 - [ ] Mọi câu hỏi của khách sau tin MÌNH cuối đều được đề cập trong đề xuất.
-- [ ] Không có con số nào (giá, ngày, số ca) mà gói dữ liệu / `du-lieu/` không có.
+- [ ] Không có con số nào (giá, ngày, số ca) mà `du-lieu/` (tin nhắn) hoặc `huong-dan/tham-chieu-meddental/` (dịch vụ, bảng giá) không có.
 - [ ] Không có chẩn đoán, không hứa kết quả, không nhắc đối thủ.
 - [ ] Không có thông tin của khách khác lọt vào phiếu.
 - [ ] Mỗi đề xuất dán được thẳng vào Zalo: không markdown, không tiêu đề, tiếng Việt có dấu.

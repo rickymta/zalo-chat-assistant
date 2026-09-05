@@ -1,23 +1,24 @@
 # 01 · Cấu trúc gói dữ liệu và cách đọc một hội thoại
 
-## 1. Gói dữ liệu là gì
+## 1. Thư mục làm việc là gì
 
-Ứng dụng **Zalo Chat Assistant** chạy trên máy Mac của tư vấn viên, đăng nhập Zalo cá nhân (quét QR) và lưu mọi tin
-nhắn đến/đi vào một cơ sở dữ liệu SQLite. Khi tư vấn viên bấm **Xuất dữ liệu**, ứng dụng tạo **một thư mục** (gói)
-chứa:
+Ứng dụng **Zalo Chat Assistant** chạy trên máy Mac của tư vấn viên, đăng nhập Zalo cá nhân (quét QR) và lưu mọi tin nhắn
+đến/đi vào một cơ sở dữ liệu SQLite **đã mã hoá**. Ứng dụng tạo và duy trì MỘT thư mục làm việc cố định
+(`~/Documents/Zalo Chat Assistant/`) — người dùng trỏ Claude Cowork vào đó một lần là đủ:
 
 | Đường dẫn | Nội dung | Bạn dùng để |
 |---|---|---|
-| `README-DU-LIEU.md` | Phạm vi thời gian, số hội thoại/tin, quy ước | Biết gói này bao phủ gì |
-| `00-INDEX.md` | Bảng mọi hội thoại: tên, SĐT, số tin, tin cuối, **Chờ trả lời**, nội dung tin cuối, đường dẫn file | Chọn hội thoại cần xử lý, xếp ưu tiên sơ bộ |
-| `hoi-thoai/NNN-<tên>.md` | Toàn bộ tin nhắn của **một** hội thoại, cũ → mới | Đọc chi tiết |
-| `tong-hop.csv` | Như 00-INDEX, dạng CSV | Thống kê nhanh |
-| `tin-nhan.jsonl` (nếu có) | Mọi tin, mỗi dòng một JSON | Phân tích hàng loạt bằng script |
-| `huong-dan/` | Bộ chỉ dẫn này + `du-lieu/` (dịch vụ, bảng giá, bác sĩ) | Quy tắc và dữ liệu tham chiếu |
+| `CLAUDE.md` | Bản sao của `huong-dan/00-chi-dan-cho-claude.md` để công cụ của Claude tự nạp | Bắt đầu mỗi phiên |
+| `huong-dan/` | Bộ chỉ dẫn này + `tham-chieu-meddental/` (dịch vụ, bảng giá, bác sĩ) | Quy tắc và dữ liệu tham chiếu |
+| `du-lieu/README-DU-LIEU.md` | Phạm vi thời gian, số hội thoại/tin, quy ước của lần cập nhật gần nhất | Biết dữ liệu hiện có bao phủ gì |
+| `du-lieu/00-INDEX.md` | Bảng mọi hội thoại: tên, SĐT, số tin, tin cuối, **Chờ trả lời**, nội dung tin cuối, đường dẫn file | Chọn hội thoại cần xử lý, xếp ưu tiên sơ bộ |
+| `du-lieu/hoi-thoai/NNN-<tên>.md` | Toàn bộ tin nhắn của **một** hội thoại, cũ → mới | Đọc chi tiết |
+| `du-lieu/tong-hop.csv` | Như 00-INDEX, dạng CSV | Thống kê nhanh |
+| `du-lieu/*.xlsx` (nếu có) | Excel, mỗi hội thoại một sheet | Người dùng tự xem |
 | `ket-qua/` | Do **bạn** tạo: kết quả tổng hợp/đề xuất | Bàn giao cho tư vấn viên |
 
-Mỗi lần xuất là một thư mục mới, tên theo thời điểm (`20260904-231500`). Gói **không** chứa ảnh/tệp thật, chỉ có
-liên kết.
+Mỗi lần tư vấn viên bấm **"Cập nhật dữ liệu cho Claude"** trong ứng dụng, thư mục `du-lieu/` được **ghi đè** bằng dữ liệu
+mới (giải mã từ cơ sở dữ liệu); `ket-qua/` và `huong-dan/` giữ nguyên. Không có ảnh/tệp thật, chỉ có liên kết.
 
 ## 2. Một file hội thoại trông thế nào
 

@@ -15,7 +15,7 @@
 
 ## 2. Giá và chi phí
 
-- Chỉ nêu giá có trong `du-lieu/bang-gia-08-2023.md` hoặc `du-lieu/dich-vu.md`, luôn kèm "giá tham khảo" và nói rõ
+- Chỉ nêu giá có trong `huong-dan/tham-chieu-meddental/bang-gia-08-2023.md` hoặc `huong-dan/tham-chieu-meddental/dich-vu.md`, luôn kèm "giá tham khảo" và nói rõ
   chi phí chính xác sau khi bác sĩ khám/chụp phim. Ví dụ: *"Giá tham khảo bọc răng sứ dao động theo loại sứ, em gửi
   chị khung giá tham khảo…; chi phí chính xác bác sĩ sẽ báo sau khi khám ạ."*
 - Không có số ⇒ **không bịa, không ước lượng**; đề xuất câu mời khám để báo giá và ghi `[CẦN XÁC NHẬN: giá]` trong
@@ -35,7 +35,7 @@
 
 ## 4. Câu hỏi chuyên môn, triệu chứng
 
-- Được phép: mô tả khái quát dịch vụ/quy trình/thời gian theo `du-lieu/dich-vu.md` (FAQ đã đăng trên website), lưu ý
+- Được phép: mô tả khái quát dịch vụ/quy trình/thời gian theo `huong-dan/tham-chieu-meddental/dich-vu.md` (FAQ đã đăng trên website), lưu ý
   chung (vệ sinh, ăn uống), khuyên đến khám để bác sĩ đánh giá.
 - Không được: nói khách "bị" bệnh gì, kê tên thuốc/liều, khẳng định "không đau", "chắc chắn", "vĩnh viễn", "không
   biến chứng", "tốt nhất/số 1".
@@ -56,7 +56,7 @@
 
 ## 6. Theo dõi sau điều trị, nhắc lịch, chăm sóc
 
-- Hỏi thăm ngắn, nhắc lưu ý sau điều trị theo dịch vụ (dựa `du-lieu/dich-vu.md`), nhắc lịch tái khám nếu có trong
+- Hỏi thăm ngắn, nhắc lưu ý sau điều trị theo dịch vụ (dựa `huong-dan/tham-chieu-meddental/dich-vu.md`), nhắc lịch tái khám nếu có trong
   hội thoại, mời liên hệ nếu có dấu hiệu bất thường.
 - Không gửi nội dung tiếp thị vào tin chăm sóc sau điều trị.
 

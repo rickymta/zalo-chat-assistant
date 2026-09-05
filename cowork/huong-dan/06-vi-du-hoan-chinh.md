@@ -1,6 +1,6 @@
 # 06 · Ví dụ hoàn chỉnh: từ file hội thoại đến phiếu đề xuất
 
-## Đầu vào — `hoi-thoai/006-vu-ngoc-mai.md` (rút gọn)
+## Đầu vào — `du-lieu/hoi-thoai/006-vu-ngoc-mai.md` (rút gọn)
 
 ```
 # Hội thoại: Vũ Ngọc Mai
@@ -30,7 +30,7 @@
 ## Đầu ra — phiếu trong `ket-qua/2026-09-04-tong-hop.md`
 
 ```
-## [P1] Vũ Ngọc Mai — hoi-thoai/006-vu-ngoc-mai.md
+## [P1] Vũ Ngọc Mai — du-lieu/hoi-thoai/006-vu-ngoc-mai.md
 ⚠️ Nên GỌI ĐIỆN thay vì nhắn (khách không để lại SĐT trong Zalo — hỏi số trong tin).
 
 **Tóm tắt:** Ngày 03/09 khách hỏi nhổ răng khôn có đau không, tư vấn viên đã tư vấn và mời khám; khách nói sẽ báo lại.

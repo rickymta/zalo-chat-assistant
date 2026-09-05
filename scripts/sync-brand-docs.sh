@@ -6,5 +6,5 @@ cd "$(dirname "$0")/.."
 REPO="${1:-$HOME/Meddental/work/meddental/mdt-re-construct-research}"
 SRC="$REPO/docs/marketing-huong-dan-viet-bai/du-lieu"
 [ -d "$SRC" ] || { echo "Không thấy $SRC"; exit 1; }
-cp "$SRC/dich-vu.md" "$SRC/bang-gia-08-2023.md" "$SRC/bac-si.md" cowork/du-lieu/
-echo "Đã cập nhật cowork/du-lieu/ từ $SRC"
+cp "$SRC/dich-vu.md" "$SRC/bang-gia-08-2023.md" "$SRC/bac-si.md" cowork/huong-dan/tham-chieu-meddental/
+echo "Đã cập nhật cowork/huong-dan/tham-chieu-meddental/ từ $SRC"

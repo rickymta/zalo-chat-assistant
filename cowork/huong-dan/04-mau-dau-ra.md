@@ -1,6 +1,6 @@
 # 04 · Mẫu đầu ra (định dạng bàn giao)
 
-Ghi kết quả vào `ket-qua/YYYY-MM-DD-tong-hop.md` trong gói (tạo thư mục nếu chưa có), đồng thời trả lời tóm tắt trong
+Ghi kết quả vào `ket-qua/YYYY-MM-DD-tong-hop.md` (thư mục `ket-qua/` có sẵn ở thư mục làm việc), đồng thời trả lời tóm tắt trong
 chat (số hội thoại đã xử lý, mấy P1, việc cần người quyết). Dùng đúng thứ tự A → B → (C nếu được yêu cầu).
 
 ## A. Bảng ưu tiên
@@ -11,14 +11,14 @@ Gói: <tên thư mục gói> · <n> hội thoại chờ trả lời đã xử l�
 
 | Ưu tiên | Khách | Chờ (giờ) | Nhu cầu | Tóm tắt 1 dòng | File |
 |---|---|---|---|---|---|
-| P1 | Vũ Ngọc Mai | 6.5 | Sau nhổ răng, đau nhiều | Nhổ răng khôn hôm qua, đau tăng, hỏi có sao không | hoi-thoai/006-vu-ngoc-mai.md |
-| P2 | Nguyễn Thị Lan | 3.2 | Hỏi giá + cơ sở gần | Hỏi giá Invisalign, đã gửi ảnh, hỏi cơ sở gần Thanh Xuân | hoi-thoai/001-nguyen-thi-lan.md |
+| P1 | Vũ Ngọc Mai | 6.5 | Sau nhổ răng, đau nhiều | Nhổ răng khôn hôm qua, đau tăng, hỏi có sao không | du-lieu/hoi-thoai/006-vu-ngoc-mai.md |
+| P2 | Nguyễn Thị Lan | 3.2 | Hỏi giá + cơ sở gần | Hỏi giá Invisalign, đã gửi ảnh, hỏi cơ sở gần Thanh Xuân | du-lieu/hoi-thoai/001-nguyen-thi-lan.md |
 ```
 
 ## B. Phiếu từng hội thoại (một khối cho mỗi hội thoại, theo thứ tự bảng A)
 
 ```
-## [P2] Nguyễn Thị Lan — hoi-thoai/001-nguyen-thi-lan.md
+## [P2] Nguyễn Thị Lan — du-lieu/hoi-thoai/001-nguyen-thi-lan.md
 
 **Tóm tắt:** Khách hỏi giá niềng răng trong suốt lúc 08:10; tư vấn viên đã giới thiệu hai phương pháp và xin ảnh; khách
 gửi ảnh (không đọc được nội dung) và hỏi cơ sở gần Thanh Xuân lúc 08:40. Chưa ai trả lời từ đó (chờ 3,2 giờ).
@@ -75,7 +75,7 @@ Mọi con số trong báo cáo phải đếm được từ gói; không ước l
 ## D. Phiếu NHÓM chat (một khối cho mỗi nhóm, đặt sau phần B)
 
 ```
-## [Nhóm] Khách hàng Nguyễn Văn A — Implant — hoi-thoai/012-khach-hang-nguyen-van-a-implant.md
+## [Nhóm] Khách hàng Nguyễn Văn A — Implant — du-lieu/hoi-thoai/012-khach-hang-nguyen-van-a-implant.md
 Loại nhóm: nhóm khách hàng (khách + vợ + tư vấn viên + BS. Bình). Khoảng đã đọc: 29/08 → 04/09/2026 · 86 tin.
 
 **Chủ đề đã bàn**

@@ -2,13 +2,13 @@
 
 Nguồn: tài liệu thương hiệu do marketing duy trì trong repo `mdt-re-construct-research`
 (`docs/marketing-huong-dan-viet-bai/10-thong-tin-thuong-hieu-meddental.md`). Khi hai bản khác nhau, bản của marketing
-đúng; chạy `scripts/sync-brand-docs.sh` trong ứng dụng để cập nhật `du-lieu/`.
+đúng; chạy `scripts/sync-brand-docs.sh` trong mã nguồn ứng dụng để cập nhật `huong-dan/tham-chieu-meddental/`.
 
 ## 1. Tên gọi
 
 - **Nha khoa MedDental** (trong câu: "MedDental"), thuộc **Hệ thống Y tế Medlatec**. Công ty chủ quản: CÔNG TY TNHH MEDDENTAL.
 - Website: https://www.meddental.com.vn · Đặt lịch: https://www.meddental.com.vn/dat-lich · Bảng giá: https://www.meddental.com.vn/bang-gia
-- Chỉ dùng các liên kết trên (và liên kết trang dịch vụ ghi trong `du-lieu/dich-vu.md`). Không dùng tên miền cũ meddental.vn.
+- Chỉ dùng các liên kết trên (và liên kết trang dịch vụ ghi trong `huong-dan/tham-chieu-meddental/dich-vu.md`). Không dùng tên miền cũ meddental.vn.
 
 ## 2. Liên hệ
 
@@ -39,7 +39,7 @@ Nguồn: tài liệu thương hiệu do marketing duy trì trong repo `mdt-re-co
 - "Hệ thống 8 phòng khám tại Hà Nội và Quảng Ninh"; "hơn 30 dịch vụ nha khoa".
 - "MedDental là Diamond Invisalign Provider — cấp cao nhất về số ca Invisalign, nhiều năm liên tiếp".
 - Thuộc Medlatec: thương hiệu 29 năm, 4 triệu khách hàng mỗi năm — nói rõ đó là số của hệ sinh thái Medlatec.
-- Giá: chỉ từ `du-lieu/bang-gia-08-2023.md` / `du-lieu/dich-vu.md`, luôn kèm "tham khảo".
+- Giá: chỉ từ `huong-dan/tham-chieu-meddental/bang-gia-08-2023.md` / `huong-dan/tham-chieu-meddental/dich-vu.md`, luôn kèm "tham khảo".
 - **Không** nêu số bác sĩ, số ca, tỷ lệ thành công, số năm bảo hành cụ thể.
 
 ## 5. Điểm mạnh được phép nhấn (khi phù hợp ngữ cảnh)
@@ -51,7 +51,7 @@ Nguồn: tài liệu thương hiệu do marketing duy trì trong repo `mdt-re-co
 
 ## 6. Bác sĩ
 
-Danh sách và chuyên môn ở `du-lieu/bac-si.md`. Chỉ nhắc tên bác sĩ khi hội thoại đã nêu hoặc khách hỏi đích danh;
+Danh sách và chuyên môn ở `huong-dan/tham-chieu-meddental/bac-si.md`. Chỉ nhắc tên bác sĩ khi hội thoại đã nêu hoặc khách hỏi đích danh;
 không tự phân công bác sĩ cho khách. Giám đốc chuyên môn: BS. Cao Thị Lộc (chỉnh nha, tổng quát, trẻ em);
 ThS-BS Trần Phương Bình và ThS-BS Trần Đức Anh (Implant, phục hình); ThS-BS Nguyễn Thị Hoa (răng sứ, Veneer).
 

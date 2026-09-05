@@ -2,12 +2,19 @@
  * Gieo dữ liệu MẪU để xem giao diện và thử xuất mà không cần đăng nhập Zalo thật.
  * Chỉ dùng khi phát triển: ghi vào một CSDL riêng (ZCA_DATA_DIR) — đừng chạy trên dữ liệu thật.
  */
-import { ensureDirs, DB_PATH, DATA_DIR } from './config.js';
+import { ensureDirs, DB_PATH, DATA_DIR, AUTH_FILE, DEFAULT_SERVER_URL } from './config.js';
 import { openDb } from './db.js';
 import { previewOf } from './zalo/normalize.js';
+import { AuthClient } from './auth/client.js';
+import { Cipher } from './crypto/cipher.js';
+import { createLogger } from './logger.js';
 
 ensureDirs();
 const db = openDb(DB_PATH);
+// Dữ liệu phải được mã hoá bằng khoá của phiên đang đăng nhập — cần data/auth.json (đăng nhập trong ứng dụng trước).
+const auth = new AuthClient({ authFile: AUTH_FILE, log: createLogger('/dev/null'), defaultServerUrl: DEFAULT_SERVER_URL });
+if (!auth.keys.length || !auth.user?.id) { console.error('Chưa có data/auth.json — hãy đăng nhập trong ứng dụng (cùng ZCA_DATA_DIR) rồi gieo lại.'); process.exit(2); }
+const cipher = new Cipher(); cipher.setKeys(auth.user.id, auth.keys, auth.keyVersion); db.setCipher(cipher);
 const acc = 'demo-account-1';
 db.upsertAccount({ id: acc, displayName: 'Tư vấn viên Demo', phone: '0985018688', status: 'disconnected' });
 

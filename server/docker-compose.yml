@@ -1,0 +1,27 @@
+services:
+  zalo-auth:
+    build: .
+    image: zalo-chat-assistant-server:latest
+    container_name: zalo-auth
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4789}:4789"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Đặt JWT_SECRET trong .env (chuỗi ngẫu nhiên dài)}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      REGISTRATION_CODE: ${REGISTRATION_CODE:-}
+      ACCESS_TTL_SEC: ${ACCESS_TTL_SEC:-900}
+      REFRESH_TTL_DAYS: ${REFRESH_TTL_DAYS:-30}
+      RESET_TTL_MIN: ${RESET_TTL_MIN:-30}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      APP_NAME: ${APP_NAME:-Zalo Chat Assistant}
+    volumes:
+      - zalo-auth-data:/data
+
+volumes:
+  zalo-auth-data:

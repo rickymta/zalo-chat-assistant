@@ -1,120 +1,149 @@
 # Zalo Chat Assistant
 
-Ứng dụng macOS cho tư vấn viên MedDental: **đăng nhập Zalo cá nhân bằng mã QR**, **tự lưu mọi tin nhắn** đến/đi vào
-máy, rồi **xuất gói dữ liệu** để **Claude Cowork** tổng hợp hội thoại và đề xuất câu trả lời. Ứng dụng **chỉ đọc** —
-không gửi tin, không đánh dấu đã xem — để giảm rủi ro cho tài khoản.
+Ứng dụng macOS cho tư vấn viên MedDental: **đăng nhập tài khoản ứng dụng** (máy chủ xác thực riêng), **kết nối Zalo cá
+nhân bằng mã QR**, **tự lưu mọi tin nhắn đến/đi vào máy ở dạng mã hoá**, và **duy trì một thư mục làm việc** để
+**Claude Cowork** tổng hợp hội thoại và đề xuất câu trả lời. Ứng dụng **chỉ đọc** Zalo — không gửi tin, không đánh dấu
+đã xem — để giảm rủi ro cho tài khoản.
 
 Dùng cùng thư viện `zca-js` và cùng cách đăng nhập với kênh Zalo cá nhân trong CRM (`backend/services/zalo-personal-bridge`
-của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy cá nhân, không cần máy chủ.
+của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy cá nhân.
 
-## Dành cho người dùng: cài và dùng trong 3 bước
+## Kiến trúc tổng thể
 
-1. **Cài**: mở file `Zalo Chat Assistant-<phiên bản>-arm64.dmg`, kéo biểu tượng vào **Applications**.
-   Lần đầu mở, macOS có thể báo *"không thể mở vì không xác minh được nhà phát triển"* — hãy **bấm chuột phải vào ứng
-   dụng → Mở → Mở** (chỉ cần một lần). Nếu vẫn bị chặn, người hỗ trợ kỹ thuật chạy:
-   ```bash
-   xattr -dr com.apple.quarantine "/Applications/Zalo Chat Assistant.app"
-   ```
-2. **Kết nối Zalo**: bấm *Đăng nhập bằng mã QR* → mở Zalo trên điện thoại → biểu tượng QR cạnh ô tìm kiếm → quét → Đồng ý.
-   Từ lúc này, cứ để ứng dụng chạy (đóng cửa sổ vẫn chạy nền; thoát hẳn bằng ⌘Q). Bật *Cài đặt → Tự mở khi bật máy*.
-3. **Xuất cho Claude**: bấm *⏳ Đang chờ trả lời* (hoặc *Hôm nay* / *7 ngày* / *Tất cả*). Ứng dụng tạo một thư mục trong
-   `~/Documents/Zalo Chat Assistant/` và mở Finder. Mở **Claude Cowork** tại thư mục đó, dán câu:
-   > Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi.
+```
+┌─ Máy chủ xác thực (server/, Node + SQLite, Docker) ───────────────────────────────┐
+│ đăng ký · đăng nhập (JWT + refresh token xoay vòng) · quên mật khẩu (mã 8 ký tự)   │
+│ cấp / lưu / đổi CHUỖI MÃ HOÁ theo phiên bản cho từng tài khoản. KHÔNG nhận tin nhắn │
+└────────────────────────────────────────────────────────────────────────────────────┘
+                 ▲ HTTPS (chỉ bridge gọi)
+┌─ Máy Mac của tư vấn viên: Zalo Chat Assistant.app ────────────────────────────────┐
+│ electron/main.js  cửa sổ + chạy nền + tự mở khi bật máy                            │
+│ src/app.js        BRIDGE Node cục bộ (127.0.0.1:3789): giữ phiên máy chủ trong      │
+│                   data/auth.json ⇒ tắt máy mở lại KHÔNG phải đăng nhập lại           │
+│ src/zalo/*        zca-js: QR, listener, ghi tin (chỉ khi đã mở khoá)                │
+│ src/db.js         SQLite: nội dung mã hoá AES-256-GCM từng trường, khoá theo phiên bản│
+│ src/workspace.js  ~/Documents/Zalo Chat Assistant/ = thư mục Claude Cowork trỏ vào  │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-   Claude trả về bảng ưu tiên + phiếu từng hội thoại kèm câu trả lời gợi ý (ghi ở `ket-qua/`). Tư vấn viên đọc, sửa,
-   rồi tự gửi trên Zalo.
+## Dành cho người dùng
+
+1. **Cài**: mở `Zalo Chat Assistant-<phiên bản>-arm64.dmg`, kéo vào **Applications**. Lần đầu macOS có thể hỏi — **chuột
+   phải → Mở**. Nếu vẫn bị chặn: `xattr -dr com.apple.quarantine "/Applications/Zalo Chat Assistant.app"`.
+2. **Đăng ký / đăng nhập** tài khoản ứng dụng (email + mật khẩu; có mã đăng ký nếu công ty yêu cầu). Quên mật khẩu → nhận mã
+   8 ký tự qua email (hoặc quản trị viên đọc mã trong log máy chủ) → đặt mật khẩu mới. Đăng nhập một lần; các lần mở sau
+   ứng dụng tự mở khoá.
+3. **Kết nối Zalo**: ở thanh trên màn Hội thoại bấm *Đăng nhập Zalo (QR)* → Zalo trên điện thoại → biểu tượng QR → quét →
+   Đồng ý. Để ứng dụng chạy (đóng cửa sổ vẫn chạy nền; thoát hẳn ⌘Q). Bật *Cài đặt → Tự mở ứng dụng khi bật máy*.
+4. **Claude Cowork**: trỏ Cowork vào `~/Documents/Zalo Chat Assistant/` **một lần**. Mỗi khi muốn Claude làm việc, bấm
+   **📁 Cập nhật dữ liệu cho Claude** (chọn kiểu: khách đang chờ trả lời / hôm nay / 7 ngày / nhóm / tất cả), rồi nhắn
+   Cowork: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*
+   Kết quả nằm ở `ket-qua/`. Tư vấn viên đọc, sửa, tự gửi trên Zalo.
+
+Thư mục làm việc (ứng dụng tự tạo và cập nhật):
+
+| Đường dẫn | Ai ghi | Nội dung |
+|---|---|---|
+| `CLAUDE.md`, `huong-dan/` | Ứng dụng (mỗi lần mở) | Chỉ dẫn cho Claude + tham chiếu MedDental |
+| `du-lieu/` | Ứng dụng (nút Cập nhật) | Hội thoại đã **giải mã**: `00-INDEX.md`, `hoi-thoai/*.md`, CSV, Excel (tuỳ chọn) — **ghi đè** mỗi lần |
+| `ket-qua/` | Claude | Tổng hợp + đề xuất |
 
 ### Những điều phải biết
 
-- **Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng** (cộng phần tin Zalo gửi bù khi nối lại sau lúc tắt máy). Tin cũ
-  hơn không lấy được — Zalo không có API lịch sử 1-1 cho tài khoản cá nhân.
-- **Nhóm chat có thể có lịch sử — tuỳ Zalo cấp**: lần đầu kết nối, ứng dụng hỏi Zalo vài trăm tin gần nhất của
-  **mỗi** nhóm (mặc định 300, đổi ở Cài đặt) qua endpoint `group_cloud_message/api/cm/getrecentv2` (endpoint cũ
-  `/api/group/history` của zca-js 2.1.2 đã bị Zalo bỏ — trả 404; xem `src/zalo/groupHistory.js`). ⚠️ Với tài khoản thử
-  05/09/2026, Zalo trả `isFiltered=1` và **0 tin cho cả 65 nhóm** — máy chủ có tin nhưng không cấp cho phiên web. Khi đó
-  ứng dụng ghi rõ ở Cài đặt và chỉ lưu tin nhóm **từ lúc kết nối trở đi**. Tự động chỉ thử lại sau 24 giờ; bấm
-  *Cài đặt → Nhập lịch sử nhóm* để thử tay. Script chẩn đoán: `scripts/probe-group-history.mjs`,
-  `scripts/probe-cm-variants.mjs` (cần `SESSION_FILE`). Nhóm KHÔNG áp dụng "đang chờ trả lời" — Claude tổng hợp nhóm theo chủ đề, việc cần làm và câu hỏi hướng tới mình
-  (`cowork/02-quy-trinh-tong-hop.md` mục 7).
-- **Đừng mở Zalo Web (chat.zalo.me) trên trình duyệt** cùng lúc: một số chỉ chạy được một phiên web, mở ở chỗ khác là
-  ứng dụng rớt kết nối và hiện *Cần đăng nhập lại*. Zalo trên **điện thoại** dùng bình thường.
-- **Tài khoản có thể bị Zalo khoá** vì đây là giao thức không chính thức. Dùng số công ty cấp, không dùng số cá nhân
-  thật. Không đăng nhập/đăng xuất liên tục, không chạy cùng một số trên nhiều máy.
-- Ảnh/tệp chỉ lưu **liên kết**, không tải về; liên kết Zalo có thể hết hạn.
-- Toàn bộ dữ liệu nằm **trên máy này**, không gửi đi đâu. Phiên đăng nhập (cookie) lưu trong
-  `~/Library/Application Support/Zalo Chat Assistant/data/sessions/` — ai có file đó là dùng được tài khoản Zalo;
-  đừng sao chép/chia sẻ thư mục `data`. Gói xuất trong `Documents` **không** chứa cookie, chia sẻ được.
+- **Hội thoại 1-1 chỉ có tin từ lúc kết nối Zalo trở đi** (cộng tin Zalo gửi bù khi nối lại). Zalo không có API lịch sử 1-1.
+- **Nhóm chat**: ứng dụng hỏi lịch sử gần đây của mọi nhóm qua endpoint mới của Zalo Web (`group_cloud_message/api/cm/getrecentv2`
+  — endpoint cũ trong zca-js 2.1.2 đã bị Zalo bỏ, trả 404). Thử 05/09/2026: Zalo trả `isFiltered=1`, 0 tin cho cả 65 nhóm ⇒
+  **đừng trông vào lịch sử nhóm**; tin nhóm được lưu đầy đủ từ lúc kết nối. Tự thử lại 24 giờ/lần.
+- **Không mở Zalo Web (chat.zalo.me) trên trình duyệt** cùng lúc — sẽ làm mất kết nối; Zalo trên điện thoại dùng bình thường.
+- **Tài khoản Zalo có thể bị khoá** vì giao thức không chính thức. Dùng số công ty cấp.
+- **Mã hoá**: tin nhắn, tên, số điện thoại, xem trước, đính kèm trong SQLite được mã hoá bằng khoá dẫn xuất từ chuỗi máy chủ
+  cấp (HKDF theo user id + AES-256-GCM). Khoá/thời gian/cờ (thread id, mốc giờ, loại) giữ nguyên để lọc và sắp. Máy chủ
+  **không bao giờ nhận tin**. `du-lieu/` trong thư mục Claude là bản **giải mã** — xoá bằng *Cài đặt → Xoá dữ liệu đã chuẩn bị*.
+- **Đổi chuỗi mã hoá** (*Cài đặt → Bảo mật*): máy chủ cấp phiên bản mới, ứng dụng mã hoá lại toàn bộ theo lô (tiếp tục được
+  nếu ngắt giữa chừng; mỗi giá trị mang `enc:v<phiên bản>:`). Máy khác cùng tài khoản tự nhận chuỗi mới khi mở.
+- **Đăng xuất ứng dụng** xoá `data/auth.json` (token + chuỗi); dữ liệu vẫn nằm trên máy dạng mã hoá, đăng nhập lại cùng tài
+  khoản là đọc được. Ai có `data/auth.json` hoặc `data/sessions/` là dùng được — không chia sẻ thư mục dữ liệu.
+
+## Máy chủ xác thực (`server/`)
+
+```bash
+cd server
+cp .env.example .env          # đặt JWT_SECRET (openssl rand -base64 48), tuỳ chọn REGISTRATION_CODE, SMTP_*
+docker compose up -d --build
+curl http://127.0.0.1:4789/health
+docker compose logs -f zalo-auth   # mã quên mật khẩu hiện ở đây khi chưa cấu hình SMTP: [RESET-CODE] email → mã
+```
+
+| Endpoint | Ý nghĩa |
+|---|---|
+| `POST /api/auth/register` `{email,password,name,registrationCode?}` | Tạo tài khoản, cấp chuỗi mã hoá phiên bản 1 |
+| `POST /api/auth/login` · `/refresh` · `/logout` | Access token 15 phút + refresh token 30 ngày (xoay vòng, thu hồi token cũ) |
+| `POST /api/auth/forgot-password` · `/reset-password` `{email,code,newPassword}` | Mã 8 ký tự, hiệu lực 30 phút, tối đa 5 lần thử |
+| `GET /api/me` · `POST /api/me/change-password` | Hồ sơ, đổi mật khẩu |
+| `GET /api/keys` | Chuỗi hiện tại + mọi phiên bản cũ (để máy bỏ lỡ lần đổi vẫn giải mã được) |
+| `POST /api/keys/rotate` · `PUT /api/keys {key}` | Đổi chuỗi (máy chủ sinh) / lưu chuỗi do client chọn (≥ 32 ký tự) |
+
+Mật khẩu băm scrypt; JWT HS256 (`JWT_SECRET`); giới hạn tần suất theo IP; dữ liệu ở volume `zalo-auth-data`
+(`/data/auth.db`). Triển khai thật: đặt sau reverse proxy HTTPS, đổi địa chỉ máy chủ trong màn đăng nhập của ứng dụng
+(*Nâng cao*) hoặc đặt mặc định bằng `ZCA_SERVER_URL` khi đóng gói.
 
 ## Dành cho người kỹ thuật
-
-### Kiến trúc
-
-```
-electron/main.js     Vỏ ứng dụng macOS (cửa sổ, menu, chạy nền, tự mở khi bật máy) → gọi src/app.js
-src/app.js           Lõi: mở SQLite, khởi động máy chủ HTTP cục bộ (127.0.0.1), khôi phục phiên Zalo
-src/zalo/manager.js  Đăng nhập QR / khôi phục phiên / listener zca-js / ghi tin (selfListen: true) / nhập lịch sử nhóm (getGroupChatHistory)
-src/zalo/normalize.js  Chuẩn hoá tin zca-js → dòng SQLite (bảng msgType giống CRM)
-src/db.js            SQLite (WAL): accounts, conversations, messages (chống trùng theo msgId), contacts, exports
-src/export/          markdown.js (gói cho Cowork, mỗi hội thoại 1 file) · excel.js (streaming, 1 sheet/hội thoại)
-src/server.js        API + SSE cho giao diện · src/ui/index.html  Giao diện 3 bước (vanilla JS)
-src/index.js         Chạy bằng Node thuần, mở trình duyệt · src/cli-export.js  Xuất bằng dòng lệnh
-cowork/              Bộ chỉ dẫn cho Claude Cowork — được chép vào mỗi gói xuất (thư mục huong-dan/)
-```
-
-**Kho lưu chính là SQLite**, không phải Excel: người dùng mục tiêu có hàng nghìn hội thoại và tin đến liên tục; Excel
-không chịu được ghi nối + chống trùng. Excel/Markdown là đầu ra xuất theo yêu cầu. Gói Markdown là định dạng khuyến
-nghị cho Claude (đọc thẳng, nạp từng hội thoại); Excel là tuỳ chọn cho người cần lọc/chia sẻ.
 
 ### Chạy bằng Node (máy dev, Node ≥ 20)
 
 ```bash
 npm install
-npm start                 # mở http://127.0.0.1:3789 trong trình duyệt
-npm run seed:demo         # gieo dữ liệu mẫu (đặt ZCA_DATA_DIR để không đụng dữ liệu thật)
-npm run export -- --days 7 --format markdown,excel
+npm start                          # http://127.0.0.1:3789 — thư mục Claude = ./cowork
+ZCA_SERVER_URL=http://127.0.0.1:4789 npm start
+npm run seed:demo                  # cần data/auth.json (đăng nhập trong ứng dụng trước) — gieo dữ liệu mẫu đã mã hoá
+npm run export -- --preset week    # cập nhật du-lieu/ bằng dòng lệnh (cần data/auth.json)
 ```
 
-Biến môi trường: `ZCA_DATA_DIR` (thư mục dữ liệu, mặc định `./data`), `ZCA_EXPORTS_DIR` (mặc định `<data>/exports`),
-`PORT` (3789), `OPEN_BROWSER=false`.
+Biến môi trường: `ZCA_DATA_DIR` (mặc định `./data`), `ZCA_WORKSPACE_DIR` (mặc định `./cowork`; bản .app dùng
+`~/Documents/Zalo Chat Assistant`), `ZCA_SERVER_URL` (mặc định `http://127.0.0.1:4789`), `PORT` (3789), `OPEN_BROWSER=false`.
 
-### Chạy / đóng gói bản Electron
+### Đóng gói bản Electron
 
 ```bash
 npm run app        # chạy cửa sổ Electron (tự dựng lại better-sqlite3 cho Electron)
-npm run icon       # tạo lại build/icon.icns từ build/icon.svg (qlmanage + iconutil)
-npm run dist       # tạo dist/Zalo Chat Assistant-<ver>-arm64.dmg
-npm run dist:all   # thêm bản x64 cho Mac Intel
+npm run dist       # dist/Zalo Chat Assistant-<ver>-arm64.dmg
+npm run dist:all   # thêm bản x64
 ```
 
-`better-sqlite3` là module native, bản build cho Node và cho Electron **không dùng chung** — `scripts/ensure-native.js`
-tự dựng lại đúng runtime trước mỗi lệnh (`npm start` ↔ `npm run app`), nên đổi qua lại hai chế độ chỉ chậm vài giây.
+`better-sqlite3` là module native, bản build cho Node và Electron **không dùng chung** — `scripts/ensure-native.js` tự dựng
+lại đúng runtime trước mỗi lệnh. Ký/công chứng: cần Apple Developer ID (`CSC_LINK`, `APPLE_ID`…, thêm `"notarize": true`).
 
-**Ký và công chứng (để người dùng không phải chuột phải → Mở):** cần Apple Developer ID. Đặt biến
-`CSC_LINK`/`CSC_KEY_PASSWORD` (chứng chỉ) và `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` rồi thêm
-`"notarize": true` vào `build.mac` trong `package.json`; `electron-builder` sẽ ký + công chứng. Không có chứng chỉ thì
-bản dmg vẫn chạy, chỉ thêm bước chuột phải → Mở ở lần đầu.
+### Cấu trúc mã nguồn
+
+```
+server/                 Máy chủ xác thực (Fastify + better-sqlite3 + nodemailer), Dockerfile, docker-compose.yml
+electron/main.js        Vỏ ứng dụng macOS
+src/app.js              Lõi: mở SQLite → bridge HTTP → mở khoá theo data/auth.json → khôi phục Zalo → mã hoá lại nền
+src/auth/client.js      Client máy chủ xác thực: giữ refresh token + chuỗi mã hoá, tự refresh, đồng bộ phiên bản khoá
+src/crypto/cipher.js    AES-256-GCM từng trường, khoá dẫn xuất HKDF, giá trị mang phiên bản `enc:v<n>:`
+src/db.js               SQLite: mã hoá khi ghi / giải mã khi đọc, tìm kiếm bằng JS, mã hoá lại theo lô
+src/zalo/*              manager (QR, listener, nhập lịch sử nhóm), normalize, profiles, groupHistory (endpoint mới)
+src/workspace.js        Thư mục làm việc Claude: huong-dan/ (chép từ cowork/), du-lieu/ (ghi đè), ket-qua/
+src/export/*            markdown.js (mỗi hội thoại 1 file), excel.js (1 sheet/hội thoại)
+src/server.js           API bridge: /api/auth/*, /api/security/*, /api/workspace/*, Zalo, hội thoại; gác 423 khi chưa mở khoá
+src/ui/index.html       Giao diện: Đăng nhập/Đăng ký/Quên mật khẩu → Hội thoại · Cài đặt
+cowork/                 = thư mục làm việc mẫu: CLAUDE.md, huong-dan/ (00–06 + tham-chieu-meddental/), du-lieu/, ket-qua/
+```
 
 ### Cập nhật tài liệu cho Claude
 
-- Sửa trong `cowork/`; gói xuất tiếp theo nhận bản mới. Bản `.app` phải đóng gói lại.
-- Dữ liệu dịch vụ / bảng giá / bác sĩ (`cowork/du-lieu/`) là bản sao từ repo marketing:
-  `bash scripts/sync-brand-docs.sh [đường-dẫn-repo]`.
-
-### Vị trí dữ liệu
-
-| Chế độ | Dữ liệu (SQLite, phiên, log) | Gói xuất |
-|---|---|---|
-| `.app` | `~/Library/Application Support/Zalo Chat Assistant/data/` | `~/Documents/Zalo Chat Assistant/` |
-| Node | `./data/` (hoặc `ZCA_DATA_DIR`) | `./data/exports/` (hoặc `ZCA_EXPORTS_DIR`) |
+Sửa trong `cowork/huong-dan/` (và `cowork/CLAUDE.md` = bản sao của 00). Ứng dụng chép sang thư mục làm việc mỗi lần mở; bản
+`.app` phải đóng gói lại. Dữ liệu dịch vụ/bảng giá/bác sĩ (`cowork/huong-dan/tham-chieu-meddental/`) là bản sao từ repo
+marketing: `bash scripts/sync-brand-docs.sh [đường-dẫn-repo]`.
 
 ### Khắc phục sự cố
 
-| Hiện tượng | Nguyên nhân / cách xử lý |
+| Hiện tượng | Xử lý |
 |---|---|
-| *Cần đăng nhập lại* ngay sau khi vừa kết nối | Có phiên Zalo Web khác (trình duyệt) — đóng nó rồi *Quét QR lại* |
-| Mã QR không hiện | Mất mạng, hoặc Zalo đổi giao thức → nâng `zca-js` (`npm i zca-js@latest`) rồi đóng gói lại |
-| Tin của khách không thấy | Kiểm tra pill trạng thái; mở *Nhật ký hoạt động* ở cuối trang; thử *Lấy tin bỏ lỡ* |
-| Hội thoại không có tên/SĐT | Bấm *Đồng bộ danh bạ* (chỉ có tên/SĐT của người trong danh bạ và cho phép hiện số) |
-| Tin nhóm không được lưu | Mặc định tắt — bật ở *Cài đặt → Lưu cả tin nhắn trong nhóm* |
-| Excel mở chậm | Quá nhiều sheet — xuất theo *Đang chờ trả lời* hoặc theo khoảng ngày |
-| `NODE_MODULE_VERSION` mismatch | Chạy đúng lệnh npm (`start`/`app`) để `ensure-native` dựng lại module |
+| Màn đăng nhập báo *Không kết nối được máy chủ* | Máy chủ xác thực chưa chạy hoặc sai địa chỉ — kiểm tra `docker compose ps`, sửa ở *Nâng cao: địa chỉ máy chủ* |
+| *Hết phiên — cần đăng nhập lại* trong Cài đặt | Refresh token quá 30 ngày hoặc bị thu hồi (đặt lại mật khẩu). Dữ liệu vẫn mở được bằng chuỗi đã lưu; đăng nhập lại để đồng bộ |
+| Hội thoại hiện `[không giải mã được — thiếu khoá phiên bản n]` | Máy này thiếu phiên bản khoá cũ — đăng nhập lại để lấy đủ danh sách phiên bản từ máy chủ |
+| *Cần đăng nhập lại* ở Zalo | Có phiên Zalo Web khác — đóng nó rồi *Quét mã QR* |
+| Mã QR không hiện | Mất mạng, hoặc Zalo đổi giao thức → nâng `zca-js` rồi đóng gói lại |
+| Không thấy `du-lieu/` cập nhật | Bấm *Cập nhật dữ liệu cho Claude*; kiểm tra *Nhật ký hoạt động* |
+| `NODE_MODULE_VERSION` mismatch | Chạy đúng `npm start` / `npm run app` để `ensure-native` dựng lại module |

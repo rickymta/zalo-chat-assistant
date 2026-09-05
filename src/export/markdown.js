@@ -60,7 +60,7 @@ function copyDirFlat(src, dest, { exts = ['.md', '.txt', '.csv'] } = {}) {
 }
 
 export async function exportMarkdown({
-  db, selection, from, to, outDir, accountsById, coworkDir, includeJsonl = false, waitingHours = 2,
+  db, selection, from, to, outDir, accountsById, coworkDir, includeJsonl = false, waitingHours = 2, workspaceMode = false,
 }) {
   const convDir = ensureDir(path.join(outDir, 'hoi-thoai'));
   const now = Date.now();
@@ -159,7 +159,7 @@ export async function exportMarkdown({
 
   // README-DU-LIEU.md
   const readme = [];
-  readme.push('# Gói dữ liệu tin nhắn Zalo — đọc file này trước');
+  readme.push(workspaceMode ? '# Dữ liệu tin nhắn Zalo (du-lieu/) — đọc file này trước' : '# Gói dữ liệu tin nhắn Zalo — đọc file này trước');
   readme.push('');
   readme.push(`- Tạo lúc: **${formatVn(now)}** bởi Zalo Chat Assistant`);
   readme.push(`- Phạm vi: ${from ? formatVn(from) : 'từ đầu'} → ${to ? formatVn(to) : 'đến nay'}`);
@@ -188,8 +188,13 @@ export async function exportMarkdown({
   readme.push('');
   readme.push('## Cách dùng với Claude Cowork');
   readme.push('');
-  readme.push('1. Mở Claude Cowork, chọn thư mục này làm thư mục làm việc.');
-  readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*');
+  if (workspaceMode) {
+    readme.push('1. Claude Cowork đã/sẽ được trỏ vào thư mục CHA của thư mục này (`Zalo Chat Assistant`, nơi có `CLAUDE.md` và `huong-dan/`).');
+    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."* Dữ liệu ở `du-lieu/`, kết quả ghi vào `ket-qua/`.');
+  } else {
+    readme.push('1. Mở Claude Cowork, chọn thư mục này làm thư mục làm việc.');
+    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*');
+  }
   readme.push('3. Kết quả (bản tổng hợp + đề xuất phản hồi) là ĐỀ XUẤT — tư vấn viên đọc, sửa rồi tự gửi trên Zalo. Ứng dụng này không gửi tin.');
   readme.push('');
   writeText(path.join(outDir, 'README-DU-LIEU.md'), readme.join('\n'));

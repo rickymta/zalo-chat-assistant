@@ -16,8 +16,10 @@ app.setName(PRODUCT);
 // Cho phép ghi đè bằng biến môi trường (hỗ trợ kỹ thuật / chạy thử với dữ liệu mẫu):
 //   ZCA_DATA_DIR=/duong/dan "/Applications/Zalo Chat Assistant.app/Contents/MacOS/Zalo Chat Assistant"
 const dataDir = process.env.ZCA_DATA_DIR || path.join(app.getPath('userData'), 'data');
-const exportsDir = process.env.ZCA_EXPORTS_DIR || path.join(app.getPath('documents'), PRODUCT);
+const workspaceDir = process.env.ZCA_WORKSPACE_DIR || path.join(app.getPath('documents'), PRODUCT);
+const exportsDir = process.env.ZCA_EXPORTS_DIR || path.join(workspaceDir, 'du-lieu');
 process.env.ZCA_DATA_DIR = dataDir;
+process.env.ZCA_WORKSPACE_DIR = workspaceDir;
 process.env.ZCA_EXPORTS_DIR = exportsDir;
 process.env.OPEN_BROWSER = 'false';
 
@@ -67,9 +69,9 @@ function buildMenu() {
     {
       label: PRODUCT,
       submenu: [
-        { label: `Về ${PRODUCT}`, click: () => dialog.showMessageBox({ message: PRODUCT, detail: `Phiên bản ${app.getVersion()}\nLưu tin nhắn Zalo cá nhân và xuất gói dữ liệu cho Claude Cowork.\n\nDữ liệu: ${dataDir}\nGói xuất: ${exportsDir}` }) },
+        { label: `Về ${PRODUCT}`, click: () => dialog.showMessageBox({ message: PRODUCT, detail: `Phiên bản ${app.getVersion()}\nLưu tin nhắn Zalo cá nhân (mã hoá) và chuẩn bị dữ liệu cho Claude Cowork.\n\nDữ liệu: ${dataDir}\nThư mục Claude: ${workspaceDir}` }) },
         { type: 'separator' },
-        { label: 'Mở thư mục gói xuất', click: () => { fs.mkdirSync(exportsDir, { recursive: true }); shell.openPath(exportsDir); } },
+        { label: 'Mở thư mục làm việc với Claude', click: () => { fs.mkdirSync(workspaceDir, { recursive: true }); shell.openPath(workspaceDir); } },
         { label: 'Mở thư mục dữ liệu', click: () => shell.openPath(dataDir) },
         { type: 'separator' },
         { role: 'hide', label: `Ẩn ${PRODUCT}` }, { role: 'hideOthers', label: 'Ẩn ứng dụng khác' }, { role: 'unhide', label: 'Hiện tất cả' },
@@ -105,7 +107,7 @@ app.on('before-quit', async (e) => {
 app.whenReady().then(async () => {
   try {
     fs.mkdirSync(dataDir, { recursive: true });
-    fs.mkdirSync(exportsDir, { recursive: true });
+    fs.mkdirSync(workspaceDir, { recursive: true });
     core = await startCore();
     buildMenu();
     createWindow(core.url);

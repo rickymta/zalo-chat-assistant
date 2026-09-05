@@ -1,70 +1,51 @@
 /**
- * Xuất bằng dòng lệnh, không cần giao diện — dùng cho lịch tự động (launchd/cron) hoặc người kỹ thuật.
+ * Cập nhật thư mục làm việc Claude bằng dòng lệnh (không cần giao diện) — dùng cho lịch tự động hoặc người kỹ thuật.
+ * Cần data/auth.json (đã đăng nhập trong ứng dụng) để có khoá giải mã.
  *
- *   node src/cli-export.js                       # gói Markdown, 7 ngày gần nhất
- *   node src/cli-export.js --days 1 --waiting    # chỉ hội thoại đang chờ trả lời, hôm qua tới nay
- *   node src/cli-export.js --format markdown,excel --from 2026-09-01 --to 2026-09-04
- *   node src/cli-export.js --all                 # toàn bộ dữ liệu
- *
- * Chạy được song song với ứng dụng đang mở (SQLite WAL cho phép nhiều tiến trình đọc).
+ *   node src/cli-export.js                      # kiểu mặc định: khách đang chờ trả lời
+ *   node src/cli-export.js --preset week --excel
+ *   node src/cli-export.js --preset custom --from 2026-09-01 --to 2026-09-04 --groups
  */
-import { ensureDirs, loadSettings, DB_PATH, EXPORTS_DIR, COWORK_DIR, LOG_PATH } from './config.js';
+import { ensureDirs, loadSettings, DB_PATH, LOG_PATH, WORKSPACE_DIR, COWORK_DIR, AUTH_FILE, DEFAULT_SERVER_URL } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
-import { runExport } from './export/index.js';
+import { AuthClient } from './auth/client.js';
+import { Cipher } from './crypto/cipher.js';
+import { ensureWorkspace, updateWorkspaceData } from './workspace.js';
+import { presetParams } from './server.js';
 
 function parseArgs(argv) {
-  const out = { format: 'markdown', days: 7 };
+  const out = { preset: 'waiting' };
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    const next = () => argv[++i];
-    if (a === '--format') out.format = next();
-    else if (a === '--days') out.days = Number(next());
+    const a = argv[i]; const next = () => argv[++i];
+    if (a === '--preset') out.preset = next();
     else if (a === '--from') out.from = next();
     else if (a === '--to') out.to = next();
-    else if (a === '--all') out.all = true;
-    else if (a === '--waiting') out.waiting = true;
-    else if (a === '--groups') out.groups = true;
-    else if (a === '--jsonl') out.jsonl = true;
-    else if (a === '--account') out.account = next();
+    else if (a === '--excel') out.includeExcel = true;
+    else if (a === '--groups') out.includeGroups = true;
+    else if (a === '--full') out.fullHistory = true;
+    else if (a === '--jsonl') out.includeJsonl = true;
     else if (a === '--help' || a === '-h') out.help = true;
   }
   return out;
 }
 
-function vnDayStart(dateStr) {
-  // "YYYY-MM-DD" → 00:00 giờ Việt Nam (UTC+7)
-  return Date.parse(`${dateStr}T00:00:00+07:00`);
-}
-
 const args = parseArgs(process.argv.slice(2));
-if (args.help) {
-  console.log('Tuỳ chọn: --format markdown|excel|markdown,excel  --days N | --from YYYY-MM-DD --to YYYY-MM-DD | --all  --waiting  --groups  --jsonl  --account <id>');
-  process.exit(0);
-}
+if (args.help) { console.log('Tuỳ chọn: --preset waiting|today|week|groups|all|custom  --from YYYY-MM-DD --to YYYY-MM-DD  --excel  --groups  --full  --jsonl'); process.exit(0); }
 
 ensureDirs();
 const log = createLogger(LOG_PATH);
 const db = openDb(DB_PATH);
+const auth = new AuthClient({ authFile: AUTH_FILE, log, defaultServerUrl: DEFAULT_SERVER_URL });
+if (!auth.keys.length || !auth.user?.id) { console.error('Chưa có phiên đăng nhập (data/auth.json). Hãy đăng nhập trong ứng dụng trước.'); process.exit(2); }
+const cipher = new Cipher();
+cipher.setKeys(auth.user.id, auth.keys, auth.keyVersion);
+db.setCipher(cipher);
+ensureWorkspace(WORKSPACE_DIR, COWORK_DIR, log);
 
-let from = null;
-let to = null;
-if (!args.all) {
-  if (args.from) from = vnDayStart(args.from);
-  if (args.to) to = vnDayStart(args.to) + 86400000;
-  if (!args.from && !args.to) from = Date.now() - Number(args.days) * 86400000;
-}
-
-const params = {
-  formats: String(args.format).split(',').map((s) => s.trim()).filter(Boolean),
-  from, to,
-  includeGroups: args.groups ?? loadSettings().includeGroups,
-  onlyWaiting: !!args.waiting,
-  includeJsonl: !!args.jsonl,
-  accountIds: args.account ? [args.account] : undefined,
-};
-
-const r = await runExport({ db, params, exportsDir: EXPORTS_DIR, coworkDir: COWORK_DIR, log, settings: loadSettings() });
+const settings = loadSettings();
+const params = presetParams(args.preset, args, settings);
+const r = await updateWorkspaceData({ db, params, root: WORKSPACE_DIR, log, settings });
 db.close();
 if (!r.ok) { console.error(r.error); process.exit(2); }
-console.log(`Đã xuất ${r.conversations} hội thoại, ${r.messages} tin → ${r.dir}`);
+console.log(`Đã cập nhật ${r.conversations} hội thoại, ${r.messages} tin → ${r.dir}`);

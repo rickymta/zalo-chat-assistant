@@ -22,6 +22,12 @@ export const DB_PATH = path.join(DATA_DIR, 'zalo.db');
 export const LOG_PATH = path.join(DATA_DIR, 'app.log');
 export const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 export const COWORK_DIR = path.join(ROOT_DIR, 'cowork');
+/** Thư mục làm việc với Claude Cowork — người dùng trỏ Cowork vào đây MỘT lần. Node: chính cowork/ của nguồn; .app: ~/Documents/Zalo Chat Assistant. */
+export const WORKSPACE_DIR = process.env.ZCA_WORKSPACE_DIR ? path.resolve(process.env.ZCA_WORKSPACE_DIR) : COWORK_DIR;
+/** Phiên đăng nhập máy chủ xác thực + chuỗi mã hoá (quyền 600). */
+export const AUTH_FILE = path.join(DATA_DIR, 'auth.json');
+/** Địa chỉ máy chủ xác thực mặc định — người dùng đổi được ở màn đăng nhập. */
+export const DEFAULT_SERVER_URL = (process.env.ZCA_SERVER_URL ?? 'http://127.0.0.1:4789').replace(/\/+$/, '');
 export const UI_DIR = path.join(__dirname, 'ui');
 
 export const PORT = Number(process.env.PORT ?? 3789);
@@ -34,6 +40,12 @@ const DEFAULT_SETTINGS = Object.freeze({
   includeGroups: true,
   /** Số tin mới nhất lấy cho MỖI nhóm khi nhập lịch sử nhóm (Zalo có thể trả ít hơn). */
   groupHistoryCount: 300,
+  /** Kèm file Excel khi cập nhật dữ liệu cho Claude. */
+  includeExcel: false,
+  /** Kiểu chọn dữ liệu mặc định cho nút "Cập nhật dữ liệu cho Claude". */
+  defaultPreset: 'waiting',
+  /** Tự cập nhật du-lieu/ cho Claude mỗi N phút (0 = tắt). Luôn chỉ có MỘT gói — ghi đè, không sinh thêm thư mục. */
+  autoUpdateMinutes: 60,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
   syncOldOnConnect: true,
   /** Hội thoại có tin cuối là của KHÁCH và đã quá số giờ này ⇒ đánh dấu "quá hạn trả lời". */
