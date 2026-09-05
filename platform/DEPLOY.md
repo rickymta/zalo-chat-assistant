@@ -102,12 +102,15 @@ tương đương bảng trên; nginx trỏ về `127.0.0.1:4790`.
 chuỗi mã hoá gắn với `id` người dùng trong Mongo; tạo lại tài khoản trên máy chủ trống sẽ ra `id` khác, ứng dụng báo xung
 đột chủ sở hữu và chỉ có thể xoá dữ liệu cục bộ để dùng tiếp.
 
-Trên máy hiện tại (Docker `zca-mongo` + `zca-api` đang chạy):
+Trên máy hiện tại (cần `zca-mongo` + `zca-api` đang chạy: `docker compose up -d mongo api`):
 
 ```bash
 bash platform/deploy/export-data.sh                      # → ~/zca-backups/platform-YYYYMMDD-HHMM.tar.gz (quyền 600)
-scp ~/zca-backups/platform-*.tar.gz user@volcanion.vn:~/
+scp ~/zca-backups/platform-*.tar.gz root@volcanion.vn:~/
 ```
+
+Gói gồm mọi collection (tài khoản, chuỗi mã hoá, phiên, bài viết, cấu hình trang) nhưng **chỉ các bản phát hành đang
+published** kèm tệp cài; bản nháp bị bỏ để gói nhẹ (0.0.1 + 0.0.2 ≈ 700 MB).
 
 Trên máy chủ (sau mục 4, **ghi đè** database `zca` và `/data`):
 
@@ -116,7 +119,12 @@ cd ~/zca-platform && bash deploy/import-data.sh ~/platform-YYYYMMDD-HHMM.tar.gz
 ```
 
 `downloadUrl` của các bản đã phát hành được dựng lại từ `PUBLIC_URL` mỗi lần trả API nên tự thành `https://volcanion.vn/…`.
-Hai bản `0.0.1` (ba nền tảng) và `0.0.1-beta.1` đang published; 24 bản `1.1.x` là bản nháp — xoá ở admin → Phiên bản khi tiện.
+Sau import, tài khoản admin có sẵn là các email trong `ADMIN_EMAILS` đã đăng ký ở máy cũ (mật khẩu giữ nguyên). Tài khoản thử
+`test@meddental.vn` cũng đi theo — đổi mật khẩu hoặc xoá ở admin → Người dùng trước khi mở cho người khác dùng.
+
+**Không chuyển dữ liệu mà chỉ cần đẩy bản cài?** Đăng ký trên `https://volcanion.vn/dang-ky` bằng email có trong `ADMIN_EMAILS`
+(tự thành admin), rồi từ máy dev: `bash platform/deploy/publish-release.sh 0.0.2 https://volcanion.vn` — script hỏi email/mật khẩu
+admin của bạn (nhập kín), tải ba tệp trong `dist/` lên và Xuất bản. Dùng script này cho mọi bản sau.
 
 ## 7. Kiểm tra sau triển khai
 
