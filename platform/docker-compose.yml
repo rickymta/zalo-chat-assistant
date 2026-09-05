@@ -10,7 +10,7 @@
 # Máy chủ thật:  cp .env.production.example .env, điền JWT_SECRET/DOMAIN/ACME_EMAIL, giữ COMPOSE_PROFILES=server
 #                → docker compose up -d                            → thêm edge, HTTPS tự động. Chi tiết: DEPLOY.md.
 #
-# ⚠️ `docker compose up -d` KHÔNG tự dựng lại ảnh khi mã đổi: sau khi rsync mã mới chạy `docker compose up -d --build`.
+# api/web có pull_policy: build ⇒ `docker compose up -d` tự dựng ảnh từ mã hiện có (mã mới sau rsync cũng vậy), không pull registry.
 
 services:
   mongo:
@@ -33,6 +33,9 @@ services:
       context: ./api
       dockerfile: Dockerfile
     image: zca-platform-api:latest
+    # Ảnh dựng tại chỗ, không có trên registry: KHÔNG thử pull (tránh cảnh báo "pull access denied"), luôn dựng từ mã
+    # trong thư mục này khi `up` — mã đổi là ảnh đổi, không cần nhớ --build; không đổi thì cache trúng hết, vài giây.
+    pull_policy: build
     container_name: zca-api
     restart: unless-stopped
     depends_on:
@@ -72,6 +75,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
     image: zca-platform-web:latest
+    pull_policy: build
     container_name: zca-web
     restart: unless-stopped
     depends_on:

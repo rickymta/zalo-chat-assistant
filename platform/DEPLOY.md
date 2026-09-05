@@ -63,13 +63,15 @@ và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 
 ```bash
 cd ~/zca-platform
-docker compose up -d --build            # lần đầu: build api + web (vài phút) rồi lên mongo → api → web → edge
+docker compose up -d                    # lần đầu: dựng ảnh api + web tại chỗ (vài phút) rồi lên mongo → api → web → edge
 docker compose ps                        # 4 container: zca-mongo, zca-api, zca-web (healthy), zca-edge
 docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên
 ```
 
-Thứ tự khởi động do `depends_on` + healthcheck lo: web chờ api khoẻ, edge chờ web khoẻ. Những lần sau chỉ cần
-`docker compose up -d` (không `--build` nếu mã không đổi). Máy khởi động lại thì Docker tự kéo cả bộ lên (`restart: unless-stopped`).
+Thứ tự khởi động do `depends_on` + healthcheck lo: web chờ api khoẻ, edge chờ web khoẻ. Ảnh `zca-platform-api`/`zca-platform-web`
+không có trên registry nào — compose **dựng tại chỗ** (`pull_policy: build`), nên mọi lần sau vẫn chỉ `docker compose up -d`: mã không
+đổi thì cache trúng hết trong vài giây, mã đổi (sau rsync) thì tự dựng lại. Máy khởi động lại thì Docker tự kéo cả bộ lên
+(`restart: unless-stopped`).
 
 ## 5. HTTPS — tự động, không có bước riêng
 
@@ -142,8 +144,8 @@ Mở `https://volcanion.vn/tai-ve` trên máy Mac và máy Windows để xem tra
 ## 9. Vận hành
 
 ```bash
-# Cập nhật mã (sau rsync lại thư mục platform/): một lệnh, chỉ dựng lại ảnh có mã đổi
-docker compose up -d --build
+# Cập nhật mã (sau rsync lại thư mục platform/): vẫn một lệnh — tự dựng lại ảnh có mã đổi
+docker compose up -d
 # Dừng / chạy lại cả bộ (giữ dữ liệu): docker compose down   |   docker compose up -d
 # Sao lưu định kỳ (cron hằng ngày): mongodump + /data
 docker exec zca-mongo mongodump --quiet --db zca --gzip --archive=/tmp/zca.dump && docker cp zca-mongo:/tmp/zca.dump ~/backup/zca-$(date +%F).dump
