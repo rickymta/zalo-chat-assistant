@@ -11,12 +11,12 @@ nhóm "Không cần trả lời") những hội thoại mà tin cuối của kh�
 
 | Mục | Cách xác định |
 |---|---|
-| **Khách** | Tên hiển thị; cách xưng hô đã dùng (anh/chị/cô/chú); SĐT nếu có; cơ sở khách nhắc tới |
+| **Người đối thoại** | Tên hiển thị; **quan hệ** (khách hàng / đồng nghiệp / đối tác / bạn bè — suy từ nội dung); cách xưng hô đã dùng; SĐT nếu có; cơ sở được nhắc tới |
 | **Nhu cầu chính** | Một trong: hỏi giá · đặt/đổi/huỷ lịch · hỏi chuyên môn (triệu chứng, quy trình) · theo dõi sau điều trị · khiếu nại/phàn nàn · thanh toán/hoá đơn · ưu đãi · khác |
 | **Dịch vụ quan tâm** | Tên dịch vụ đúng theo `huong-dan/tham-chieu-meddental/dich-vu.md` (niềng răng, Implant, răng sứ, nhổ răng khôn, tẩy trắng, trẻ em…) |
 | **Giai đoạn** | Mới hỏi lần đầu · đang được tư vấn · đã có lịch hẹn · đã điều trị / đang theo dõi · đã kết thúc |
-| **Câu hỏi chưa được trả lời** | Liệt kê từng câu của KHÁCH sau tin MÌNH cuối cùng; câu nào đã trả lời một phần thì nói rõ phần thiếu |
-| **Việc MÌNH đã hứa** | "Em gửi bảng giá sau", "để em hỏi bác sĩ", "mai em gọi"… kèm thời điểm; đã thực hiện chưa (nhìn các tin sau) |
+| **Câu hỏi chưa được trả lời** | Liệt kê từng câu của người kia sau tin "Bạn" cuối cùng; câu nào đã trả lời một phần thì nói rõ phần thiếu |
+| **Việc Bạn đã hứa** | "Em gửi bảng giá sau", "để em hỏi bác sĩ", "mai em gọi"… kèm thời điểm; đã thực hiện chưa (nhìn các tin sau) |
 | **Thông tin đã có** | Ngày giờ hẹn đã chốt, cơ sở, bác sĩ, tình trạng răng khách mô tả, ảnh đã gửi |
 | **Cảm xúc / mức khẩn** | Bình thường · sốt ruột (hỏi lại nhiều lần, "sao chưa trả lời") · lo lắng (đau, sợ) · không hài lòng (khiếu nại) · khẩn (đau nhiều, chảy máu, sưng, sốt, sau phẫu thuật) |
 | **Điều cần người quyết** | Giá cụ thể, lịch trống, bác sĩ phụ trách, ưu đãi — những thứ bạn không được tự trả lời |
@@ -35,7 +35,7 @@ Trong cùng mức, xếp theo thời gian chờ giảm dần (chờ lâu hơn l�
 ## 4. Cách đọc để không bỏ sót
 
 1. Đọc phần đầu file (thông tin + trạng thái) để biết bối cảnh và số tin.
-2. Đọc **từ tin MÌNH cuối cùng trở xuống** để gom mọi câu hỏi mới của khách.
+2. Đọc **từ tin "Bạn" cuối cùng trở xuống** để gom mọi câu hỏi mới của người kia.
 3. Đọc ngược lên để tìm: dịch vụ đang bàn, cơ sở/lịch đã chốt, lời đã hứa, cách xưng hô, tên khách.
 4. Với hội thoại dài (trên 200 tin): tóm tắt theo mốc (lần đầu hỏi → tư vấn → hẹn → điều trị → theo dõi), chỉ trích
    dẫn tin thật khi cần dẫn chứng.
@@ -50,7 +50,7 @@ Trong cùng mức, xếp theo thời gian chờ giảm dần (chờ lâu hơn l�
 
 ## 6. Tự soát trước khi bàn giao
 
-- [ ] Mọi câu hỏi của khách sau tin MÌNH cuối đều được đề cập trong đề xuất.
+- [ ] Mọi câu hỏi của người kia sau tin "Bạn" cuối đều được đề cập trong đề xuất.
 - [ ] Không có con số nào (giá, ngày, số ca) mà `du-lieu/` (tin nhắn) hoặc `huong-dan/tham-chieu-meddental/` (dịch vụ, bảng giá) không có.
 - [ ] Không có chẩn đoán, không hứa kết quả, không nhắc đối thủ.
 - [ ] Không có thông tin của khách khác lọt vào phiếu.
@@ -59,7 +59,7 @@ Trong cùng mức, xếp theo thời gian chờ giảm dần (chờ lâu hơn l�
 
 ## 7. Hội thoại NHÓM — tổng hợp theo chủ đề, không theo "chờ trả lời"
 
-Trong nhóm, tin cuối là của người khác không có nghĩa mình phải trả lời. Thay vì trạng thái chờ, rút các mục sau
+Trong nhóm, tin cuối là của người khác không có nghĩa Bạn phải trả lời. Thay vì trạng thái chờ, rút các mục sau
 (cho khoảng thời gian người dùng yêu cầu; mặc định 7 ngày gần nhất hoặc toàn bộ file nếu ngắn hơn):
 
 | Mục | Cách xác định |
@@ -83,7 +83,7 @@ cần; mọi quy tắc ở file 03 vẫn áp dụng.
 
 ## 8. Hội thoại ĐÃ trả lời — gợi ý tin theo dõi (`kind = theo-doi`)
 
-Tin cuối là của MÌNH không có nghĩa là xong việc. Xét lần lượt, chọn MỘT lý do mạnh nhất để nhắn tiếp; không có thì `khong-can`:
+Tin cuối là của Bạn không có nghĩa là xong việc. Xét lần lượt, chọn MỘT lý do mạnh nhất để nhắn tiếp; không có thì `khong-can`:
 
 | Tình huống trong hội thoại | Tin theo dõi nên đề xuất |
 |---|---|

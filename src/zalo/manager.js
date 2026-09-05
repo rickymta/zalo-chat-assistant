@@ -241,6 +241,22 @@ export class ZaloManager extends EventEmitter {
       void (async () => { for (const m of list) await this.ingest(id, m, 'old_sync'); })();
     });
 
+    const onReaction = (r) => {
+      try {
+        const d = r?.data ?? {}; const c = d.content ?? {};
+        const threadId = String(r?.threadId ?? d.idTo ?? ''); if (!threadId) return;
+        const icon = typeof c.rIcon === 'string' ? c.rIcon : '';
+        const reactorId = String(d.uidFrom ?? '') === '0' ? id : String(d.uidFrom ?? '');
+        let changed = false;
+        for (const m of (Array.isArray(c.rMsg) ? c.rMsg : [])) {
+          if (this.db.setReaction({ accountId: id, threadId, msgId: m?.gMsgID, reactorId, icon, ts: Number(d.ts) })) changed = true;
+        }
+        if (changed) this.emit('message', { accountId: id, threadId, reaction: true });
+      } catch (err) { this.log.warn(`Không ghi được cảm xúc: ${err?.message ?? err}`); }
+    };
+    l.on('reaction', onReaction);
+    l.on('old_reactions', (list) => { for (const r of (Array.isArray(list) ? list : [])) onReaction(r); });
+
     l.on('undo', (u) => {
       try {
         const c = u?.data?.content ?? {};

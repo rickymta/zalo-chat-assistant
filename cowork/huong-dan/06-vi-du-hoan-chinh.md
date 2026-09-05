@@ -10,16 +10,16 @@
 - **Trạng thái: ĐANG CHỜ TRẢ LỜI** (khách nhắn cuối, đã 6.5 giờ — QUÁ HẠN)
 
 ## Tin nhắn (cũ → mới)
-- **[03/09/2026 09:00:00] KHÁCH:** Nhổ răng khôn có đau không ạ, em sợ quá
-- **[03/09/2026 09:12:00] MÌNH:** Dạ có gây tê nên trong lúc nhổ không đau ạ; sau đó ê nhẹ vài ngày. Bên em dùng máy Piezotome ít sang chấn. Chị Mai muốn đặt lịch khám để bác sĩ chụp phim đánh giá không ạ?
-- **[03/09/2026 09:20:00] KHÁCH:** Để em sắp xếp rồi báo lại
-- **[04/09/2026 13:50:00] KHÁCH:** Chị ơi em nhổ ở chỗ khác hôm qua rồi, giờ đau nhiều quá, má sưng, có sao không ạ
-- **[04/09/2026 14:05:00] KHÁCH:** [Ảnh: IMG_2231.jpg](https://…)
+- **[03/09/2026 09:00:00] Vũ Ngọc Mai:** Nhổ răng khôn có đau không ạ, em sợ quá
+- **[03/09/2026 09:12:00] Bạn:** Dạ có gây tê nên trong lúc nhổ không đau ạ; sau đó ê nhẹ vài ngày. Bên em dùng máy Piezotome ít sang chấn. Chị Mai muốn đặt lịch khám để bác sĩ chụp phim đánh giá không ạ?
+- **[03/09/2026 09:20:00] Vũ Ngọc Mai:** Để em sắp xếp rồi báo lại
+- **[04/09/2026 13:50:00] Vũ Ngọc Mai:** Chị ơi em nhổ ở chỗ khác hôm qua rồi, giờ đau nhiều quá, má sưng, có sao không ạ
+- **[04/09/2026 14:05:00] Vũ Ngọc Mai:** [Ảnh: IMG_2231.jpg](https://…)
 ```
 
 ## Cách đọc
 
-- Tin MÌNH cuối lúc 03/09 09:12 → hai tin mới của khách (13:50 và 14:05 ngày 04/09) chưa được trả lời.
+- Tin "Bạn" cuối lúc 03/09 09:12 → hai tin mới của người kia (13:50 và 14:05 ngày 04/09) chưa được trả lời.
 - Nhu cầu đổi từ "hỏi trước khi nhổ" sang **theo dõi sau nhổ răng ở nơi khác**, có **đau nhiều + sưng** ⇒ dấu hiệu
   cần xử lý sớm (file 03 mục 4) ⇒ **P1**, nên gọi điện.
 - Ảnh không đọc được ⇒ `[CẦN XÁC NHẬN: nội dung ảnh]`.

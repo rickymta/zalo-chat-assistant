@@ -29,23 +29,24 @@ mới (giải mã từ cơ sở dữ liệu); `ket-qua/` và `huong-dan/` giữ 
 - SĐT khách: 0912000001
 - Tài khoản Zalo của mình: Tư vấn viên Demo (0985018688)
 - Khoảng thời gian trong gói: 04/09/2026 08:10:00 → 04/09/2026 08:40:00
-- Số tin trong gói: 4 (khách 3 / mình 1) · Tổng đã lưu: 4
-- Tin cuối: 04/09/2026 08:40:00 do KHÁCH gửi
-- **Trạng thái: ĐANG CHỜ TRẢ LỜI** (khách nhắn cuối, đã 3.2 giờ — QUÁ HẠN)
+- Số tin trong gói: 4 (người kia 3 / bạn 1) · Tổng đã lưu: 4
+- Tin cuối: 04/09/2026 08:40:00 do Nguyễn Thị Lan gửi
+- **Trạng thái: CHƯA TRẢ LỜI** (người kia nhắn cuối, đã 3.2 giờ — QUÁ HẠN)
 
 ## Tin nhắn (cũ → mới)
 
-- **[04/09/2026 08:10:00] KHÁCH:** Chào shop, em muốn hỏi niềng răng trong suốt giá bao nhiêu ạ?
-- **[04/09/2026 08:20:00] MÌNH:** Chào chị Lan, MedDental có Invisalign và mắc cài…
-- **[04/09/2026 08:30:00] KHÁCH:** [Ảnh: anh.jpg](https://…)
-- **[04/09/2026 08:40:00] KHÁCH:** Em ở Thanh Xuân thì đến cơ sở nào gần ạ?
+- **[04/09/2026 08:10:00] Nguyễn Thị Lan:** Chào shop, em muốn hỏi niềng răng trong suốt giá bao nhiêu ạ?
+- **[04/09/2026 08:20:00] Bạn:** Chào chị Lan, MedDental có Invisalign và mắc cài…
+- **[04/09/2026 08:30:00] Nguyễn Thị Lan:** [Ảnh: anh.jpg](https://…)
+- **[04/09/2026 08:40:00] Nguyễn Thị Lan:** Em ở Thanh Xuân thì đến cơ sở nào gần ạ?
 ```
 
 Quy ước:
 
-- **KHÁCH** = người đối thoại gửi. **MÌNH** = tư vấn viên (chủ tài khoản Zalo) gửi, kể cả gửi từ điện thoại.
-- Trong **nhóm** chat, nhãn là `THÀNH VIÊN (Tên người gửi):` — tên là bắt buộc vì người gửi đổi liên tục; `MÌNH` vẫn là
-  chủ tài khoản. Đầu file nhóm ghi `Trạng thái: NHÓM CHAT — không áp dụng "chờ trả lời"`.
+- Mỗi dòng tin ghi **tên người gửi** như trong Zalo: `**[thời gian] Nguyễn Thị Lan:** …`; tin của chủ tài khoản ghi
+  `**[thời gian] Bạn:** …` (kể cả gửi từ điện thoại). Trong nhóm, mỗi thành viên hiện đúng tên mình. Đầu file nhóm ghi
+  `Trạng thái: NHÓM CHAT — không áp dụng "chưa trả lời"`.
+- Các file gói cũ (trước 05/09/2026) dùng nhãn `KHÁCH`/`MÌNH`/`THÀNH VIÊN (Tên)` — đọc tương đương.
 - **Lịch sử nhóm có thể cũ hơn ngày cài ứng dụng**: Zalo cho lấy vài trăm tin gần nhất của mỗi nhóm khi nhập lịch sử;
   hội thoại 1-1 thì không có cơ chế này.
 - Thời gian theo giờ Việt Nam, `dd/MM/yyyy HH:mm:ss`.
@@ -55,9 +56,9 @@ Quy ước:
   xem được nội dung ảnh**. Khi ý khách nằm trong ảnh (ảnh răng, ảnh đơn thuốc, ảnh chuyển khoản) hãy ghi
   `[CẦN XÁC NHẬN: nội dung ảnh]` và đề xuất câu trả lời theo hai hướng nếu cần.
 - `_(tin này đã bị thu hồi)_`: người gửi đã rút lại; không dựa vào nội dung đó để trả lời.
-- **Trạng thái ĐANG CHỜ TRẢ LỜI** = tin cuối cùng là của khách. **QUÁ HẠN** = đã quá số giờ mà tư vấn viên cài (mặc
-  định 2 giờ). Tin cuối của khách chỉ là "Cảm ơn em"/"Ok"/sticker thì vẫn hiện "chờ trả lời" — bạn tự đánh giá là
-  **không cần trả lời** (ghi rõ trong phiếu).
+- **Trạng thái CHƯA TRẢ LỜI** = tin cuối cùng là của người kia. **QUÁ HẠN** = đã quá số giờ người dùng cài (mặc định
+  2 giờ). Tin cuối chỉ là "Cảm ơn"/"Ok"/sticker thì vẫn hiện "chưa trả lời" — bạn tự đánh giá là **không cần nhắn**
+  (`kind = khong-can`, ghi lý do).
 
 ## 3. Giới hạn của dữ liệu — phải biết trước khi kết luận
 

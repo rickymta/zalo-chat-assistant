@@ -9,7 +9,7 @@ chat (số hội thoại đã xử lý, mấy P1, việc cần người quyết)
 # Tổng hợp tin nhắn Zalo — <ngày giờ tạo>
 Gói: <tên thư mục gói> · <n> hội thoại chờ trả lời đã xử lý · P1: <n> · P2: <n> · P3: <n> · Không cần trả lời: <n>
 
-| Ưu tiên | Khách | Chờ (giờ) | Nhu cầu | Tóm tắt 1 dòng | File |
+| Ưu tiên | Hội thoại | Quan hệ | Chờ (giờ) | Loại gợi ý | Tóm tắt 1 dòng | File |
 |---|---|---|---|---|---|
 | P1 | Vũ Ngọc Mai | 6.5 | Sau nhổ răng, đau nhiều | Nhổ răng khôn hôm qua, đau tăng, hỏi có sao không | du-lieu/hoi-thoai/006-vu-ngoc-mai.md |
 | P2 | Nguyễn Thị Lan | 3.2 | Hỏi giá + cơ sở gần | Hỏi giá Invisalign, đã gửi ảnh, hỏi cơ sở gần Thanh Xuân | du-lieu/hoi-thoai/001-nguyen-thi-lan.md |
@@ -19,15 +19,15 @@ Gói: <tên thư mục gói> · <n> hội thoại chờ trả lời đã xử l�
 
 ```
 ## [P2] Nguyễn Thị Lan — du-lieu/hoi-thoai/001-nguyen-thi-lan.md
-**Loại gợi ý:** trả lời (khách nhắn cuối)
+**Loại gợi ý:** trả lời (người kia nhắn cuối) · **Quan hệ:** khách hàng
 
 **Tóm tắt:** Khách hỏi giá niềng răng trong suốt lúc 08:10; tư vấn viên đã giới thiệu hai phương pháp và xin ảnh; khách
 gửi ảnh (không đọc được nội dung) và hỏi cơ sở gần Thanh Xuân lúc 08:40. Chưa ai trả lời từ đó (chờ 3,2 giờ).
 
-**Khách cần gì:** (1) giá tham khảo Invisalign; (2) cơ sở gần Thanh Xuân.
+**Người đối thoại cần gì:** (1) giá tham khảo Invisalign; (2) cơ sở gần Thanh Xuân.
 **Giai đoạn:** đang tư vấn, chưa có lịch. **Cảm xúc:** bình thường.
-**Chưa được trả lời:** cả hai câu trên. **Việc đã hứa:** "để bác sĩ tư vấn sơ bộ sau khi có ảnh" — chưa thực hiện.
-**Thông tin đã có:** khách xưng "em", tư vấn viên gọi "chị Lan"; khách ở Thanh Xuân; đã gửi 1 ảnh.
+**Chưa được trả lời:** cả hai câu trên. **Việc Bạn đã hứa:** "để bác sĩ tư vấn sơ bộ sau khi có ảnh" — chưa thực hiện.
+**Thông tin đã có:** người kia xưng "em", Bạn gọi "chị Lan"; ở Thanh Xuân; đã gửi 1 ảnh.
 
 **Đề xuất phản hồi (dán vào Zalo):**
 Chị Lan ơi, em nhận được ảnh rồi ạ, em đã chuyển bác sĩ xem sơ bộ và sẽ báo lại chị trong chiều nay nhé.

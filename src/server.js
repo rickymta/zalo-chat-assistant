@@ -175,6 +175,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       accountIds: q.accountId ? [q.accountId] : undefined,
       q: q.q || undefined,
       onlyWaiting: q.waiting === 'true',
+      onlyUnread: q.unread === 'true',
       onlyGroups: q.groups === 'true',
       includeGroups: q.includeGroups === undefined ? !!s.includeGroups : q.includeGroups === 'true',
       from: q.from ? Number(q.from) : undefined,
@@ -186,10 +187,15 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/conversations/:accountId/:threadId/messages', async (req) => {
     const { accountId, threadId } = req.params;
     const conv = db.getConversation(accountId, threadId);
-    const messages = db.getRecentMessages(accountId, threadId, { limit: req.query?.limit ? Number(req.query.limit) : 300, before: req.query?.before ? Number(req.query.before) : null })
-      .map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], raw_json: undefined }));
-    return { conversation: conv, messages };
+    const limit = req.query?.limit ? Number(req.query.limit) : 60;
+    const rows = db.getRecentMessages(accountId, threadId, { limit, before: req.query?.before ? Number(req.query.before) : null });
+    const reactions = db.reactionsForMessages(accountId, threadId, rows.map((m) => m.zalo_msg_id).filter(Boolean), accountId);
+    const messages = rows.map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], reactions: reactions[m.zalo_msg_id] ?? [], raw_json: undefined }));
+    return { conversation: conv, messages, hasMore: rows.length >= limit };
   });
+
+  /** Đánh dấu đã đọc (cục bộ, như Zalo) — KHÔNG gửi trạng thái "đã xem" lên Zalo. */
+  app.post('/api/conversations/:accountId/:threadId/read', async (req) => { const changed = db.markRead(req.params.accountId, req.params.threadId); if (changed) broadcast('status', { read: true }); return { ok: true }; });
 
   // ── Gửi tin & gợi ý của Claude ───────────────────────────────────────────────
   app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text)));

@@ -291,6 +291,84 @@
   .pane { min-height: 0; }
   #reencryptBar { width: 100%; flex: none; }
 </style>
+
+<style>
+  /* ── v4: bố cục kiểu Zalo ── */
+  .zapp { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; min-height: 58px; -webkit-app-region: drag; }
+  .zapp.mac .topbar { padding-left: 86px; }
+  .topbar button, .topbar select, .topbar input, .topbar .pill { -webkit-app-region: no-drag; }
+  .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .brand-mini .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; }
+  .zstrip { display: flex; align-items: center; gap: 8px; white-space: nowrap; min-width: 0; }
+  .zstrip .pill { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+  .chipstat { background: #f1f5fb; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .chipstat b { color: var(--bad); }
+  .ws-line .stats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .topbar select { height: 40px; }
+  .topbar button { height: 40px; }
+  button.icon { width: 42px; padding: 0; justify-content: center; font-size: 18px; }
+  .ws-line { flex: none; padding: 5px 16px; font-size: 13px; color: var(--muted); background: #fbfcfe; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-height: 32px; }
+  .zapp.mac .ws-line { padding-left: 16px; }
+  #reencryptBar { flex: none; padding: 8px 16px 0; }
+  .cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px 1fr; }
+  .convcol { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+  .convcol .toolbar { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  .convcol .toolbar input[type=search] { width: 100%; height: 40px; }
+  .convcol .chips { display: flex; gap: 6px; }
+  .convcol .foot { padding: 6px 12px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12px; }
+  .vlist { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+  .vspacer { position: relative; width: 100%; }
+  .conv { position: absolute; left: 0; right: 0; height: 72px; display: flex; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 0; }
+  .conv:hover { background: #f4f7fc; }
+  .conv.active { background: var(--primary-soft); }
+  .conv .avatar { width: 48px; height: 48px; }
+  .conv .body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+  .conv .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .conv .nm { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv.unread .nm, .conv.unread .pv { font-weight: 700; color: var(--text); }
+  .conv .tm { font-size: 12px; color: var(--faint); white-space: nowrap; }
+  .conv.unread .tm { color: var(--primary); font-weight: 600; }
+  .conv .bottom { display: flex; align-items: center; gap: 6px; }
+  .conv .pv { flex: 1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+  .badge-unread { flex: none; background: #ef4444; color: #fff; border-radius: 999px; font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; display: inline-grid; place-items: center; }
+  .sugdot { flex: none; font-size: 13px; filter: saturate(1.2); }
+  .sugdot.none { filter: grayscale(1); opacity: .5; }
+  .conv.skeleton .avatar { background: #eef2f7; } .conv .sk { height: 12px; border-radius: 6px; background: #eef2f7; width: 70%; } .conv .sk.short { width: 40%; }
+  .chatcol { display: flex; flex-direction: column; min-height: 0; background: #f6f8fc; }
+  .chatcol .chat-head { background: var(--panel); }
+  .msgs { flex: 1; overflow-y: auto; padding: 12px 20px 16px; display: flex; flex-direction: column; }
+  .msgs-top { text-align: center; color: var(--faint); font-size: 12px; padding: 4px 0 10px; flex: none; }
+  #msgsList { display: flex; flex-direction: column; gap: 6px; }
+  .msg { display: flex; flex-direction: column; align-items: flex-start; content-visibility: auto; contain-intrinsic-size: auto 56px; }
+  .msg.out { align-items: flex-end; }
+  .msg .bubble { max-width: 70%; position: relative; padding: 8px 12px 6px; border-radius: 14px; background: #fff; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
+  .msg.out .bubble { background: #e5efff; border-color: #c7dcff; }
+  .msg .bubble.media { background: transparent; border: 0; padding: 0; }
+  .msg .bubble.media .time { position: static; margin-top: 2px; }
+  .msg .bubble .meta { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 2px; white-space: normal; }
+  .msg .bubble .time { font-size: 11px; color: var(--faint); text-align: right; margin-top: 3px; }
+  .msg .bubble .quote { border-left: 3px solid #c7d2de; padding-left: 8px; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+  .msg .bubble.recalled { opacity: .65; }
+  .atts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .att-img { max-width: 320px; max-height: 320px; border-radius: 12px; display: block; cursor: zoom-in; background: #eef2f7; }
+  .sticker { width: 130px; height: 130px; object-fit: contain; display: block; }
+  .att-video { max-width: 360px; border-radius: 12px; background: #000; }
+  .att-audio { width: 260px; }
+  .att-chip { display: inline-flex; align-items: center; gap: 6px; background: #f1f5fb; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; text-decoration: none; color: var(--text); }
+  .att-chip.file { color: var(--primary); }
+  .reacts { display: flex; gap: 4px; margin-top: -4px; padding: 0 6px; }
+  .react { background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; padding: 1px 7px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .react.mine { border-color: var(--primary); background: var(--primary-soft); }
+  .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
+  .settings-dlg { width: 860px; max-width: 94vw; padding: 0; }
+  .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; }
+  .settings-head { display: flex; align-items: center; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .settings-head h2 { font-size: 20px; }
+  .settings-body { overflow: auto; padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
+  .settings-body .card h2 { font-size: 17px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 300px 1fr; } .brand-mini b { display: none; } }
+</style>
 </head>
 <body>
 <!-- ═══════════ ĐĂNG NHẬP ═══════════ -->
@@ -364,114 +442,110 @@
   </div>
 </div>
 
-<!-- ═══════════ ỨNG DỤNG ═══════════ -->
-<div class="app" id="appView" hidden>
-  <aside class="sidebar">
-    <div class="brand"><div class="logo">Z</div><div><b>Zalo Chat<br>Assistant</b></div></div>
-    <nav class="nav">
-      <button data-view="chats"><span class="ico">💬</span> Hội thoại <span class="badge" id="navWaiting"></span></button>
-      <button data-view="settings"><span class="ico">⚙️</span> Cài đặt</button>
-    </nav>
-    <div class="side-account" id="sideAccount" title="Mở Cài đặt"></div>
-  </aside>
+<!-- ═══════════ ỨNG DỤNG (bố cục kiểu Zalo) ═══════════ -->
+<div class="zapp" id="appView" hidden>
+  <header class="topbar">
+    <div class="brand-mini"><div class="logo">Z</div><b>Zalo Chat Assistant</b></div>
+    <div class="zstrip" id="zaloStrip"></div>
+    <div class="grow"></div>
+    <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
+    <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
+    <button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>
+    <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
+  </header>
+  <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
+  <div id="reencryptBar" hidden></div>
 
-  <main>
-    <div id="reencryptBar" hidden style="margin:0 auto 14px; max-width:1180px"></div>
+  <div class="cols">
+    <aside class="convcol">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button></div>
+      </div>
+      <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
+      <div class="foot" id="convFoot"></div>
+    </aside>
 
-    <section class="view" id="view-chats" hidden>
-      <div class="strip" id="zaloStrip"></div>
-      <div class="ws-line" id="wsLine"></div>
-      <div class="split">
-        <div class="pane">
-          <div class="toolbar">
-            <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
-            <button class="chip active" data-filter="all">Tất cả</button>
-            <button class="chip" data-filter="waiting">Đang chờ trả lời</button>
-            <button class="chip" data-filter="groups">Nhóm</button>
-          </div>
-          <div class="scroll conv-list" id="convList"></div>
-          <div class="foot" id="convFoot"></div>
-        </div>
-        <div class="pane">
-          <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Nội dung sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden>📁 Đưa riêng hội thoại này cho Claude</button></div>
-          <div class="msgs" id="msgs"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div>
-          <div class="sug-card" id="sugCard" hidden></div>
-          <div class="composer" id="composer" hidden>
-            <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
-            <button class="primary" id="btnSend">Gửi</button>
-          </div>
-        </div>
+    <section class="chatcol">
+      <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden>📁 Đưa riêng hội thoại này cho Claude</button></div>
+      <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
+      <div class="sug-card" id="sugCard" hidden></div>
+      <div class="composer" id="composer" hidden>
+        <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+        <button class="primary" id="btnSend">Gửi</button>
       </div>
     </section>
-
-    <section class="view" id="view-settings" hidden>
-      <div class="view-head"><div><h1>Cài đặt</h1><p class="muted">Tài khoản, bảo mật, Zalo, tuỳ chọn và thư mục làm việc với Claude.</p></div></div>
-
-      <div class="card">
-        <h2>Tài khoản đăng nhập</h2>
-        <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
-        <details><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
-          <div class="form" style="margin-top:10px; max-width:420px">
-            <div class="field"><label>Mật khẩu hiện tại</label><input type="password" id="cpCurrent"></div>
-            <div class="field"><label>Mật khẩu mới (≥ 8 ký tự)</label><input type="password" id="cpNew"></div>
-            <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
-          </div>
-        </details>
-        <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
-      </div>
-
-      <div class="card">
-        <h2>Bảo mật dữ liệu</h2>
-        <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
-        <div class="kv" id="securityKv"></div>
-        <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền, có thể mất vài phút).</span></div>
-      </div>
-
-      <div class="card">
-        <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
-        <div id="accountRows"></div>
-      </div>
-
-      <div class="card">
-        <h2>Thư mục làm việc với Claude Cowork</h2>
-        <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
-        <div class="kv" id="wsKv"></div>
-        <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
-        <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Tự cập nhật dữ liệu cho Claude định kỳ</b><span>Chạy đúng mốc giờ tròn (60 phút = đúng :00) để lịch tự động của Claude Cowork đọc được gói mới. Gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
-        <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất (đến hoặc đi) thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
-        <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
-      </div>
-
-      <div class="card">
-        <h2>Tuỳ chọn</h2>
-        <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng thử lấy lịch sử gần đây của các nhóm (Zalo có thể không cấp).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
-        <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
-        <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
-        <div class="row" style="margin-top:14px; justify-content:flex-end"><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
-      </div>
-
-      <div class="card">
-        <h2>Nơi lưu dữ liệu</h2>
-        <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
-        <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
-      </div>
-
-      <div class="card">
-        <h2>Lưu ý quan trọng</h2>
-        <ul style="margin:8px 0 0; padding-left:22px; line-height:1.7">
-          <li>Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng trở đi; nhóm có thể có thêm lịch sử gần đây nếu Zalo cấp.</li>
-          <li>Không mở Zalo Web (chat.zalo.me) trên trình duyệt cùng lúc — sẽ làm mất kết nối ở đây. Zalo trên điện thoại dùng bình thường.</li>
-          <li>Ứng dụng chỉ đọc, không gửi tin, không đánh dấu đã xem.</li>
-        </ul>
-      </div>
-
-      <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
-    </section>
-  </main>
+  </div>
 </div>
+
+<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
+<dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span><span class="grow"></span><button class="sm" id="btnSettingsClose">Đóng</button></div>
+  <div class="settings-body">
+    <div class="card">
+      <h2>Tài khoản đăng nhập</h2>
+      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
+      <details><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+        <div class="form" style="margin-top:10px; max-width:420px">
+          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
+          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
+        </div>
+      </details>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Bảo mật dữ liệu</h2>
+      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
+      <div class="kv" id="securityKv"></div>
+      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
+      <div id="accountRows"></div>
+    </div>
+
+    <div class="card">
+      <h2>Thư mục làm việc với Claude Cowork</h2>
+      <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
+      <div class="kv" id="wsKv"></div>
+      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
+      <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Tự cập nhật định kỳ</b><span>Chạy đúng mốc giờ tròn; gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
+    </div>
+
+    <div class="card">
+      <h2>Tuỳ chọn</h2>
+      <div class="setting" id="setAutoStartRow" hidden><div class="txt"><b>Tự mở ứng dụng khi bật máy</b><span>Khuyên bật — để tin nhắn luôn được lưu.</span></div><label class="switch"><input type="checkbox" id="setAutoStart"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Lưu cả tin nhắn trong nhóm</b><span>Lần đầu bật, ứng dụng thử lấy lịch sử gần đây của các nhóm (Zalo có thể không cấp).</span></div><label class="switch"><input type="checkbox" id="setGroups"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
+      <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
+      <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
+      <div class="row" style="margin-top:14px; justify-content:flex-end"><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Nơi lưu dữ liệu</h2>
+      <div class="setting"><div class="txt"><b>Dữ liệu ứng dụng (đã mã hoá)</b><span id="pathData"></span></div><button class="sm" data-open="data">Mở thư mục</button></div>
+      <div class="warnbox" style="margin-top:12px">Thư mục dữ liệu chứa phiên Zalo và phiên đăng nhập (kèm chuỗi mã hoá) — đừng chia sẻ. Thư mục Claude chứa bản GIẢI MÃ của tin nhắn trong <code>du-lieu/</code>; xoá khi không cần.</div>
+    </div>
+
+    <div class="card">
+      <h2>Lưu ý quan trọng</h2>
+      <ul style="margin:8px 0 0; padding-left:22px; line-height:1.7">
+        <li>Hội thoại 1-1 chỉ có tin từ lúc cài ứng dụng trở đi; nhóm có thể có thêm lịch sử gần đây nếu Zalo cấp.</li>
+        <li>Không mở Zalo Web (chat.zalo.me) trên trình duyệt cùng lúc — sẽ làm mất kết nối ở đây. Zalo trên điện thoại dùng bình thường.</li>
+        <li>Mỗi tin gửi từ ứng dụng là một lần bạn bấm Gửi; ứng dụng không gửi tự động, không đánh dấu đã xem.</li>
+      </ul>
+    </div>
+
+    <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
+  </div>
+</div></dialog>
 
 <dialog id="dlgQr"><div class="dlg">
   <h2>Đăng nhập Zalo bằng mã QR</h2>
@@ -492,18 +566,20 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
-  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, view: 'chats', tab: 'login' };
+  const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, automation: null, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, tab: 'login', sugByKey: {}, sugUnresolved: 0 };
   const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại.';
+  const EMO = { '/-strong': '👍', '/-heart': '❤️', ':>': '😆', ':o': '😮', ':-((': '😢', ':-h': '😠', ':-*': '😘', ":')": '😂', '/-rose': '🌹', '/-break': '💔', '/-weak': '👎', ';xx': '😍', ';-/': '😕', ';-)': '😉', '/-ok': '👌', '/-v': '✌️', '/-thanks': '🙏', '/-punch': '👊', '_()_': '🙏', '/-no': '🚫', '/-loveu': '🥰', ':((': '😭', 'x-)': '😎', ';-d': '😁', 'b-)': '😎', ':-o': '😲', ':))': '🤣', '/-beer': '🍺', ':-)': '🙂', ':-(': '🙁', ':-D': '😀', ':-P': '😛', ':)': '🙂', ':(': '🙁', ':D': '😀' };
+  const emo = (code) => EMO[code] || code;
 
   const fmtTime = (ms) => ms ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ms)) : '';
   const fmtClock = (ms) => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
   const fmtDay = (ms) => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ms));
   const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(ms));
-  const fmtRel = (ms) => { if (!ms) return ''; const d = Date.now() - ms; if (d < 60e3) return 'vừa xong'; if (d < 3600e3) return Math.floor(d / 60e3) + ' phút trước'; if (d < 86400e3) return Math.floor(d / 3600e3) + ' giờ trước'; return Math.floor(d / 86400e3) + ' ngày trước'; };
+  const fmtRel = (ms) => { if (!ms) return ''; const d = Date.now() - ms; if (d < 60e3) return 'vừa xong'; if (d < 3600e3) return Math.floor(d / 60e3) + ' phút'; if (d < 86400e3) return fmtClock(ms); if (d < 7 * 86400e3) return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' }).format(new Date(ms)); return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit' }).format(new Date(ms)); };
   const num = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0));
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const initials = (name) => (name || '?').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
-  const avatarHtml = (url, name, cls = '') => url ? '<img class="avatar ' + cls + '" src="' + esc(url) + '" alt="">' : '<div class="avatar ' + cls + '">' + esc(initials(name)) + '</div>';
+  const avatarHtml = (url, name, cls = '') => url ? '<img class="avatar ' + cls + '" src="' + esc(url) + '" alt="" loading="lazy">' : '<div class="avatar ' + cls + '">' + esc(initials(name)) + '</div>';
   const api = async (url, opt = {}) => {
     const headers = opt.body ? { 'Content-Type': 'application/json' } : {};
     const res = await fetch(url, { ...opt, headers, body: opt.body ? JSON.stringify(opt.body) : undefined });
@@ -515,22 +591,22 @@
   let toastTimer;
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3800); };
   const busy = async (btn, label, fn) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = label; try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = old; } };
-  const waitingLabel = (c) => { const h = (Date.now() - c.last_message_at) / 3600e3; const limit = Number(state.settings.waitingHours ?? 2); if (h >= limit) return { cls: 'late', text: h >= 48 ? 'Chờ ' + Math.floor(h / 24) + ' ngày' : 'Chờ ' + Math.floor(h) + ' giờ' }; if (h >= 1) return { cls: '', text: 'Chờ ' + Math.floor(h) + ' giờ' }; return { cls: '', text: 'Vừa nhắn' }; };
   const STATUS = { connected: ['ok', 'Đang kết nối'], connecting: ['warn', 'Đang kết nối…'], reconnecting: ['warn', 'Đang nối lại…'], need_relogin: ['bad', 'Cần đăng nhập lại'], disconnected: ['', 'Đã tạm dừng'], logged_out: ['', 'Đã đăng xuất'] };
   const visibleAccounts = () => state.accounts.filter((a) => a.status !== 'logged_out' || a.hasSession);
+  const isMac = /Mac/.test(navigator.platform);
 
   // ── Đăng nhập máy chủ ─────────────────────────────────────────────────────
   function showLogin() { $('#loginView').hidden = false; $('#appView').hidden = true; if (!$('#serverUrl').value) $('#serverUrl').value = state.auth.serverUrl || ''; $('#serverUrlText').textContent = $('#serverUrl').value || state.auth.serverUrl || ''; }
+  function showApp() { $('#loginView').hidden = true; $('#appView').hidden = false; $('#appView').classList.toggle('mac', isMac && state.platform?.name === 'electron'); }
   const setErr = (sel, msg) => { const el = $(sel); el.textContent = msg || ''; el.hidden = !msg; };
   function switchTab(name) { state.tab = name; $('#formLogin').hidden = name !== 'login'; $('#formRegister').hidden = name !== 'register'; $('#formForgot').hidden = name !== 'forgot'; ['#liErr', '#rgErr', '#fgErr'].forEach((s) => setErr(s, '')); const first = $(name === 'login' ? '#liEmail' : name === 'register' ? '#rgName' : '#fgEmail'); setTimeout(() => first?.focus(), 50); }
   $$('[data-tab]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); switchTab(a.dataset.tab); }));
   $$('[data-eye]').forEach((b) => b.onclick = () => { const i = $('#' + b.dataset.eye); i.type = i.type === 'password' ? 'text' : 'password'; b.style.opacity = i.type === 'text' ? '1' : ''; });
   $('#serverToggle').onclick = (e) => { e.preventDefault(); const ed = $('#serverEdit'); ed.hidden = !ed.hidden; if (!ed.hidden) $('#serverUrl').focus(); };
   $('#serverUrl').addEventListener('input', () => { $('#serverUrlText').textContent = $('#serverUrl').value.trim() || state.auth.serverUrl || ''; });
-  function showApp() { $('#loginView').hidden = true; $('#appView').hidden = false; }
   const serverUrl = () => $('#serverUrl').value.trim() || undefined;
-  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); show(state.view); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
-  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); show(state.view); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
+  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
+  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
   $('#fgSend').onclick = async () => { setErr('#fgErr', ''); if (!$('#fgEmail').value.trim()) return setErr('#fgErr', 'Nhập email trước.'); await busy($('#fgSend'), 'Đang gửi…', async () => { try { const r = await api('/api/auth/forgot', { method: 'POST', body: { email: $('#fgEmail').value, serverUrl: serverUrl() } }); const h = $('#fgHint'); h.hidden = false; h.textContent = r.delivery === 'server-log' ? 'ℹ️ Máy chủ chưa cấu hình gửi email: mã đặt lại nằm trong nhật ký máy chủ — hãy hỏi quản trị viên rồi nhập ở bước 2.' : '✅ Đã gửi mã tới email (hiệu lực 30 phút). Nhập mã ở bước 2.'; $('#fgCode').focus(); } catch (err) { setErr('#fgErr', err.message); } }); };
   $('#formForgot').onsubmit = async (e) => { e.preventDefault(); setErr('#fgErr', ''); if (!$('#fgCode').value.trim()) return setErr('#fgErr', 'Nhập mã 8 ký tự đã nhận.'); await busy($('#fgBtn'), 'Đang đặt lại…', async () => { try { await api('/api/auth/reset', { method: 'POST', body: { email: $('#fgEmail').value, code: $('#fgCode').value, newPassword: $('#fgPassword').value, serverUrl: serverUrl() } }); toast('Đã đặt lại mật khẩu — hãy đăng nhập.'); $('#liEmail').value = $('#fgEmail').value; switchTab('login'); } catch (err) { setErr('#fgErr', err.message); } }); };
   $('#btnPing').onclick = async () => { $('#pingResult').textContent = 'Đang kiểm tra…'; try { const r = await api('/api/auth/ping?url=' + encodeURIComponent(serverUrl() || '')); $('#pingResult').textContent = '✅ Máy chủ trả lời (' + num(r.server?.users) + ' tài khoản' + (r.server?.smtp ? ', có gửi email' : ', chưa cấu hình email') + ').'; } catch (err) { $('#pingResult').textContent = '❌ ' + err.message; } };
@@ -540,45 +616,32 @@
     const s = await api('/api/state');
     Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions });
     if (s.locked) { showLogin(); return; }
-    try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { state.sugByKey = state.sugByKey || {}; }
     showApp();
-    renderSide(); renderStrip(); renderReencrypt();
-    if (state.view === 'settings') renderSettings();
+    try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
+    renderTop(); renderReencrypt();
+    if ($('#dlgSettings').open) renderSettings();
   }
-  function renderSide() {
-    const list = visibleAccounts();
-    const a = list.find((x) => x.status === 'connected') || list[0];
-    const [cls, label] = a ? (STATUS[a.status] || ['', a.status]) : ['', 'Chưa kết nối Zalo'];
-    $('#sideAccount').innerHTML = avatarHtml(a?.avatarUrl, a?.displayName || state.auth.user?.name || state.auth.user?.email) + '<div class="who"><b>' + esc(state.auth.user?.name || state.auth.user?.email || '') + '</b><span class="small muted"><span class="dot ' + cls + '"></span>' + (a ? 'Zalo ' + esc(a.displayName || '') + ' · ' + label : label) + '</span></div>';
-    const w = Number(state.stats?.waiting || 0);
-    $('#navWaiting').textContent = w ? String(w) : '';
-  }
-  function renderStrip() {
+  function renderTop() {
     const list = visibleAccounts();
     const live = list.filter((a) => a.status === 'connected');
     const bad = list.find((a) => a.status === 'need_relogin');
     let zalo;
-    if (!list.length) zalo = '<span class="pill">Chưa kết nối Zalo</span><button class="primary" data-act="qr">📱 Đăng nhập Zalo (QR)</button>';
-    else if (bad) zalo = '<span class="pill bad">Zalo ' + esc(bad.displayName || '') + ': mất kết nối</span><button class="primary" data-act="qr">Quét mã QR</button>';
-    else if (live.length) zalo = avatarHtml(live[0].avatarUrl, live[0].displayName, 'sm') + '<span class="pill ok">Zalo ' + esc(live.map((a) => a.displayName || a.id).join(', ')) + ' · đang lưu tin</span>';
-    else { const p = list[0]; zalo = '<span class="pill warn">Zalo ' + esc(p.displayName || '') + ': ' + (STATUS[p.status]?.[1] || p.status) + '</span>' + (p.hasSession ? '<button class="primary" data-act="start" data-id="' + esc(p.id) + '">Kết nối</button>' : '<button class="primary" data-act="qr">Quét mã QR</button>'); }
+    if (!list.length) zalo = '<span class="pill">Chưa kết nối Zalo</span><button class="primary sm" data-act="qr">📱 Đăng nhập Zalo (QR)</button>';
+    else if (bad) zalo = '<span class="pill bad">Zalo ' + esc(bad.displayName || '') + ': mất kết nối</span><button class="primary sm" data-act="qr">Quét mã QR</button>';
+    else if (live.length) zalo = avatarHtml(live[0].avatarUrl, live[0].displayName, 'sm') + '<span class="pill ok">' + esc(live.map((a) => a.displayName || a.id).join(', ')) + ' · đang kết nối</span>';
+    else { const p = list[0]; zalo = '<span class="pill warn">Zalo ' + esc(p.displayName || '') + ': ' + (STATUS[p.status]?.[1] || p.status) + '</span>' + (p.hasSession ? '<button class="primary sm" data-act="start" data-id="' + esc(p.id) + '">Kết nối</button>' : '<button class="primary sm" data-act="qr">Quét mã QR</button>'); }
     const s = state.stats || {};
     const job = list.map((a) => a.importJob).find((j) => j && j.running);
-    $('#zaloStrip').innerHTML = '<div class="zalo">' + zalo + '</div>' +
-      '<span class="chipstat">⏳ <b>' + num(s.waiting) + '</b> chờ trả lời</span><span class="chipstat">📩 ' + num(s.today) + ' tin hôm nay</span>' + (s.groups ? '<span class="chipstat">👥 ' + num(s.groups) + ' nhóm</span>' : '') +
+    $('#zaloStrip').innerHTML = zalo;
+    $('#statChips').innerHTML = '<span class="chipstat" title="Hội thoại có tin chưa đọc">✉️ <b>' + num(s.unread_conversations) + '</b> chưa đọc</span><span class="chipstat">📩 ' + num(s.today) + ' tin hôm nay</span>' + (s.groups ? '<span class="chipstat">👥 ' + num(s.groups) + ' nhóm</span>' : '') +
       (job ? '<span class="chipstat">⏳ nhập lịch sử nhóm ' + job.done + '/' + job.total + '</span>' : '') +
-      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '') +
-      '<span class="grow"></span><select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>' +
-      '<button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button><button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>';
-    $('#presetSel').value = state.settings.defaultPreset || 'waiting';
-    $('#btnWsUpdate').onclick = () => updateWorkspace({ preset: $('#presetSel').value }, $('#btnWsUpdate'));
-    const ws = state.workspace || {};
-    $('#wsLine').innerHTML = ws.hasData && ws.status
-      ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) + ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>'
-      : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.';
-    const au = state.automation;
-    if (au) $('#wsLine').innerHTML += (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) + ' (' + au.quietMinutes + ' phút sau tin cuối)' : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 và mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '');
-    const cp = $('#btnCopyPrompt2'); if (cp) cp.onclick = copyPrompt;
+      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '');
+    $('#presetSel').value = state.settings.defaultPreset || 'today';
+    const ws = state.workspace || {}; const au = state.automation;
+    $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.') +
+      (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) + ' (' + au.quietMinutes + ' phút sau tin cuối)' : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 và mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
+      ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>';
+    $('#btnCopyPrompt2').onclick = copyPrompt;
   }
   function renderReencrypt() {
     const r = state.security?.reencrypt; const bar = $('#reencryptBar');
@@ -598,111 +661,177 @@
       catch (err) { toast('Không cập nhật được: ' + err.message); }
     });
   }
+  $('#btnWsUpdate').onclick = () => updateWorkspace({ preset: $('#presetSel').value }, $('#btnWsUpdate'));
   document.addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (!b) return; const p = b.dataset.open === 'workspace' ? state.paths.workspaceDir : state.paths.dataDir; api('/api/open', { method: 'POST', body: { path: p } }).catch((err) => toast(err.message)); });
 
-  // ── Điều hướng ───────────────────────────────────────────────────────────
-  function show(view) {
-    state.view = view;
-    $$('.view').forEach((v) => { v.hidden = v.id !== 'view-' + view; });
-    $$('.nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
-    $('main').classList.toggle('fixed', view === 'chats');   // Hội thoại: trang không cuộn, chỉ hai cột cuộn
-    location.hash = view;
-    if (view === 'chats') loadConversations();
-    if (view === 'settings') renderSettings();
-  }
-  $$('.nav button').forEach((b) => b.onclick = () => show(b.dataset.view));
-  $('#sideAccount').onclick = () => show('settings');
-  window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (['chats', 'settings'].includes(v) && v !== state.view) show(v); });
-
-  // ── Hội thoại ────────────────────────────────────────────────────────────
-  function convItem(c) {
-    const waiting = c.last_message_outbound === 0 && !c.is_group;
+  // ── Danh sách hội thoại: cuộn ảo (hàng cao cố định, tải theo trang) ────────
+  const ROW_H = 72, PAGE = 100, OVERSCAN = 6;
+  const vlist = {
+    scroll: null, spacer: null, total: 0, rows: [], pages: new Set(), loading: new Set(), gen: 0,
+    init() { this.scroll = $('#convScroll'); this.spacer = $('#convSpacer'); this.scroll.addEventListener('scroll', () => this.render()); new ResizeObserver(() => this.render()).observe(this.scroll); },
+    params() { const p = new URLSearchParams({ includeGroups: 'true', limit: String(PAGE) }); if (state.q) p.set('q', state.q); if (state.filter === 'unread') p.set('unread', 'true'); if (state.filter === 'groups') p.set('groups', 'true'); return p; },
+    reset() { this.gen++; this.rows = []; this.pages = new Set(); this.loading = new Set(); this.total = 0; this.scroll.scrollTop = 0; this.spacer.innerHTML = ''; this.spacer.style.height = '0px'; return this.loadPage(0).then(() => this.render()); },
+    /** Tải lại các trang đã có (giữ vị trí cuộn) — dùng khi có tin mới/đổi trạng thái. */
+    async refresh() { const gen = ++this.gen; const pages = [...this.pages]; if (!pages.length) return this.reset(); this.pages = new Set(); await Promise.all(pages.map((p) => this.loadPage(p, gen))); if (gen === this.gen) this.render(); },
+    async loadPage(p, gen = this.gen) {
+      if (this.pages.has(p) || this.loading.has(p)) return; this.loading.add(p);
+      try {
+        const q = this.params(); q.set('offset', String(p * PAGE));
+        const r = await api('/api/conversations?' + q.toString());
+        if (gen !== this.gen) return;
+        this.total = r.total; for (let i = 0; i < r.rows.length; i++) this.rows[p * PAGE + i] = r.rows[i];
+        this.pages.add(p); this.spacer.style.height = (this.total * ROW_H) + 'px';
+        $('#convFoot').textContent = num(this.total) + ' hội thoại';
+        this.render();
+      } catch (err) { toast(err.message); } finally { this.loading.delete(p); }
+    },
+    render() {
+      if (state.locked) return;
+      const top = this.scroll.scrollTop, h = this.scroll.clientHeight;
+      const start = Math.max(0, Math.floor(top / ROW_H) - OVERSCAN), end = Math.min(this.total, Math.ceil((top + h) / ROW_H) + OVERSCAN);
+      for (let p = Math.floor(start / PAGE); p <= Math.floor(Math.max(0, end - 1) / PAGE); p++) if (!this.pages.has(p)) void this.loadPage(p);
+      let html = '';
+      for (let i = start; i < end; i++) { const c = this.rows[i]; html += c ? convItem(c, i) : '<div class="conv skeleton" style="top:' + (i * ROW_H) + 'px"><div class="avatar"></div><div class="body"><div class="sk"></div><div class="sk short"></div></div></div>'; }
+      if (!this.total && this.pages.size) html = '<div class="empty" style="position:relative"><div class="big">📭</div>' + (state.q || state.filter !== 'all' ? 'Không có hội thoại nào khớp.' : 'Chưa có hội thoại nào. Kết nối Zalo ở thanh trên; khi có tin nhắn mới, hội thoại sẽ hiện ở đây.') + '</div>';
+      this.spacer.innerHTML = html;
+    },
+  };
+  function convItem(c, i) {
     const key = c.account_id + '|' + c.thread_id;
-    const w = waiting ? waitingLabel(c) : null;
-    const who = c.last_message_outbound ? 'Mình' : (c.is_group ? (c.last_message_sender || '') : '');
-    const tag = (c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>')) + (((state.sugByKey || {})[key] || []).length ? (() => { const s = (state.sugByKey[key].find((x) => x.reply) || state.sugByKey[key][0]); return s.reply ? ' <span class="tag sug ' + (s.kind === 'theo-doi' ? 'follow' : '') + '">💡 ' + (s.kind === 'theo-doi' ? 'Gợi ý theo dõi' : 'Có gợi ý') + '</span>' : ' <span class="tag sug none">Claude: không cần nhắn</span>'; })() : '');
-    return '<div class="conv ' + (state.selected === key ? 'active' : '') + '" data-key="' + esc(key) + '">' + avatarHtml(c.avatar_url, c.name) + '<div class="body"><div class="top"><span class="nm">' + esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div><div class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</div>' + tag + '</div></div>';
+    const sug = (state.sugByKey || {})[key]; const s = sug?.length ? (sug.find((x) => x.reply) || sug[0]) : null;
+    const who = c.last_message_outbound ? 'Bạn' : (c.is_group ? (c.last_message_sender || '') : '');
+    const unread = Number(c.unread_count || 0);
+    return '<div class="conv ' + (state.selected === key ? 'active' : '') + (unread ? ' unread' : '') + '" data-key="' + esc(key) + '" style="top:' + (i * ROW_H) + 'px">' + avatarHtml(c.avatar_url, c.name) +
+      '<div class="body"><div class="top"><span class="nm">' + (c.is_group ? '👥 ' : '') + esc(c.name || (c.is_group ? 'Nhóm ' : '') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div>' +
+      '<div class="bottom"><span class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</span>' +
+      (unread ? '<span class="badge-unread">' + (unread > 99 ? '99+' : unread) + '</span>' : '') + (s ? '<span class="sugdot ' + (s.reply ? (s.kind === 'theo-doi' ? 'follow' : '') : 'none') + '" title="' + (s.reply ? 'Có gợi ý từ Claude' : 'Claude: không cần nhắn') + '">💡</span>' : '') + '</div></div></div>';
   }
-  document.addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it) return; state.selected = it.dataset.key; $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === state.selected)); loadMessages(); });
   function setFilter(f) { state.filter = f; $$('.chip').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
-  $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); loadConversations(); });
-  let loadTimer, loadSeq = 0;
-  async function loadConversations() {
-    if (state.locked) return;
-    const seq = ++loadSeq;   // bỏ kết quả cũ về muộn (tìm kiếm + tải lại theo SSE có thể chồng nhau)
-    const p = new URLSearchParams({ limit: 400, includeGroups: 'true' });
-    if (state.q) p.set('q', state.q);
-    if (state.filter === 'waiting') p.set('waiting', 'true');
-    if (state.filter === 'groups') p.set('groups', 'true');
-    const r = await api('/api/conversations?' + p.toString());
-    if (seq !== loadSeq) return;
-    $('#convList').innerHTML = r.rows.length ? r.rows.map(convItem).join('') : '<div class="empty"><div class="big">📭</div>' + (state.q || state.filter !== 'all' ? 'Không có hội thoại nào khớp.' : 'Chưa có hội thoại nào. Kết nối Zalo ở thanh trên; khi có tin nhắn mới, hội thoại sẽ hiện ở đây.') + '</div>';
-    $('#convFoot').textContent = 'Hiển thị ' + r.rows.length + ' / ' + num(r.total) + ' hội thoại';
+  $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); vlist.reset(); });
+  let searchTimer; $('#search').addEventListener('input', (e) => { state.q = e.target.value.trim(); clearTimeout(searchTimer); searchTimer = setTimeout(() => vlist.reset(), 250); });
+  $('#convScroll').addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it || !it.dataset.key) return; openConversation(it.dataset.key); });
+
+  // ── Tin nhắn: cuộn vô cực lên trên + cảm xúc + ảnh/sticker ───────────────
+  const chat = { key: null, accountId: null, threadId: null, items: [], hasMore: false, loadingOlder: false, conv: null };
+  const PAGE_MSG = 60;
+  async function openConversation(key) {
+    state.selected = key; chat.key = key; [chat.accountId, chat.threadId] = key.split('|'); chat.items = []; chat.hasMore = false;
+    $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === key));
+    const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
+    if (chat.key !== key) return;
+    chat.conv = r.conversation || {}; chat.items = r.messages; chat.hasMore = !!r.hasMore;
+    renderHead(); renderMessages(true); renderSuggestion(chat.accountId, chat.threadId); renderComposer();
+    api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/read', { method: 'POST' }).then(() => { const row = vlist.rows.find((c) => c && c.account_id === chat.accountId && c.thread_id === chat.threadId); if (row) { row.unread_count = 0; vlist.render(); } refreshState(); }).catch(() => {});
   }
-  $('#search').addEventListener('input', (e) => { state.q = e.target.value.trim(); clearTimeout(loadTimer); loadTimer = setTimeout(loadConversations, 250); });
-  async function loadMessages() {
-    if (!state.selected) return;
-    const [accountId, threadId] = state.selected.split('|');
-    const r = await api('/api/conversations/' + encodeURIComponent(accountId) + '/' + encodeURIComponent(threadId) + '/messages?limit=400');
-    const c = r.conversation || {};
-    $('#chatName').textContent = c.name || threadId;
-    $('#chatMeta').textContent = c.is_group ? 'Nhóm chat · ' + num(c.message_count) + ' tin (thành viên ' + num(c.inbound_count) + ', mình ' + num(c.outbound_count) + ')' : 'Khách' + (c.phone ? ' · ' + c.phone : '') + ' · ' + num(c.message_count) + ' tin (khách ' + num(c.inbound_count) + ', mình ' + num(c.outbound_count) + ')';
+  function renderHead() {
+    const c = chat.conv || {};
+    $('#chatName').textContent = c.name || chat.threadId;
+    $('#chatMeta').textContent = c.is_group ? 'Nhóm · ' + num(c.message_count) + ' tin nhắn' : (c.phone ? c.phone + ' · ' : '') + num(c.message_count) + ' tin nhắn';
     $('#chatAvatar').outerHTML = avatarHtml(c.avatar_url, c.name).replace('class="avatar', 'id="chatAvatar" class="avatar');
     $('#chatExportBtn').hidden = false;
-    const box = $('#msgs'); let lastDay = '';
-    box.innerHTML = r.messages.length ? r.messages.map((m) => {
-      const d = dayKey(m.event_time); const sep = d !== lastDay ? '<div class="day-sep">' + fmtDay(m.event_time) + '</div>' : ''; lastDay = d;
-      const att = (m.attachments || []).map((a) => a.url ? '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">[' + esc(a.type === 'image' ? 'Ảnh' : a.type === 'file' ? 'Tệp' : a.type === 'sticker' ? 'Sticker' : a.type) + (a.name && a.type !== 'sticker' ? ': ' + esc(a.name) : '') + ']</a>' : '<span>[' + esc(a.name || a.type) + ']</span>').join(' ');
-      return sep + '<div class="bubble ' + (m.is_outbound ? 'out' : '') + ' ' + (m.recalled ? 'recalled' : '') + '"><div class="meta">' + (m.is_outbound ? 'Mình' : esc(m.sender_name || c.name || 'Khách')) + ' · ' + fmtClock(m.event_time) + (m.recalled ? ' · đã thu hồi' : '') + '</div>' + (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') + esc(m.text || '') + (att ? '<div class="att">' + att + '</div>' : '') + '</div>';
-    }).join('') : '<div class="empty">Chưa có tin nhắn.</div>';
-    box.scrollTop = box.scrollHeight;
-    renderSuggestion(accountId, threadId);
-    const acc = state.accounts.find((a) => a.id === accountId);
+  }
+  function attHtml(a) {
+    const url = a.url ? esc(a.url) : '';
+    // Ảnh/sticker lỗi tải (link Zalo hết hạn, không có mạng) → đổi sang chip có tên + liên kết, không để ô trống.
+    const onErr = (label) => ' onerror="this.parentElement.outerHTML=\x27<a class=&quot;att-chip&quot; href=&quot;' + url + '&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>' + label + ' (không tải được — mở liên kết)</a>\x27"';
+    if (a.type === 'sticker') return url ? '<span><img class="sticker" src="' + url + '" alt="Sticker" loading="lazy"' + onErr('😊 Sticker') + '></span>' : '<span class="att-chip">😊 Sticker</span>';
+    if (a.type === 'image' || a.type === 'gif') return url ? '<a href="' + url + '" target="_blank" rel="noopener"><img class="att-img" src="' + url + '" alt="' + esc(a.name || 'Ảnh') + '" loading="lazy"' + onErr((a.type === 'gif' ? '🎞 ' : '🖼 ') + esc(a.name || 'Ảnh')) + '></a>' : '<span class="att-chip">🖼 ' + esc(a.name || 'Ảnh') + '</span>';
+    if (a.type === 'video') return url ? '<video class="att-video" controls preload="metadata"' + (a.thumb ? ' poster="' + esc(a.thumb) + '"' : '') + ' src="' + url + '"></video>' : '<span class="att-chip">🎬 Video</span>';
+    if (a.type === 'audio') return url ? '<audio class="att-audio" controls preload="none" src="' + url + '"></audio>' : '<span class="att-chip">🎤 Ghi âm</span>';
+    if (a.type === 'file') return url ? '<a class="att-chip file" href="' + url + '" target="_blank" rel="noopener">📎 ' + esc(a.name || 'Tệp') + '</a>' : '<span class="att-chip">📎 ' + esc(a.name || 'Tệp') + '</span>';
+    if (a.type === 'link') return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">🔗 ' + esc(a.name || url) + '</a>' : '';
+    return url ? '<a class="att-chip" href="' + url + '" target="_blank" rel="noopener">📄 ' + esc(a.name || a.type) + '</a>' : '<span class="att-chip">' + esc(a.name || a.type) + '</span>';
+  }
+  function bubble(m) {
+    const c = chat.conv || {};
+    const who = m.is_outbound ? 'Bạn' : esc(m.sender_name || c.name || '');
+    const atts = (m.attachments || []);
+    const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
+    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + '" data-id="' + m.id + '"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
+      (c.is_group && !m.is_outbound ? '<div class="meta">' + who + '</div>' : '') +
+      (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') +
+      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : esc(m.text || '')) +
+      (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
+      '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>';
+  }
+  function renderMessages(scrollBottom) {
+    const box = $('#msgs'), list = $('#msgsList');
+    const prevH = box.scrollHeight, prevTop = box.scrollTop;
+    let lastDay = '', html = '';
+    for (const m of chat.items) { const d = dayKey(m.event_time); if (d !== lastDay) { html += '<div class="day-sep">' + fmtDay(m.event_time) + '</div>'; lastDay = d; } html += bubble(m); }
+    list.innerHTML = html || '<div class="empty">Chưa có tin nhắn.</div>';
+    $('#msgsTop').textContent = chat.hasMore ? 'Cuộn lên để xem tin cũ hơn' : (chat.items.length ? 'Đầu hội thoại đã lưu' : '');
+    if (scrollBottom) box.scrollTop = box.scrollHeight; else box.scrollTop = box.scrollHeight - prevH + prevTop;
+  }
+  async function loadOlder() {
+    if (!chat.key || !chat.hasMore || chat.loadingOlder || !chat.items.length) return;
+    chat.loadingOlder = true; const key = chat.key;
+    try {
+      const oldest = chat.items[0].event_time;
+      const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG + '&before=' + oldest);
+      if (chat.key !== key) return;
+      const seen = new Set(chat.items.map((m) => m.id));
+      chat.items = [...r.messages.filter((m) => !seen.has(m.id)), ...chat.items]; chat.hasMore = !!r.hasMore;
+      renderMessages(false);
+    } catch (err) { toast(err.message); } finally { chat.loadingOlder = false; }
+  }
+  $('#msgs').addEventListener('scroll', () => { if ($('#msgs').scrollTop < 120) loadOlder(); });
+  /** Có tin mới/cảm xúc mới ở hội thoại đang mở: lấy phần mới nhất, ghép vào (giữ vị trí nếu đang đọc tin cũ). */
+  async function refreshOpenChat() {
+    if (!chat.key) return; const key = chat.key;
+    const r = await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/messages?limit=' + PAGE_MSG);
+    if (chat.key !== key) return;
+    const box = $('#msgs'); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    const byId = new Map(chat.items.map((m) => [m.id, m]));
+    for (const m of r.messages) byId.set(m.id, m);
+    chat.items = [...byId.values()].sort((a, b) => a.event_time - b.event_time || a.id - b.id);
+    chat.conv = r.conversation || chat.conv; renderHead(); renderMessages(atBottom); renderSuggestion(chat.accountId, chat.threadId);
+    api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/read', { method: 'POST' }).catch(() => {});
+  }
+  function renderComposer() {
+    const acc = state.accounts.find((a) => a.id === chat.accountId);
     const comp = $('#composer'); comp.hidden = false;
     const canSend = acc?.status === 'connected';
     $('#btnSend').disabled = !canSend; $('#composeText').disabled = !canSend;
-    $('#composeText').placeholder = canSend ? 'Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
+    $('#composeText').placeholder = canSend ? 'Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
   }
-  const KIND = { 'tra-loi': ['', 'Trả lời'], 'theo-doi': ['follow', 'Theo dõi'], 'nhom': ['', 'Nhóm'], 'khong-can': ['none', 'Không cần nhắn'] };
+  $('#chatExportBtn').onclick = () => { if (!chat.key) return; updateWorkspace({ preset: 'one', accountIds: [chat.accountId], threadIds: [chat.threadId] }, $('#chatExportBtn')); };
+
+  // ── Gợi ý từ Claude ───────────────────────────────────────────────────────
+  const KIND = { 'tra-loi': ['', 'Trả lời'], 'theo-doi': ['follow', 'Nhắn tiếp'], 'nhom': ['', 'Nhóm'], 'khong-can': ['none', 'Không cần nhắn'] };
   function renderSuggestion(accountId, threadId) {
     const list = (state.sugByKey || {})[accountId + '|' + threadId] || [];
     const card = $('#sugCard');
     if (!list.length) { card.hidden = true; card.innerHTML = ''; card.className = 'sug-card'; return; }
     const it = list.find((x) => x.reply) || list[0];
     const [kcls, klabel] = KIND[it.kind] || KIND['tra-loi'];
-    card.hidden = false;
-    card.className = 'sug-card ' + kcls;
+    card.hidden = false; card.className = 'sug-card ' + kcls;
     const prio = it.priority ? '<span class="prio ' + (it.priority === 'P1' ? 'p1' : it.priority === 'P3' ? 'p3' : '') + '">' + esc(it.priority) + '</span>' : '';
     const head = '<div class="head"><span class="ttl">💡 Gợi ý từ Claude</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
       (it.reply ? '<span class="acts"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span>' : '') + '</div>';
     const warn = it.hasNewer ? '<div class="warnnew">⚠️ Có tin mới sau khi Claude viết gợi ý — đọc lại hội thoại trước khi gửi.</div>' : '';
-    if (!it.reply) {
-      card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '');
-      return;
-    }
-    card.innerHTML = head + warn +
-      (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') +
-      '<div class="reply">' + esc(it.reply) + '</div>' +
+    if (!it.reply) { card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : ''); return; }
+    card.innerHTML = head + warn + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') + '<div class="reply">' + esc(it.reply) + '</div>' +
       ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của Claude' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
     $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
     $('#btnCopySug').onclick = async () => { try { await navigator.clipboard.writeText(it.reply); toast('Đã sao chép gợi ý.'); } catch { toast('Không sao chép được.'); } };
   }
   async function sendCurrent() {
-    if (!state.selected) return;
+    if (!chat.key) return;
     const t = $('#composeText'); const text = t.value.trim(); if (!text) return;
-    const [accountId, threadId] = state.selected.split('|');
     await busy($('#btnSend'), 'Đang gửi…', async () => {
-      try { await api('/api/conversations/' + encodeURIComponent(accountId) + '/' + encodeURIComponent(threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; toast('Đã gửi.'); await loadMessages(); loadConversations(); }
+      try { await api('/api/conversations/' + encodeURIComponent(chat.accountId) + '/' + encodeURIComponent(chat.threadId) + '/send', { method: 'POST', body: { text } }); t.value = ''; await refreshOpenChat(); vlist.refresh(); }
       catch (err) { toast('Không gửi được: ' + err.message); }
     });
   }
   $('#btnSend').onclick = sendCurrent;
   $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } });
-  $('#chatExportBtn').onclick = () => { if (!state.selected) return; const [accountId, threadId] = state.selected.split('|'); updateWorkspace({ preset: 'one', accountIds: [accountId], threadIds: [threadId] }, $('#chatExportBtn')); };
 
-  // ── Cài đặt ──────────────────────────────────────────────────────────────
+  // ── Cài đặt (hộp thoại) ───────────────────────────────────────────────────
   function renderSettings() {
     const u = state.auth.user || {};
+    $('#settingsSub').textContent = u.email ? 'Đăng nhập: ' + u.email : '';
     $('#accountKv').innerHTML = '<div>Email</div><div><b>' + esc(u.email || '') + '</b>' + (u.name ? ' · ' + esc(u.name) : '') + '</div><div>Máy chủ</div><div>' + esc(state.auth.serverUrl || '') + (state.auth.loggedIn ? ' <span class="pill ok">Còn phiên</span>' : ' <span class="pill bad">Hết phiên — cần đăng nhập lại</span>') + '</div>' + (state.auth.lastServerError ? '<div>Lần gần nhất</div><div class="small" style="color:var(--bad)">' + esc(state.auth.lastServerError) + '</div>' : '');
     const sec = state.security || {}; const r = sec.reencrypt;
     $('#securityKv').innerHTML = '<div>Chuỗi mã hoá</div><div>Phiên bản <b>' + num(sec.keyVersion) + '</b> · đang giữ ' + num(sec.keyCount) + ' phiên bản để giải mã dữ liệu cũ</div><div>Trạng thái</div><div>' + (r?.running ? '🔐 Đang mã hoá lại: ' + (r.table || '') + ' ' + num(r.done) + '/' + num(r.total) : (sec.pending ? '⚠️ ' + num(sec.pending) + ' dòng chưa ở phiên bản hiện tại' : '✅ Toàn bộ dữ liệu ở phiên bản hiện tại')) + (r && !r.running && r.finishedAt ? ' · lần gần nhất ' + fmtTime(r.finishedAt) + (r.error ? ' — lỗi: ' + esc(r.error) : '') : '') + '</div>';
@@ -718,7 +847,7 @@
     const ws = state.workspace || {};
     $('#wsKv').innerHTML = '<div>Đường dẫn</div><div><code>' + esc(ws.root || state.paths.workspaceDir || '') + '</code></div><div>Dữ liệu hiện có</div><div>' + (ws.hasData && ws.status ? num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin — ' + fmtTime(ws.status.updatedAt) : 'chưa có') + '</div><div>Câu lệnh cho Claude</div><div><code>' + esc(PROMPT) + '</code></div>';
     const s = state.settings;
-    $('#setExcel').checked = !!s.includeExcel; $('#setPreset').value = s.defaultPreset || 'waiting'; $('#setAutoMinutes').value = s.autoUpdateMinutes ?? 60; $('#setQuietMinutes').value = s.quietMinutes ?? 3;
+    $('#setExcel').checked = !!s.includeExcel; $('#setPreset').value = s.defaultPreset || 'today'; $('#setAutoMinutes').value = s.autoUpdateMinutes ?? 60; $('#setQuietMinutes').value = s.quietMinutes ?? 3;
     $('#setGroups').checked = !!s.includeGroups; $('#setSyncOld').checked = s.syncOldOnConnect !== false;
     $('#setWaitingHours').value = s.waitingHours ?? 2; $('#setGroupCount').value = s.groupHistoryCount ?? 300;
     const supportsAuto = state.platform && state.platform.autoStart !== null && state.platform.autoStart !== undefined;
@@ -726,6 +855,9 @@
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
+  function openSettings() { renderSettings(); $('#dlgSettings').showModal(); }
+  $('#btnSettings').onclick = openSettings;
+  $('#btnSettingsClose').onclick = () => $('#dlgSettings').close();
   $('#accountRows').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const id = btn.closest('.acc-row').dataset.id; const act = btn.dataset.act;
@@ -748,7 +880,7 @@
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
   };
-  $('#btnLogoutApp').onclick = async () => { if (!confirm('Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).')) return; try { await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
+  $('#btnLogoutApp').onclick = async () => { if (!confirm('Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).')) return; try { $('#dlgSettings').close(); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
   $('#cpBtn').onclick = async () => { $('#cpMsg').textContent = ''; try { await api('/api/auth/change-password', { method: 'POST', body: { currentPassword: $('#cpCurrent').value, newPassword: $('#cpNew').value } }); $('#cpMsg').textContent = '✅ Đã đổi mật khẩu.'; $('#cpCurrent').value = ''; $('#cpNew').value = ''; } catch (err) { $('#cpMsg').textContent = '❌ ' + err.message; } };
   $('#btnRotate').onclick = async () => { if (!confirm('Đổi chuỗi mã hoá?\nMáy chủ sẽ cấp chuỗi mới và ứng dụng mã hoá lại TOÀN BỘ dữ liệu trên máy (chạy nền). Máy khác dùng cùng tài khoản sẽ tự lấy chuỗi mới khi mở.')) return; await busy($('#btnRotate'), 'Đang đổi…', async () => { try { const r = await api('/api/security/rotate-key', { method: 'POST' }); toast('Đã đổi sang phiên bản ' + r.version + ' — đang mã hoá lại.'); await refreshState(); } catch (err) { toast(err.message); } }); };
   $('#btnReencrypt').onclick = async () => { try { await api('/api/security/reencrypt', { method: 'POST' }); toast('Đã bắt đầu mã hoá lại phần còn thiếu.'); } catch (err) { toast(err.message); } };
@@ -770,7 +902,7 @@
     const st = $('#qrState');
     const map = { pending: ['', 'Đang chờ bạn quét mã…'], scanned: ['ok', 'Đã quét' + (r.scannedName ? ' — ' + r.scannedName : '') + '. Hãy bấm Đồng ý trên điện thoại.'], success: ['ok', '✅ Đăng nhập thành công!'], expired: ['bad', 'Mã đã hết hạn — bấm "Tạo mã mới".'], declined: ['bad', 'Bạn đã từ chối trên điện thoại.'], failed: ['bad', 'Đăng nhập thất bại' + (r.error ? ': ' + r.error : '')] };
     const [cls, text] = map[r.state] || ['', r.state]; st.className = 'qr-state ' + cls; st.textContent = text;
-    if (r.state === 'success') { clearInterval(state.qrTimer); setTimeout(() => { $('#dlgQr').close(); refreshState(); loadConversations(); }, 1200); }
+    if (r.state === 'success') { clearInterval(state.qrTimer); setTimeout(() => { $('#dlgQr').close(); refreshState(); vlist.reset(); }, 1200); }
     if (['expired', 'declined', 'failed'].includes(r.state)) clearInterval(state.qrTimer);
   }
   async function pollQr() { if (!state.qrKey) return; try { showQr(await api('/api/accounts/login-qr/' + state.qrKey)); } catch { /* bỏ qua */ } }
@@ -778,20 +910,19 @@
 
   // ── Realtime ─────────────────────────────────────────────────────────────
   let reloadTimer, esRetry = 3000;
-  const scheduleReload = () => { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => { refreshState().then(() => { if (!state.locked && state.view === 'chats') { loadConversations(); if (state.selected) loadMessages(); } }).catch(() => {}); }, 500); };
+  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions'].forEach((ev) => es.addEventListener(ev, scheduleReload));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }
 
   (async () => {
-    const initial = ['chats', 'settings'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'chats';
-    state.view = initial;
+    vlist.init();
     try { await refreshState(); } catch (err) { toast('Không kết nối được với ứng dụng: ' + err.message); }
-    if (!state.locked) show(initial);
+    if (!state.locked) vlist.reset();
     connectEvents();
     setInterval(() => { refreshState().catch(() => {}); }, 30000);
   })();

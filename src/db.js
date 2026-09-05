@@ -14,6 +14,7 @@ const ENC = {
   messages: ['sender_name', 'text', 'attachments_json', 'quote_text', 'raw_json'],
   conversations: ['name', 'avatar_url', 'phone', 'last_message_preview', 'last_message_sender', 'note'],
   contacts: ['display_name', 'zalo_name', 'avatar_url', 'phone'],
+  reactions: ['icon'],
 };
 
 const SCHEMA = `
@@ -83,6 +84,17 @@ CREATE TABLE IF NOT EXISTS contacts (
   PRIMARY KEY (account_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS reactions (
+  account_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  msg_id TEXT NOT NULL,              -- zalo_msg_id của tin được thả cảm xúc
+  reactor_id TEXT NOT NULL,          -- uid người thả
+  icon TEXT,                         -- mã cảm xúc Zalo (mã hoá)
+  ts INTEGER NOT NULL,
+  PRIMARY KEY (account_id, thread_id, msg_id, reactor_id)
+);
+CREATE INDEX IF NOT EXISTS ix_reactions_thread ON reactions(account_id, thread_id);
+
 CREATE TABLE IF NOT EXISTS exports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at INTEGER NOT NULL,
@@ -123,6 +135,8 @@ export function openDb(dbPath) {
   ensureColumn('conversations', 'last_message_sender', 'TEXT');   // tên người gửi tin cuối (hữu ích với NHÓM)
   ensureColumn('accounts', 'groups_imported_at', 'INTEGER');        // đã nhập lịch sử nhóm lần đầu chưa (chỉ ghi khi đọc được tin)
   ensureColumn('accounts', 'groups_import_attempt_at', 'INTEGER'); // lần THỬ gần nhất — tự động chỉ thử lại sau 24 giờ
+  ensureColumn('conversations', 'unread_count', 'INTEGER NOT NULL DEFAULT 0'); // chưa đọc như Zalo: tăng khi tin đến, về 0 khi mở/khi mình gửi
+  ensureColumn('conversations', 'last_read_at', 'INTEGER');
 
   const st = {
     upsertAccount: db.prepare(`
@@ -172,7 +186,10 @@ export function openDb(dbPath) {
                                    THEN excluded.last_message_sender ELSE conversations.last_message_sender END,
         message_count  = conversations.message_count + 1,
         inbound_count  = conversations.inbound_count + excluded.inbound_count,
-        outbound_count = conversations.outbound_count + excluded.outbound_count`),
+        outbound_count = conversations.outbound_count + excluded.outbound_count,
+        unread_count   = CASE WHEN excluded.is_group >= 0 AND excluded.inbound_count = 1 AND @count_unread = 1 THEN conversations.unread_count + 1
+                              WHEN excluded.outbound_count = 1 THEN 0 ELSE conversations.unread_count END`),
+    markRead: db.prepare(`UPDATE conversations SET unread_count = 0, last_read_at = ? WHERE account_id = ? AND thread_id = ?`),
     updateConversationMeta: db.prepare(`
       UPDATE conversations SET
         name = COALESCE(?, name), avatar_url = COALESCE(?, avatar_url), phone = COALESCE(?, phone)
@@ -201,6 +218,10 @@ export function openDb(dbPath) {
         AND conversations.account_id = ?`),
     getContact: db.prepare(`SELECT * FROM contacts WHERE account_id = ? AND user_id = ?`),
 
+    upsertReaction: db.prepare(`
+      INSERT INTO reactions (account_id, thread_id, msg_id, reactor_id, icon, ts) VALUES (@account_id, @thread_id, @msg_id, @reactor_id, @icon, @ts)
+      ON CONFLICT(account_id, thread_id, msg_id, reactor_id) DO UPDATE SET icon = excluded.icon, ts = excluded.ts`),
+    deleteReaction: db.prepare(`DELETE FROM reactions WHERE account_id = ? AND thread_id = ? AND msg_id = ? AND reactor_id = ?`),
     insertExport: db.prepare(`
       INSERT INTO exports (created_at, format, dir, conversations, messages, params_json)
       VALUES (?, ?, ?, ?, ?, ?)`),
@@ -231,6 +252,8 @@ export function openDb(dbPath) {
       sender: enc(row.sender_name ?? null),
       inbound: row.is_outbound ? 0 : 1,
       outbound: row.is_outbound ? 1 : 0,
+      // Tin lịch sử/đồng bộ cũ không tính chưa đọc — chỉ tin live/gửi bù mới làm nổi hội thoại
+      count_unread: (row.source === 'live' || row.source === 'old_sync') ? 1 : 0,
     });
     return true;
   });
@@ -247,6 +270,7 @@ export function openDb(dbPath) {
     else if (!p.includeGroups) where.push('c.is_group = 0');
     // "Đang chờ trả lời" chỉ có nghĩa với hội thoại 1-1 — trong nhóm không phải tin nào cũng cần mình trả lời.
     if (p.onlyWaiting) where.push('c.last_message_outbound = 0 AND c.is_group = 0');
+    if (p.onlyUnread) where.push('c.unread_count > 0');
     // p.q KHÔNG lọc trong SQL: name/phone/preview đã mã hoá. Lọc bằng JS sau khi giải mã (xem applyQ).
     if (p.threadIds?.length) {
       where.push(`c.thread_id IN (${p.threadIds.map((_, i) => `@th${i}`).join(',')})`);
@@ -307,6 +331,7 @@ export function openDb(dbPath) {
       st.updateConversationMeta.run(enc(name ?? null), enc(avatarUrl ?? null), enc(phone ?? null), accountId, threadId);
     },
     getConversation(accountId, threadId) { return decConversation(st.getConversation.get(accountId, threadId)); },
+    markRead(accountId, threadId) { return st.markRead.run(Date.now(), accountId, threadId).changes > 0; },
 
     listConversations(p = {}) {
       const { where, params } = conversationFilter(p);
@@ -378,6 +403,8 @@ export function openDb(dbPath) {
         SELECT COUNT(*) AS conversations,
                SUM(CASE WHEN last_message_outbound = 0 AND is_group = 0 THEN 1 ELSE 0 END) AS waiting,
                SUM(CASE WHEN is_group = 1 THEN 1 ELSE 0 END) AS groups,
+               SUM(unread_count) AS unread,
+               SUM(CASE WHEN unread_count > 0 THEN 1 ELSE 0 END) AS unread_conversations,
                MAX(last_message_at) AS last_message_at
         FROM conversations WHERE ${accWhere}`).get(params);
       const msg = db.prepare(`
@@ -408,6 +435,31 @@ export function openDb(dbPath) {
     },
     getContact(accountId, userId) { return decRow(st.getContact.get(accountId, userId), ENC.contacts); },
 
+    // ── Cảm xúc (reaction) ───────────────────────────────────────────────────
+    /** icon rỗng = gỡ cảm xúc. Trả true nếu có thay đổi. */
+    setReaction({ accountId, threadId, msgId, reactorId, icon, ts }) {
+      if (!msgId || !reactorId) return false;
+      if (!icon) return st.deleteReaction.run(accountId, threadId, String(msgId), String(reactorId)).changes > 0;
+      st.upsertReaction.run({ account_id: accountId, thread_id: threadId, msg_id: String(msgId), reactor_id: String(reactorId), icon: enc(icon), ts: Number(ts) || Date.now() });
+      return true;
+    },
+    /** Cảm xúc của một loạt tin: { msgId → [{ icon, count, mine }] } — gom theo icon. */
+    reactionsForMessages(accountId, threadId, msgIds, selfId) {
+      if (!msgIds.length) return {};
+      const out = {};
+      for (let i = 0; i < msgIds.length; i += 400) {
+        const chunk = msgIds.slice(i, i + 400);
+        const rows = db.prepare(`SELECT msg_id, reactor_id, icon FROM reactions WHERE account_id = ? AND thread_id = ? AND msg_id IN (${chunk.map(() => '?').join(',')})`).all(accountId, threadId, ...chunk);
+        for (const r of rows) {
+          const icon = dec(r.icon); if (!icon) continue;
+          const list = (out[r.msg_id] ||= []);
+          let e = list.find((x) => x.icon === icon); if (!e) { e = { icon, count: 0, mine: false }; list.push(e); }
+          e.count++; if (r.reactor_id === selfId) e.mine = true;
+        }
+      }
+      return out;
+    },
+
     // ── Mã hoá lại ───────────────────────────────────────────────────────────
     /** Số dòng còn giá trị chưa mã hoá hoặc mã hoá bằng phiên bản khác phiên bản hiện tại. */
     countNeedingReencrypt() {
@@ -429,7 +481,7 @@ export function openDb(dbPath) {
       const v = `enc:v${cipher.version}:%`;
       const summary = {};
       for (const [table, cols] of Object.entries(ENC)) {
-        const pk = table === 'messages' ? ['id'] : table === 'conversations' ? ['account_id', 'thread_id'] : ['account_id', 'user_id'];
+        const pk = table === 'messages' ? ['id'] : table === 'conversations' ? ['account_id', 'thread_id'] : table === 'reactions' ? ['account_id', 'thread_id', 'msg_id', 'reactor_id'] : ['account_id', 'user_id'];
         const cond = cols.map((c) => `(${c} IS NOT NULL AND ${c} NOT LIKE @v)`).join(' OR ');
         const total = db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${cond}`).get({ v }).n;
         const select = db.prepare(`SELECT ${[...pk, ...cols].join(', ')} FROM ${table} WHERE ${cond} LIMIT 300`);

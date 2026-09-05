@@ -3,7 +3,9 @@
 Ứng dụng macOS cho tư vấn viên MedDental: **đăng nhập tài khoản ứng dụng** (máy chủ xác thực riêng), **kết nối Zalo cá
 nhân bằng mã QR**, **tự lưu mọi tin nhắn đến/đi vào máy ở dạng mã hoá**, **duy trì một thư mục làm việc** để
 **Claude Cowork** tổng hợp hội thoại và đề xuất câu trả lời, **hiện gợi ý của Claude ngay cạnh hội thoại** và cho
-**trả lời trực tiếp** từ ứng dụng (mỗi tin gửi là một lần người dùng bấm Gửi — không gửi tự động/hàng loạt; tin gửi đi
+**trả lời trực tiếp** từ ứng dụng. Giao diện theo bố cục Zalo (cột hội thoại + khung chat, Cài đặt là hộp thoại), đánh dấu
+**chưa đọc/đã đọc** cục bộ như Zalo, hiển thị ảnh/GIF/sticker/video/tệp/cảm xúc, danh sách hội thoại cuộn ảo và tin nhắn
+tải vô cực khi cuộn lên (mỗi tin gửi là một lần người dùng bấm Gửi — không gửi tự động/hàng loạt; tin gửi đi
 cũng được lưu mã hoá). Ứng dụng không đánh dấu đã xem.
 
 Dùng cùng thư viện `zca-js` và cùng cách đăng nhập với kênh Zalo cá nhân trong CRM (`backend/services/zalo-personal-bridge`
