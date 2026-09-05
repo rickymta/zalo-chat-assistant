@@ -46,7 +46,10 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
    → bấm **Dùng gợi ý này** để điền vào ô soạn → sửa → **Gửi**. Gợi ý cũ hơn tin mới nhất được cảnh báo "có tin mới sau gợi ý".
 4b. **Trong khung chat như Zalo**: rê chuột lên tin hiện 👍 (thả cảm xúc — 6 cảm xúc chuẩn, bấm pill của Bạn để bỏ) và ba nút
    Trả lời (trích dẫn), Chuyển tiếp (chọn nhiều hội thoại, chỉ tin văn bản — giới hạn của zca-js), Thêm (sao chép, xem ảnh).
-   Ảnh/GIF/sticker mở hộp xem trong ứng dụng (← → chuyển ảnh, Esc đóng). Ô soạn có bảng biểu cảm. Mọi thao tác gửi đi
+   Ảnh/GIF/sticker mở hộp xem trong ứng dụng (← → chuyển ảnh, Esc đóng). Thanh công cụ trên ô soạn: **Sticker** (kho sticker
+   Zalo, tìm theo từ khoá, có hàng Gần đây), **GIF** (tìm qua Tenor — cần điền *Cài đặt → Khoá Tenor API*, khoá miễn phí từ Google
+   Cloud; không có khoá vẫn gửi GIF từ máy), **Ảnh** và **Tệp** (chọn từ máy, tối đa 10 tệp × 50 MB; bản sao lưu ở `data/sent/`
+   để hiển thị lại), **Biểu cảm**. Mọi thao tác gửi đi
    (tin, trích dẫn, cảm xúc, chuyển tiếp) vẫn là do người dùng bấm, ứng dụng không tự gửi gì.
 5. **📊 Báo cáo ngày** (nút ở thanh trên): một hộp thoại tổng hợp **toàn bộ hội thoại trong ngày** — số hội thoại/tin đến/tin
    đi/chưa trả lời/việc cần làm (đếm từ dữ liệu trên máy), phần *Tổng quan* và *Việc cần làm* do Claude viết, rồi từng hội
