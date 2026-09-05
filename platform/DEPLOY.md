@@ -55,8 +55,9 @@ cd ~/zca-platform && cp .env.production.example .env && chmod 600 .env && nano .
 
 Điền: `JWT_SECRET` (**giữ nguyên giá trị đang dùng ở máy hiện tại** nếu chuyển dữ liệu — xem mục 6; máy mới hoàn toàn thì
 `openssl rand -base64 48`), `ADMIN_EMAILS`, `ACME_EMAIL` (email nhận cảnh báo chứng chỉ), `ALLOW_REGISTRATION`/`REGISTRATION_CODE`
-theo ý muốn, SMTP nếu có. Các dòng đã điền sẵn và **phải giữ**: `COMPOSE_PROFILES=server` (bật service `edge`), `DOMAIN`,
-`ADMIN_DOMAIN`, `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS`, `BIND_IP=127.0.0.1`. Dùng Mongo ngoài thì đổi `MONGO_URL`
+theo ý muốn, SMTP nếu có. Các dòng đã điền sẵn và **phải giữ**: `DOMAIN`, `ADMIN_DOMAIN` (cổng vào Caddy đọc hai dòng này
+để xin chứng chỉ và điều hướng — thiếu là nó chạy với `localhost`), `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS`,
+`BIND_IP=127.0.0.1`. Dùng Mongo ngoài thì đổi `MONGO_URL`
 và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 
 ## 4. Chạy — một lệnh
@@ -64,7 +65,7 @@ và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 ```bash
 cd ~/zca-platform
 docker compose up -d                    # lần đầu: dựng ảnh api + web tại chỗ (vài phút) rồi lên mongo → api → web → edge
-docker compose ps                        # 4 container: zca-mongo, zca-api, zca-web (healthy), zca-edge
+docker compose ps                        # 4 container: zca-mongo, zca-api, zca-web (healthy), zca-edge — thiếu zca-edge là chưa có cổng vào
 docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên
 ```
 
@@ -91,7 +92,7 @@ trỏ DNS mà đã `up` thì Caddy chỉ báo lỗi và thử lại theo lịch 
 Thử trên máy dev: `.env` để `DOMAIN=localhost`, `ADMIN_DOMAIN=admin.localhost` ⇒ Caddy dùng chứng chỉ nội bộ tự ký, không gọi
 Let's Encrypt (`curl -k --resolve admin.localhost:443:127.0.0.1 https://admin.localhost/`).
 
-**Máy chủ đã có nginx riêng?** Bỏ `COMPOSE_PROFILES=server` (không chạy `edge`) và dùng hai file trong `deploy/nginx/`
+**Máy chủ đã có nginx riêng?** Chạy `docker compose up -d mongo api web` (không kéo `edge`) và dùng hai file trong `deploy/nginx/`
 (`volcanion.vn.conf` HTTP + ACME webroot, `volcanion.vn-ssl.conf` hai khối 443) với certbot của máy chủ — nội dung điều hướng
 tương đương bảng trên; nginx trỏ về `127.0.0.1:4790`.
 

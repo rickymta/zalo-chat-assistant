@@ -161,8 +161,8 @@ hoá), khu **/admin** (bài viết, phiên bản, người dùng, nội dung tra
 ```bash
 cd platform && cp .env.example .env   # điền JWT_SECRET, ADMIN_EMAILS, PUBLIC_URL (địa chỉ web người dùng gõ được)
 docker compose up -d --build           # mongo + api 127.0.0.1:4789 + web 127.0.0.1:4790 (BIND_IP=0.0.0.0 nếu cần mở ra LAN)
-# Máy chủ thật volcanion.vn / admin.volcanion.vn: .env theo .env.production.example (COMPOSE_PROFILES=server bật thêm
-# service edge = Caddy 80/443 + Let's Encrypt tự động) rồi CÙNG MỘT LỆNH docker compose up -d. Chuyển dữ liệu Mongo + bộ cài
+# Máy chủ thật volcanion.vn / admin.volcanion.vn: .env theo .env.production.example (DOMAIN/ADMIN_DOMAIN cho service edge
+# = Caddy 80/443 + Let's Encrypt tự động, luôn chạy cùng bộ) rồi CÙNG MỘT LỆNH docker compose up -d. Chuyển dữ liệu Mongo + bộ cài
 # từ máy này: platform/DEPLOY.md. Ứng dụng desktop mặc định trỏ https://volcanion.vn từ bản 0.0.2.
 # Chuyển dữ liệu từ máy chủ cũ (server/, SQLite): xem platform/api/README.md mục 5 (docker cp → migrate-from-sqlite.mjs);
 # người dùng cũ giữ nguyên id + mật khẩu + chuỗi mã hoá + phiên đang đăng nhập.
