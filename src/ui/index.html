@@ -394,8 +394,15 @@
   .react { background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; padding: 1px 7px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .react.mine { border-color: var(--primary); background: var(--primary-soft); }
   .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
-  .settings-dlg { width: 860px; max-width: 94vw; padding: 0; }
-  .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; }
+  .settings-dlg { width: 860px; max-width: min(94vw, 1100px); padding: 0; }
+  .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; position: relative; }
+  .dlg { position: relative; }
+  /* Nút ✕ cố định góc trên-phải của MỌI hộp thoại — luôn thấy dù đầu hộp thoại xuống dòng; ngoài ra bấm nền tối hoặc Esc cũng đóng. */
+  .dlg-x { position: absolute; top: 8px; right: 8px; z-index: 5; width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 15px; line-height: 1; display: grid; place-items: center; }
+  .dlg-x:hover { background: #f1f5fb; color: var(--text); }
+  .settings-head { padding-right: 48px; }
+  .dlg h2 { padding-right: 40px; }
+  .rp-sum p { margin: 0 0 8px; } .rp-sum p:last-child { margin-bottom: 0; }
   .settings-head { display: flex; align-items: center; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--line); background: var(--panel); }
   .settings-head h2 { font-size: 20px; }
   .settings-body { overflow: auto; padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
@@ -1139,7 +1146,7 @@
     $('#rpOpenMd').hidden = !r.mdPath; $('#rpOpenMd').onclick = () => api('/api/open', { method: 'POST', body: { path: r.mdPath } }).catch((e) => toast(e.message));
     const o = r.overview;
     const tiles = '<div class="rp-tiles"><div class="tile"><div class="v">' + num(o.conversations) + '</div><div class="l">Hội thoại có tin</div></div><div class="tile"><div class="v">' + num(o.messages) + '</div><div class="l">Tin nhắn · ' + num(o.inbound) + ' đến / ' + num(o.outbound) + ' đi</div></div><div class="tile ' + (o.needReply ? 'hot' : '') + '"><div class="v">' + num(o.needReply) + '</div><div class="l">Chưa trả lời</div></div><div class="tile ' + (o.tasksForYou ? 'hot' : '') + '"><div class="v">' + num(o.tasksForYou) + '</div><div class="l">Việc cần làm</div></div></div>';
-    const overview = (o.claudeSummary || (o.highlights || []).length) ? '<div class="card"><h2>Tổng quan</h2>' + (o.claudeSummary ? '<p class="rp-sum">' + esc(o.claudeSummary).replace(/\n+/g, '<br>') + '</p>' : '') + ((o.highlights || []).length ? '<ul class="rp-hl">' + o.highlights.map((h) => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + '</div>' : '';
+    const overview = (o.claudeSummary || (o.highlights || []).length) ? '<div class="card"><h2>Tổng quan</h2>' + (o.claudeSummary ? '<div class="rp-sum">' + esc(o.claudeSummary).split(/\n\s*\n/).map((p) => '<p>' + p.replace(/\n+/g, '<br>') + '</p>').join('') + '</div>' : '') + ((o.highlights || []).length ? '<ul class="rp-hl">' + o.highlights.map((h) => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + '</div>' : '';
     const accOf = (a) => a.accountId || r.conversations.find((c) => c.threadId === String(a.threadId))?.accountId || '';
     const actions = (r.actionItems || []).length ? '<div class="card"><h2>✅ Việc cần làm (' + r.actionItems.length + ')</h2><ul class="rp-actions">' + r.actionItems.map((a) => '<li>' + (a.priority ? '<span class="pill ' + (a.priority === 'P1' ? 'bad' : a.priority === 'P2' ? 'warn' : '') + '">' + esc(a.priority) + '</span> ' : '') + (a.threadId ? '<a href="#" data-openconv="' + esc(accOf(a) + '|' + a.threadId) + '"><b>' + esc(a.name || '') + '</b></a>' : '<b>' + esc(a.name || '') + '</b>') + ' — ' + esc(a.task || '') + (a.due ? ' <span class="faint">(' + esc(a.due) + ')</span>' : '') + '</li>').join('') + '</ul></div>' : '';
     const convs = r.conversations.length ? '<div class="card"><h2>Từng hội thoại (' + r.conversations.length + ')</h2>' + r.conversations.map((c) => {
@@ -1168,6 +1175,19 @@
     for (const c of r.conversations) { lines.push('## ' + (c.isGroup ? '[Nhóm] ' : '') + (c.name || c.threadId) + (c.messages ? ' — ' + c.messages + ' tin' : '')); if (c.claude?.summary) lines.push(c.claude.summary); if (c.claude?.timeline?.length) lines.push(...c.claude.timeline.map((t) => '- ' + (t.time ? t.time + ' ' : '') + t.what)); if (c.claude?.keyFacts?.length) lines.push('Thông tin đáng nhớ: ' + c.claude.keyFacts.join('; ')); if (c.claude?.decisions?.length) lines.push('Đã chốt: ' + c.claude.decisions.join('; ')); if (c.claude?.tasksForYou?.length) lines.push('Việc của Bạn: ' + c.claude.tasksForYou.join('; ')); if (c.claude?.openQuestions?.length) lines.push('Chưa trả lời: ' + c.claude.openQuestions.join('; ')); lines.push(''); }
     await copyText(lines.join('\n'), 'Đã sao chép báo cáo.');
   };
+
+  // ── Hộp thoại: bấm nền tối, phím Esc hoặc nút ✕ (tự chèn) đều đóng; QR thì dừng hỏi trạng thái; mẫu tin đang sửa dở thì không đóng vì bấm nhầm ra ngoài.
+  function closeDialog(d) {
+    if (d.id === 'dlgQr') clearInterval(state.qrTimer);
+    d.close();
+  }
+  function tplDirty() { const t = tplEditing !== null ? state.templates[tplEditing] : null; return ($('#tplTitle').value.trim() !== (t?.title || '')) || ($('#tplText').value.trim() !== (t?.text || '')); }
+  $$('dialog').forEach((d) => {
+    d.addEventListener('click', (e) => { if (e.target !== d) return; if (d.id === 'dlgTemplate' && tplDirty()) { toast('Mẫu đang sửa chưa lưu — bấm Lưu mẫu hoặc ✕ để bỏ.'); return; } closeDialog(d); });
+    d.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(d); });
+    const wrap = d.firstElementChild;
+    if (wrap && !wrap.querySelector('.dlg-x')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'dlg-x'; b.title = 'Đóng (Esc)'; b.setAttribute('aria-label', 'Đóng'); b.textContent = '✕'; b.onclick = () => closeDialog(d); wrap.prepend(b); }
+  });
 
   // ── QR ───────────────────────────────────────────────────────────────────
   async function openQr() {

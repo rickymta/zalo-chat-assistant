@@ -143,7 +143,7 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
   "date": "2026-09-05",
   "generatedAt": "2026-09-05T10:40:00+07:00",
   "overview": {
-    "summary": "6–10 câu, viết theo từng MẢNG VIỆC/chủ đề (không gom chung chung): việc gì, ai liên quan, tiến độ tới đâu, mốc giờ/hạn/con số được nhắc, còn treo gì, ai đang chờ Bạn. Người không đọc hội thoại vẫn nắm được toàn cảnh ngày.",
+    "summary": "6–10 câu, chia thành NHIỀU ĐOẠN — mỗi mảng việc/chủ đề một đoạn, các đoạn cách nhau bằng dòng trống (\\n\\n), đoạn đầu là 1–2 câu toàn cảnh. Mỗi đoạn: việc gì, ai liên quan, tiến độ tới đâu, mốc giờ/hạn/con số được nhắc, còn treo gì, ai đang chờ Bạn. Người không đọc hội thoại vẫn nắm được toàn cảnh ngày.",
     "highlights": ["Chị Lan (Invisalign) chờ báo giá từ sáng", "Nhóm CRM chốt lịch demo thứ 3", "Anh Hùng đổi giờ khám"]
   },
   "conversations": [
