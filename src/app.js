@@ -131,7 +131,7 @@ export async function startApp({ platform, port = PORT } = {}) {
    */
   const automation = {
     timer: null, lastRunAt: null, lastResult: null, nextRunAt: null, running: false, quietTimer: null, quietAt: null, lastActivityAt: null,
-    status() { const s = loadSettings(); return { minutes: Number(s.autoUpdateMinutes ?? 60), quietMinutes: Number(s.quietMinutes ?? 3), preset: s.defaultPreset ?? 'today', lastRunAt: this.lastRunAt, nextRunAt: this.nextRunAt, quietAt: this.quietAt, lastActivityAt: this.lastActivityAt, running: this.running, lastResult: this.lastResult ? { conversations: this.lastResult.conversations, messages: this.lastResult.messages, error: this.lastResult.error ?? null } : null }; },
+    status() { const s = loadSettings(); return { minutes: Number(s.autoUpdateMinutes ?? 30), quietMinutes: Number(s.quietMinutes ?? 3), preset: s.defaultPreset ?? 'today', lastRunAt: this.lastRunAt, nextRunAt: this.nextRunAt, quietAt: this.quietAt, lastActivityAt: this.lastActivityAt, running: this.running, lastResult: this.lastResult ? { conversations: this.lastResult.conversations, messages: this.lastResult.messages, error: this.lastResult.error ?? null } : null }; },
     /** Có tin mới (đến hoặc đi): hẹn cập nhật gói sau N phút yên lặng — mỗi tin mới lại dời mốc. */
     onActivity() {
       this.lastActivityAt = Date.now();
@@ -144,11 +144,11 @@ export async function startApp({ platform, port = PORT } = {}) {
     },
     /**
      * Chạy theo MỐC GIỜ TRÒN (60 phút ⇒ đúng :00, 30 phút ⇒ :00/:30…) thay vì đếm từ lúc mở khoá — để lịch tự động của
-     * Claude Cowork (vd mỗi giờ lúc :10) luôn đọc được gói vừa cập nhật ở :00.
+     * Claude Cowork (chạy mỗi 5 phút) luôn đọc được gói vừa cập nhật ở mốc tròn (30 phút ⇒ :00/:30).
      */
     schedule() {
       clearTimeout(this.timer); clearInterval(this.timer); this.timer = null; this.nextRunAt = null;
-      const mins = Number(loadSettings().autoUpdateMinutes ?? 60);
+      const mins = Number(loadSettings().autoUpdateMinutes ?? 30);
       if (!db.unlocked || !mins) return;
       const period = mins * 60e3;
       const next = Math.ceil((Date.now() + 1000) / period) * period;
@@ -172,7 +172,7 @@ export async function startApp({ platform, port = PORT } = {}) {
         log.error(`Tự cập nhật gói Claude thất bại: ${this.lastResult.error}`);
       } finally {
         this.running = false;
-        const mins = Number(loadSettings().autoUpdateMinutes ?? 60);
+        const mins = Number(loadSettings().autoUpdateMinutes ?? 30);
         this.nextRunAt = this.timer && mins ? Math.ceil((Date.now() + 1000) / (mins * 60e3)) * (mins * 60e3) : null;
         events.emit('workspace', this.status());
       }

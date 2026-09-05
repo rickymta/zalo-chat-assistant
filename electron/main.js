@@ -61,7 +61,7 @@ function createWindow(url) {
   win = new BrowserWindow({
     width: 1240, height: 860, minWidth: 980, minHeight: 640,
     title: PRODUCT,
-    titleBarStyle: 'hiddenInset',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
     backgroundColor: '#f4f6fa',
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
   });

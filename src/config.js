@@ -44,8 +44,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   includeExcel: false,
   /** Kiểu chọn dữ liệu mặc định cho nút "Cập nhật dữ liệu cho Claude". */
   defaultPreset: 'today',
-  /** Tự cập nhật du-lieu/ cho Claude mỗi N phút (0 = tắt). Luôn chỉ có MỘT gói — ghi đè, không sinh thêm thư mục. */
-  autoUpdateMinutes: 60,
+  /** Chu kỳ Claude tổng hợp lại: ứng dụng làm mới du-lieu/ đúng mốc mỗi N phút (mặc định 30 — người dùng chốt 05/09/2026), lịch Cowork
+   *  (chạy mỗi 5 phút) thấy gói đổi là tổng hợp. 0 = tắt chu kỳ (chỉ còn cập nhật sau tin nhắn cuối). Luôn chỉ MỘT gói — ghi đè. */
+  autoUpdateMinutes: 30,
   /** Cập nhật gói N phút sau TIN NHẮN CUỐI (yên lặng N phút thì chạy; có tin tiếp thì đếm lại). 0 = tắt. */
   quietMinutes: 3,
   /** Giữ máy không tự ngủ khi ứng dụng chạy (màn hình vẫn tắt/khoá được). Máy ngủ = Zalo mất kết nối; tin đến lúc đó chỉ có lại nếu Zalo gửi bù. */

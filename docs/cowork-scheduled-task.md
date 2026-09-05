@@ -28,7 +28,7 @@ thông tin không có trong dữ liệu; chỗ chưa chắc ghi [CẦN XÁC NH�
 ```
 
 Lưu ý: lịch chỉ chạy khi Claude Cowork đang mở (đóng thì chạy bù ở lần mở sau). Lượt "dữ liệu chưa đổi" chỉ đọc hai file JSON
-nhỏ nên rất rẻ; lượt có dữ liệu mới tốn token theo số hội thoại. Ứng dụng vẫn giữ nhịp cập nhật mỗi giờ tròn làm nền.
+nhỏ nên rất rẻ; lượt có dữ liệu mới tốn token theo số hội thoại. Ứng dụng vẫn giữ nhịp cập nhật theo chu kỳ trong Cài đặt (mặc định 30 phút, đúng mốc :00/:30) — đây chính là chu kỳ Claude tổng hợp lại khi không có tin mới.
 Lần chạy đầu Cowork hỏi quyền ghi file (Write) — duyệt một lần trong mục Scheduled; các lần sau tự chạy.
 Hộp thoại 📊 Báo cáo trong ứng dụng đọc `ket-qua/bao-cao/<ngày>.json`; chưa có file thì hiện số liệu của ứng dụng.
 

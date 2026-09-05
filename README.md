@@ -51,8 +51,8 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
    chép báo cáo** ra Markdown để dán vào Zalo/email; **Mở bản .md** mở file Claude đã viết. Ngày chưa được Claude tổng hợp
    vẫn hiện số liệu của ứng dụng (kèm tóm tắt lấy từ gợi ý gần nhất nếu có). Nguồn: `ket-qua/bao-cao/YYYY-MM-DD.json`.
 
-**Tự động hoá hoàn toàn với lịch của Claude Cowork:** ứng dụng cập nhật `du-lieu/` **3 phút sau tin nhắn cuối** (và mỗi giờ
-tròn làm nền); trong Claude Cowork tạo một *scheduled task* chạy mỗi 5 phút (`*/5 7-22 * * *`) với nội dung: đọc `huong-dan/00`, bỏ qua nếu
+**Tự động hoá hoàn toàn với lịch của Claude Cowork:** ứng dụng cập nhật `du-lieu/` **3 phút sau tin nhắn cuối** (và theo chu kỳ
+*Cài đặt → Claude tổng hợp lại theo chu kỳ*, mặc định **30 phút**, đúng mốc :00/:30); trong Claude Cowork tạo một *scheduled task* chạy mỗi 5 phút (`*/5 7-22 * * *`) với nội dung: đọc `huong-dan/00`, bỏ qua nếu
 `de-xuat.json` mới hơn `du-lieu/.trang-thai.json`, ngược lại **tổng hợp từng hội thoại một** (subagent Claude Sonnet, tuần
 tự) và ghi `ket-qua/bao-cao/YYYY-MM-DD.json` + `.md` (báo cáo ngày), `ket-qua/de-xuat.json` (gợi ý) và
 `YYYY-MM-DD-tong-hop.md`. Ứng dụng nhận file mới trong vài giây: gắn 💡 vào từng hội thoại và làm mới hộp thoại Báo cáo. Lịch chỉ chạy khi Claude
@@ -83,6 +83,13 @@ Các bước trên máy thử (macOS):
    `permissions.allow` với đường dẫn tương ứng (xem `docs/cowork-scheduled-task.md`), rồi tạo scheduled task bằng mẫu prompt
    trong cùng file — đổi `/Users/<tên-máy>`.
 4. Kết thúc thử: Cài đặt → Đăng xuất (xoá dữ liệu thử) hoặc đăng ký tài khoản thật.
+
+**Windows (thử nghiệm):** dùng file `Zalo Chat Assistant-Setup-<phiên bản>-x64.exe` (dựng bằng `npm run dist:win` ngay trên macOS).
+Bản chưa ký nên SmartScreen chặn lần đầu: bấm *More info → Run anyway*. Trình cài cho chọn thư mục, tạo shortcut. Sau đó
+các bước giống macOS: **Bắt đầu dùng thử** (không cần Docker) → quét QR Zalo → Claude desktop cho Windows trỏ Cowork vào
+`C:\Users\<tên>\Documents\Zalo Chat Assistant`. Dữ liệu ứng dụng ở `%APPDATA%\Zalo Chat Assistant\data`. Chống ngủ dùng
+powerSaveBlocker của Electron (không có `caffeinate`); sao chép dùng clipboard Electron. Chưa kiểm tra trên máy Windows thật —
+cần một lượt thử: cài, dùng thử, QR, nhận tin, cột trợ lý, báo cáo, cập nhật gói cho Claude, khoá/mở màn hình.
 
 Cách khác không cần chế độ thử: giữ máy chủ Docker ở máy này, trên máy kia bấm *Máy chủ → Đổi* và nhập `http://<IP-máy-này>:4789`
 (compose đã mở cổng trên mọi giao diện mạng; cần cùng mạng LAN, máy này thức và tường lửa cho phép). Cách này giữ đúng mô hình

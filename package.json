@@ -16,7 +16,8 @@
     "app": "node scripts/ensure-native.js electron && electron .",
     "icon": "bash scripts/make-icon.sh",
     "dist": "node scripts/ensure-native.js electron && electron-builder --mac dmg",
-    "dist:x64": "node scripts/ensure-native.js electron-x64 && electron-builder --mac dmg --x64"
+    "dist:x64": "node scripts/ensure-native.js electron-x64 && electron-builder --mac dmg --x64",
+    "dist:win": "node scripts/ensure-native.js electron-win && electron-builder --win nsis --x64"
   },
   "dependencies": {
     "better-sqlite3": "^12.0.0",
@@ -72,6 +73,25 @@
           "path": "/Applications"
         }
       ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Zalo Chat Assistant",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     }
   },
   "devDependencies": {

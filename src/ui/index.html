@@ -691,7 +691,7 @@
       <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
       <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
-      <div class="setting"><div class="txt"><b>Tự cập nhật định kỳ</b><span>Chạy đúng mốc giờ tròn; gói cũ bị ghi đè, không sinh thêm thư mục. 0 = tắt.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Claude tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30); lịch Cowork kiểm tra mỗi 5 phút và chỉ tổng hợp khi gói đổi. Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
       <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
     </div>
 
@@ -830,7 +830,7 @@
     $('#presetSel').value = state.settings.defaultPreset || 'today';
     const ws = state.workspace || {}; const au = state.automation;
     $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.') +
-      (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
+      (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 tổng hợp lại mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
       ' · <button class="link" id="btnCopyPrompt2" title="Sao chép câu lệnh dán vào Claude Cowork">Sao chép câu lệnh</button>';
     $('#btnCopyPrompt2').onclick = copyPrompt;
   }

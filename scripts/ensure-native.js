@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const marker = path.join(root, 'node_modules', '.zca-native-target');
 // 'electron' = Electron kiến trúc máy này (arm64); 'electron-x64' = Electron cho Mac Intel (tải prebuilt x64 của better-sqlite3).
-const target = ['electron', 'electron-x64'].includes(process.argv[2]) ? process.argv[2] : 'node';
+// 'electron-win' = Electron cho Windows x64 (tải prebuilt win32-x64 của better-sqlite3 để đóng gói chéo từ macOS).
+const target = ['electron', 'electron-x64', 'electron-win'].includes(process.argv[2]) ? process.argv[2] : 'node';
 const current = fs.existsSync(marker) ? fs.readFileSync(marker, 'utf8').trim() : '';
 
 if (current === target) process.exit(0);
@@ -23,6 +24,8 @@ if (target === 'electron') {
   execSync('npx electron-builder install-app-deps', { cwd: root, stdio: 'inherit' });
 } else if (target === 'electron-x64') {
   execSync('npx electron-builder install-app-deps --arch x64', { cwd: root, stdio: 'inherit' });
+} else if (target === 'electron-win') {
+  execSync('npx electron-builder install-app-deps --platform win32 --arch x64', { cwd: root, stdio: 'inherit' });
 } else {
   execSync('npm rebuild better-sqlite3', { cwd: root, stdio: 'inherit' });
 }
