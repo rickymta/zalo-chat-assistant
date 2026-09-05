@@ -145,11 +145,20 @@ const css = `
   .att-audio { width: 260px; }
   .att-chip { display: inline-flex; align-items: center; gap: 6px; background: #f1f5fb; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; text-decoration: none; color: var(--text); }
   .att-chip.file { color: var(--primary); }
-  .reacts { display: flex; gap: 4px; margin-top: -10px; padding: 0 8px; position: relative; z-index: 1; }
-  .msg.out .reacts { justify-content: flex-end; }
-  .react { background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; padding: 1px 7px; box-shadow: 0 1px 3px rgba(0,0,0,.12); cursor: default; }
-  .react.mine { border-color: var(--primary); background: var(--primary-soft); cursor: pointer; }
+  /* Cảm xúc kiểu Zalo: MỘT pill nhỏ ở góc dưới-phải bong bóng, chồng lên mép ~9px; gom tối đa 3 icon + tổng số. */
+  .msg .mcol { position: relative; }
+  .msg.has-reacts { padding-bottom: 10px; }
+  .reacts { position: absolute; right: 6px; bottom: -9px; z-index: 1; display: flex; }
+  .msg.out .reacts { right: 6px; }
+  .react { display: inline-flex; align-items: center; gap: 2px; height: 20px; padding: 0 6px 0 5px; background: #fff; border: 1px solid #e3e8ef; border-radius: 999px; font-size: 12px; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.14); cursor: default; }
+  .react em { font-style: normal; font-size: 13px; line-height: 1; margin-left: -3px; }
+  .react em:first-child { margin-left: 0; }
+  .react b { font-weight: 600; color: var(--muted); font-size: 12px; margin-left: 2px; }
+  .react.mine { border-color: #bfd4ff; background: #eef4ff; cursor: pointer; }
+  .react.mine b { color: var(--primary); }
   .react.mine:hover { background: #fee2e2; border-color: #fca5a5; }
+  .msg .bubble .time { text-align: left; font-size: 11px; color: var(--faint); margin-top: 3px; }
+  .msg .bubble.media .time { margin-left: 2px; }
   .day-sep { align-self: center; font-size: 12px; color: var(--faint); background: #e9eef6; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
   .settings-dlg { width: 860px; max-width: min(94vw, 1100px); padding: 0; }
   .settings-wrap { display: flex; flex-direction: column; max-height: 88vh; position: relative; }
@@ -195,6 +204,9 @@ const css = `
   .img-nav:disabled { opacity: .25; }
   .img-dlg .dlg-x { top: 14px; right: 14px; }
   .att-open { display: inline-block; cursor: zoom-in; }
+  /* Ảnh đang tải (lazy) hoặc chờ máy chủ Zalo: giữ một ô nền để bong bóng không trống rỗng. */
+  .att-img { min-width: 96px; min-height: 72px; background: #e9eef6; border-radius: 10px; display: block; }
+  .att-img[src] { background: #e9eef6; }
   [data-preview] .sticker { cursor: zoom-in; }
   /* Màn đăng nhập trong cửa sổ hẹp (~1000px): không cuộn ngang, ẩn cột giới thiệu, ô dùng thử xuống dòng. */
   .login-wrap { padding: 16px; box-sizing: border-box; overflow: auto; }

@@ -274,16 +274,18 @@
     const who = m.is_outbound ? 'Bạn' : (m.sender_name || c.name || '');
     const atts = (m.attachments || []);
     const mediaOnly = !m.text && atts.length && atts.every((a) => ['sticker', 'image', 'gif'].includes(a.type) && a.url);
-    const reacts = (m.reactions || []).length ? '<div class="reacts">' + m.reactions.map((r) => '<span class="react ' + (r.mine ? 'mine' : '') + '" data-icon="' + esc(r.icon) + '" title="' + (r.mine ? 'Bấm để bỏ cảm xúc của Bạn' : esc(emo(r.icon))) + '">' + esc(emo(r.icon)) + (r.count > 1 ? ' ' + r.count : '') + '</span>').join('') + '</div>' : '';
+    const rs = (m.reactions || []).slice().sort((a, b) => b.count - a.count); const total = rs.reduce((n, r) => n + r.count, 0); const mine = rs.some((r) => r.mine);
+    const reacts = rs.length ? '<div class="reacts"><span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + (total > 1 ? '<b>' + total + '</b>' : '') + '</span></div>' : '';
     const canAct = !m.recalled && m.zalo_msg_id && !String(m.zalo_msg_id).startsWith('local-');
     const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="react" title="Thả cảm xúc">😊</button><button type="button" data-act="reply" title="Trả lời">↩</button>' + (m.text ? '<button type="button" data-act="copy" title="Sao chép nội dung">⧉</button>' : '') + '</div>' : '';
     const showAvatar = !!c.is_group && !m.is_outbound;
-    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
+    const body = m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (m.text || atts.length ? callText(m.text) : '<i class="faint">[Nội dung không hiển thị được — ' + esc({ text: 'tin trống', image: 'ảnh', gif: 'ảnh động', sticker: 'sticker', video: 'video', audio: 'ghi âm', file: 'tệp', link: 'liên kết', location: 'vị trí', other: 'tin hệ thống' }[m.type] || m.type) + ']</i>');
+    return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + (c.is_group ? ' grp' : '') + (rs.length ? ' has-reacts' : '') + '" data-id="' + m.id + '" data-msgid="' + esc(m.zalo_msg_id || '') + '">' +
       (showAvatar ? avatarHtml(null, who, 'xs') : '') +
       '<div class="mcol"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
       (showAvatar ? '<div class="meta">' + esc(who) + '</div>' : '') +
       (m.quote_text ? quoteHtml(m.quote_text) : '') +
-      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : callText(m.text)) +
+      body +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
       '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>' + acts + '</div>';
   }
