@@ -94,7 +94,11 @@ export function normalizeMessage(msg) {
 
     // Liên kết/vị trí/thẻ: gom tiêu đề + mô tả vào text để người đọc (và Claude) thấy được nội dung.
     if (type === 'link' || type === 'location' || type === 'other') {
-      text = [title, description].filter((s) => typeof s === 'string' && s.trim()).join(' — ') || null;
+      // Sự kiện cuộc gọi tới dưới dạng {title: 'sendBubbleMessage', description: 'Cuộc gọi…'} — bỏ mã nội bộ, giữ phần mô tả.
+      const isCall = typeof title === 'string' && /^send[A-Z]\w*Message$/.test(title.trim());
+      text = isCall
+        ? `📞 ${typeof description === 'string' && description.trim() ? description.trim() : 'Cuộc gọi'}`
+        : ([title, description].filter((s) => typeof s === 'string' && s.trim()).join(' — ') || null);
       if (type === 'link' && href && !text?.includes(String(href))) text = text ? `${text}\n${href}` : String(href);
     } else if (type === 'file' && title) {
       text = null; // tên tệp đã nằm ở đính kèm

@@ -408,7 +408,15 @@
   .settings-body { overflow: auto; padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
   .settings-body .card h2 { font-size: 17px; }
   .report-dlg { width: 980px; }
-  .report-dlg .settings-head { flex-wrap: wrap; row-gap: 8px; }
+  .report-dlg .settings-head { flex-wrap: nowrap; }
+  #rpSource { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .settings-tools { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 22px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+  .settings-foot { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 22px; border-top: 1px solid var(--line); background: var(--panel); }
+  .ws-line #wsLine { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ws-line .grow { display: none; }
+  .ws-line { flex-wrap: nowrap; }
+  .zstrip .pill { min-width: 90px; }
+  .topbar select { max-width: 160px; }
   .report-dlg .settings-head h2 { white-space: nowrap; margin-right: 4px; }
   .report-dlg .settings-head select { max-width: 200px; }
   .rp-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -610,7 +618,7 @@
 
 <!-- ═══════════ TIN NHẮN MẪU (hộp thoại sửa) ═══════════ -->
 <dialog id="dlgTemplate" class="settings-dlg tpl-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2 id="tplDlgTitle">Tin nhắn mẫu</h2><span class="grow"></span><button class="sm" id="btnTplClose">Đóng</button></div>
+  <div class="settings-head"><h2 id="tplDlgTitle">Tin nhắn mẫu</h2></div>
   <div class="settings-body"><div class="form">
     <label class="fld"><span>Tên mẫu</span><input id="tplTitle" maxlength="80" placeholder="Ví dụ: Xác nhận lịch hẹn"></label>
     <label class="fld"><span>Nội dung — dán được thẳng vào Zalo; viết [tên] để tự thay bằng tên người đối thoại, các ô [..] khác tự điền trước khi gửi</span><textarea id="tplText" rows="7" maxlength="2000"></textarea></label>
@@ -620,13 +628,14 @@
 
 <!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
 <dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span><span class="grow"></span><button class="sm" id="rpCopy">Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>Mở bản .md</button><button class="sm" id="btnReportClose">Đóng</button></div>
+  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
+  <div class="settings-tools"><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
   <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
 </div></dialog>
 
 <!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
 <dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span><span class="grow"></span><button class="sm" id="btnSettingsClose">Đóng</button></div>
+  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span></div>
   <div class="settings-body">
     <div class="card">
       <h2>Tài khoản đăng nhập</h2>
@@ -672,7 +681,6 @@
       <div class="setting"><div class="txt"><b>Số tin lấy cho mỗi nhóm khi nhập lịch sử</b></div><div class="row"><input type="number" id="setGroupCount" min="20" max="2000" step="50" style="width:110px"> <span class="muted">tin</span></div></div>
       <div class="setting"><div class="txt"><b>Tự lấy tin bỏ lỡ khi kết nối lại</b><span>Sau khi máy tắt, xin Zalo gửi bù phần tin đã lỡ.</span></div><label class="switch"><input type="checkbox" id="setSyncOld"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Báo "quá hạn" khi khách chờ quá</b><span>Số giờ kể từ tin cuối của khách.</span></div><div class="row"><input type="number" id="setWaitingHours" min="0" step="0.5" style="width:100px"> <span class="muted">giờ</span></div></div>
-      <div class="row" style="margin-top:14px; justify-content:flex-end"><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
     </div>
 
     <div class="card">
@@ -692,6 +700,7 @@
 
     <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
   </div>
+  <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
 </div></dialog>
 
 <dialog id="dlgQr"><div class="dlg">
@@ -788,8 +797,8 @@
     $('#presetSel').value = state.settings.defaultPreset || 'today';
     const ws = state.workspace || {}; const au = state.automation;
     $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.') +
-      (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) + ' (' + au.quietMinutes + ' phút sau tin cuối)' : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 và mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
-      ' · <button class="link" id="btnCopyPrompt2">Sao chép câu lệnh cho Claude</button>';
+      (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
+      ' · <button class="link" id="btnCopyPrompt2" title="Sao chép câu lệnh dán vào Claude Cowork">Sao chép câu lệnh</button>';
     $('#btnCopyPrompt2').onclick = copyPrompt;
   }
   function renderReencrypt() {
@@ -912,7 +921,7 @@
     return '<div class="msg ' + (m.is_outbound ? 'out' : 'in') + '" data-id="' + m.id + '"><div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
       (c.is_group && !m.is_outbound ? '<div class="meta">' + who + '</div>' : '') +
       (m.quote_text ? '<div class="quote">' + esc(m.quote_text) + '</div>' : '') +
-      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : esc(m.text || '')) +
+      (m.recalled ? '<i>Tin nhắn đã được thu hồi</i>' : (/^sendBubbleMessage\b/.test(m.text || '') ? '📞 <i>' + esc((m.text || '').replace(/^sendBubbleMessage\s*[—-]?\s*/, '') || 'Cuộc gọi') + '</i>' : esc(m.text || ''))) +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
       '<div class="time">' + fmtClock(m.event_time) + '</div></div>' + reacts + '</div>';
   }
@@ -1057,7 +1066,6 @@
   }
   async function saveTemplates(items, okMsg) { try { const r = await api('/api/templates', { method: 'POST', body: { items } }); state.templates = r.items || items; renderTemplates(); $('#dlgTemplate').close(); toast(okMsg); } catch (err) { $('#tplMsg').textContent = '❌ ' + err.message; } }
   $('#btnTplAdd').onclick = () => openTplDialog(null);
-  $('#btnTplClose').onclick = () => $('#dlgTemplate').close();
   $('#btnTplSave').onclick = () => { const title = $('#tplTitle').value.trim(), text = $('#tplText').value.trim(); if (!title || !text) { $('#tplMsg').textContent = 'Cần cả tên mẫu và nội dung.'; return; } const items = state.templates.slice(); if (tplEditing !== null) items[tplEditing] = { ...items[tplEditing], title, text }; else items.push({ id: 'tpl-' + Date.now(), title, text }); saveTemplates(items, 'Đã lưu tin nhắn mẫu.'); };
   $('#btnTplDelete').onclick = () => { if (tplEditing === null) return; if (!confirm('Xoá mẫu này?')) return; saveTemplates(state.templates.filter((_, i) => i !== tplEditing), 'Đã xoá mẫu.'); };
 
@@ -1092,7 +1100,6 @@
   }
   function openSettings() { renderSettings(); $('#dlgSettings').showModal(); }
   $('#btnSettings').onclick = openSettings;
-  $('#btnSettingsClose').onclick = () => $('#dlgSettings').close();
   $('#accountRows').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const id = btn.closest('.acc-row').dataset.id; const act = btn.dataset.act;
@@ -1142,7 +1149,8 @@
   }
   async function loadReport() {
     const r = await api('/api/report?date=' + encodeURIComponent(report.date)); report.data = r;
-    $('#rpSource').textContent = r.hasClaude ? 'Tổng hợp bởi Claude lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp của Claude cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
+    const srcText = r.hasClaude ? 'Tổng hợp bởi Claude lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp của Claude cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
+    $('#rpSource').textContent = srcText; $('#rpSource').title = srcText;
     $('#rpOpenMd').hidden = !r.mdPath; $('#rpOpenMd').onclick = () => api('/api/open', { method: 'POST', body: { path: r.mdPath } }).catch((e) => toast(e.message));
     const o = r.overview;
     const tiles = '<div class="rp-tiles"><div class="tile"><div class="v">' + num(o.conversations) + '</div><div class="l">Hội thoại có tin</div></div><div class="tile"><div class="v">' + num(o.messages) + '</div><div class="l">Tin nhắn · ' + num(o.inbound) + ' đến / ' + num(o.outbound) + ' đi</div></div><div class="tile ' + (o.needReply ? 'hot' : '') + '"><div class="v">' + num(o.needReply) + '</div><div class="l">Chưa trả lời</div></div><div class="tile ' + (o.tasksForYou ? 'hot' : '') + '"><div class="v">' + num(o.tasksForYou) + '</div><div class="l">Việc cần làm</div></div></div>';
@@ -1164,7 +1172,6 @@
     $('#rpBody').innerHTML = tiles + overview + actions + convs;
   }
   $('#btnReport').onclick = openReport;
-  $('#btnReportClose').onclick = () => $('#dlgReport').close();
   $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
   const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
   $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);
