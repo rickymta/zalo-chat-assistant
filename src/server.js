@@ -321,6 +321,19 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
     return updater.skip(req.body?.version);
   }));
+  // Tải bộ cài trong ứng dụng (chạy nền, theo dõi tiến độ qua status) rồi cài + mở lại. Node thuần trả 501 ⇒ giao diện mở trình duyệt.
+  app.get('/api/updates/status', withUi(async () => {
+    if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
+    return updater.status();
+  }));
+  app.post('/api/updates/download', withUi(async () => {
+    if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
+    return updater.download();
+  }));
+  app.post('/api/updates/install', withUi(async () => {
+    if (!updater) throw Object.assign(new Error('Chưa bật kiểm tra cập nhật.'), { status: 501 });
+    return updater.install();
+  }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {

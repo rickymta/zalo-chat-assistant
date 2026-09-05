@@ -130,17 +130,49 @@
     });
     return t.innerHTML;
   }
+  // Thanh cập nhật: báo bản mới → tải trong ứng dụng (có tiến độ, đối chiếu SHA-256) → "Cài đặt và mở lại".
+  // Node thuần (canInstall=false) hoặc máy không tự cài được: mở trình duyệt tải như trước.
+  let updPoll = null;
+  function pollUpdate() {
+    clearTimeout(updPoll);
+    const ph = state.update?.install?.phase;
+    if (ph !== 'downloading' && ph !== 'verifying' && ph !== 'installing') return;
+    updPoll = setTimeout(async () => { try { state.update = await api('/api/updates/status'); renderUpdate(); } catch { pollUpdate(); } }, 600);
+  }
   function renderUpdate() {
-    const u = state.update; const bar = $('#updateBar'); const l = u?.latest;
-    if (!u?.available || !l) { bar.hidden = true; bar.innerHTML = ''; return; }
+    const u = state.update; const bar = $('#updateBar'); const l = u?.latest; const it = u?.install || {};
+    const busy = it.phase === 'downloading' || it.phase === 'verifying' || it.phase === 'installing';
+    if (!l || (!u?.available && !busy && it.phase !== 'ready')) { bar.hidden = true; bar.innerHTML = ''; clearTimeout(updPoll); return; }
     bar.hidden = false;
-    bar.innerHTML = '<div class="' + (u.mandatory ? 'topbar-warn' : 'topbar-info') + '">🆕 Có bản cập nhật <b>' + esc(l.version) + '</b>' + (l.fileSize ? ' (' + fmtBytes(l.fileSize) + ')' : '') + (u.mandatory ? ' — <b>bắt buộc cập nhật</b>' : '') +
-      ' · <button class="link" data-upd="download">Tải về</button> · <button class="link" data-upd="notes">Xem thay đổi</button>' + (u.mandatory ? '' : ' · <button class="link" data-upd="skip">Bỏ qua bản này</button>') + '</div>';
+    const v = '<b>' + esc(l.version) + '</b>';
+    let html;
+    if (it.phase === 'downloading') html = '⬇️ Đang tải bản ' + v + ' <span class="upd-prog"><i style="width:' + Math.round((it.progress || 0) * 100) + '%"></i></span>' + (it.total ? fmtBytes(it.received || 0) + ' / ' + fmtBytes(it.total) : fmtBytes(it.received || 0));
+    else if (it.phase === 'verifying') html = '🔎 Đã tải xong bản ' + v + ', đang đối chiếu SHA-256…';
+    else if (it.phase === 'ready') html = '✅ Đã tải xong bản ' + v + ' (khớp SHA-256) · <button class="link" data-upd="install">Cài đặt và mở lại ứng dụng</button> · <button class="link" data-upd="notes">Xem thay đổi</button>';
+    else if (it.phase === 'installing') html = '⚙️ Đang cài bản ' + v + '… ứng dụng sẽ tự đóng và mở lại trong ít giây.';
+    else if (it.phase === 'error') html = '⚠️ Không tự cài được bản ' + v + ': ' + esc(it.error || '') + ' · <button class="link" data-upd="download">Thử lại</button> · <button class="link" data-upd="browser">Tải bằng trình duyệt</button>' + (u.mandatory ? '' : ' · <button class="link" data-upd="skip">Bỏ qua bản này</button>');
+    else html = '🆕 Có bản cập nhật ' + v + (l.fileSize ? ' (' + fmtBytes(l.fileSize) + ')' : '') + (u.mandatory ? ' — <b>bắt buộc cập nhật</b>' : '') + ' · <button class="link" data-upd="download">' + (u.canInstall ? 'Tải về và cài' : 'Tải về') + '</button> · <button class="link" data-upd="notes">Xem thay đổi</button>' + (u.mandatory ? '' : ' · <button class="link" data-upd="skip">Bỏ qua bản này</button>');
+    bar.innerHTML = '<div class="' + (u.mandatory ? 'topbar-warn' : 'topbar-info') + '">' + html + '</div>';
+    pollUpdate();
+  }
+  async function updDownload() {
+    const u = state.update; const l = u?.latest; if (!l) return;
+    if (!u.canInstall) return openUrl(l.downloadUrl);
+    try { const r = await api('/api/updates/download', { method: 'POST' }); state.update = r; renderUpdate(); if (r.install?.phase === 'ready') toast('Bản ' + l.version + ' đã có sẵn trên máy — bấm "Cài đặt và mở lại".'); }
+    catch (err) { toast(err.message); }
+  }
+  async function updInstall() {
+    const l = state.update?.latest; if (!l) return;
+    if (!confirm('Cài bản ' + l.version + ' và mở lại ứng dụng ngay?\nỨng dụng đóng trong vài giây rồi tự mở lại; dữ liệu và phiên đăng nhập trên máy giữ nguyên.')) return;
+    try { const r = await api('/api/updates/install', { method: 'POST' }); state.update = r; renderUpdate(); if (r.install?.phase === 'error') toast(r.install.error || 'Không tự cài được.'); }
+    catch (err) { toast(err.message); }
   }
   $('#updateBar').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-upd]'); if (!btn) return;
     const l = state.update?.latest; if (!l) return;
-    if (btn.dataset.upd === 'download') return openUrl(l.downloadUrl);
+    if (btn.dataset.upd === 'download') return updDownload();
+    if (btn.dataset.upd === 'install') return updInstall();
+    if (btn.dataset.upd === 'browser') return openUrl(l.downloadUrl);
     if (btn.dataset.upd === 'notes') return openUpdateDialog();
     if (btn.dataset.upd === 'skip') {
       if (!confirm('Bỏ qua bản ' + l.version + '?\nỨng dụng sẽ không nhắc bản này nữa; bản mới hơn vẫn được báo. Kiểm tra lại bất cứ lúc nào ở Cài đặt → Phiên bản & cập nhật.')) return;
@@ -161,9 +193,12 @@
     else if (l.notes) { box.className = 'upd-notes plain'; box.textContent = l.notes; }
     else { box.className = 'upd-notes'; box.innerHTML = '<div class="empty small">Bản này không kèm mô tả thay đổi.</div>'; }
     $('#btnUpdSkip').hidden = !!u.mandatory;
+    const it = u.install || {};
+    $('#btnUpdDownload').textContent = it.phase === 'ready' ? '⚙️ Cài đặt và mở lại' : (u.canInstall ? '⬇️ Tải về và cài' : '⬇️ Tải về');
+    $('#updDlgFoot').textContent = u.canInstall ? 'Ứng dụng tải tệp, đối chiếu SHA-256 rồi cài và tự mở lại — dữ liệu trên máy được giữ nguyên.' : 'Tải xong: mở file và cài đè như lần đầu — dữ liệu trên máy được giữ nguyên.';
     $('#dlgUpdate').showModal();
   }
-  $('#btnUpdDownload').onclick = () => openUrl(state.update?.latest?.downloadUrl);
+  $('#btnUpdDownload').onclick = () => { const it = state.update?.install; $('#dlgUpdate').close(); return it?.phase === 'ready' ? updInstall() : updDownload(); };
   $('#btnUpdSkip').onclick = async () => {
     const l = state.update?.latest; if (!l) return;
     try { const r = await api('/api/updates/skip', { method: 'POST', body: { version: l.version } }); state.update = r; renderUpdate(); $('#dlgUpdate').close(); toast('Đã bỏ qua bản ' + l.version + '.'); }

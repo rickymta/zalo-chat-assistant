@@ -76,12 +76,24 @@ Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 ### Kiểm tra bản cập nhật
 
 Ứng dụng tự hỏi máy chủ xem có bản mới không: **20 giây sau khi mở** rồi **mỗi 6 giờ**. Có bản mới thì hiện một thanh ở đầu
-màn hình — *🆕 Có bản cập nhật `<phiên bản>` (`<kích thước>`)* kèm ba nút: **Tải về** (mở trang tải bằng trình duyệt),
-**Xem thay đổi** (danh sách thay đổi, ngày phát hành, SHA-256), **Bỏ qua bản này** (không nhắc bản đó nữa; bản mới hơn vẫn
-được báo). Bản đánh dấu **bắt buộc** hiện nền cảnh báo và **không có** nút bỏ qua.
+màn hình — *🆕 Có bản cập nhật `<phiên bản>` (`<kích thước>`)* kèm ba nút: **Tải về và cài**, **Xem thay đổi** (danh sách thay
+đổi, ngày phát hành, SHA-256), **Bỏ qua bản này** (không nhắc bản đó nữa; bản mới hơn vẫn được báo). Bản đánh dấu **bắt buộc**
+hiện nền cảnh báo và **không có** nút bỏ qua.
 
-**Ứng dụng KHÔNG tự tải và KHÔNG tự cài** — bản chưa ký nên macOS/Windows sẽ chặn. Cài bản mới giống lần đầu: mở file tải về,
-kéo vào Applications, cài đè; dữ liệu và phiên đăng nhập trên máy được giữ nguyên.
+**Cập nhật ngay trong ứng dụng (từ 0.0.2):** bấm *Tải về và cài* → ứng dụng tải bộ cài về `data/updates/` (thanh tiến độ trên
+cùng), **đối chiếu SHA-256** với giá trị máy chủ công bố (không khớp thì bỏ tệp và báo lỗi, không cài) → hiện *✅ Đã tải xong ·
+**Cài đặt và mở lại ứng dụng***. Bấm cài: ứng dụng đóng vài giây rồi tự mở lại ở bản mới; dữ liệu, phiên đăng nhập, chuỗi mã
+hoá giữ nguyên.
+
+| Hệ | Cách cài | Khi không tự cài được |
+|---|---|---|
+| macOS | Gắn tệp `.dmg` đã tải (ẩn), chép ứng dụng bên trong ra cạnh bản đang chạy bằng `ditto`, hoán chỗ, gỡ DMG, mở lại; bundle cũ xoá sau khi thoát. Tệp do chính ứng dụng tải nên không mang cờ quarantine — Gatekeeper không hỏi lại. | Thư mục chứa ứng dụng không ghi được (cài bởi tài khoản khác), đang chạy từ DMG/vị trí tạm ⇒ thanh báo chuyển sang *Tải bằng trình duyệt* để cài tay như lần đầu. |
+| Windows | Chạy `Setup.exe /S --force-run` (bộ cài per-user, không cần quyền quản trị), ứng dụng tự thoát để bộ cài thay tệp rồi mở lại. | Bộ cài không chạy được ⇒ *Tải bằng trình duyệt*. |
+| Chạy bằng Node (`npm start`) | Không tự cài — nút *Tải về* mở trình duyệt. | — |
+
+Vì bản chưa ký (không có Apple Developer ID / chứng chỉ Windows) nên **không** dùng `autoUpdater` của Electron (macOS bắt buộc
+chữ ký); cơ chế trên là bản thay thế có kiểm SHA-256. Có chữ ký sau này thì chuyển sang `electron-updater` và notarize để hết
+cảnh báo "nhà phát triển không xác định" lúc cài lần đầu.
 
 *Cài đặt → Phiên bản & cập nhật* cho biết phiên bản đang chạy, lần kiểm tra gần nhất và kết quả (đang dùng bản mới nhất / có
 bản `x.y.z` / lỗi kết nối), kèm nút **Kiểm tra cập nhật** để hỏi ngay, công tắc **Tự kiểm tra cập nhật** và ô **Máy chủ cập

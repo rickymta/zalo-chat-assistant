@@ -30,6 +30,8 @@ const css = `
   #reencryptBar { flex: none; padding: 8px 16px 0; }
   /* Thanh báo có bản cập nhật — nền xanh nhạt cho bản thường, dùng .topbar-warn (nền cảnh báo) cho bản bắt buộc. */
   #updateBar { flex: none; padding: 8px 16px 0; }
+  .upd-prog { display: inline-block; width: 160px; height: 6px; background: #d5e0f2; border-radius: 4px; vertical-align: middle; margin: 0 8px; overflow: hidden; }
+  .upd-prog i { display: block; height: 100%; background: #2f6fed; border-radius: 4px; transition: width .3s; }
   .topbar-info { background: var(--primary-soft); border: 1px solid #c7dcff; border-radius: 12px; padding: 10px 14px; font-size: 14px; }
   .upd-dlg { width: 720px; }
   .upd-notes { font-size: 14px; line-height: 1.6; margin-top: 10px; overflow-wrap: anywhere; }

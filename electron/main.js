@@ -8,6 +8,11 @@
 import { clipboard, app, BrowserWindow, Menu, shell, dialog, powerSaveBlocker, powerMonitor } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const run = promisify(execFile);
 
 const PRODUCT = 'Zalo Chat Assistant';
 app.setName(PRODUCT);
@@ -51,7 +56,76 @@ const platform = {
     return r.canceled ? [] : r.filePaths;
   },
   setAutoStart(v) { try { app.setLoginItemSettings({ openAtLogin: !!v, openAsHidden: true }); } catch { /* bỏ qua */ } return this.getAutoStart(); },
+  /**
+   * Cài bộ cài đã tải (src/updates.js đã đối chiếu SHA-256) rồi mở lại ứng dụng.
+   * Trả { ok:true } khi đã bắt đầu (ứng dụng sẽ tự thoát), hoặc { manual:true, reason } khi máy này không tự cài được —
+   * giao diện sẽ đưa người dùng sang tải bằng trình duyệt. Bản chưa ký nên không dùng autoUpdater của Electron.
+   */
+  async installUpdate({ file }) {
+    if (!file || !fs.existsSync(file)) return { manual: true, reason: 'Không thấy tệp đã tải.' };
+    if (process.platform === 'darwin') return installOnMac(file);
+    if (process.platform === 'win32') return installOnWindows(file);
+    return { manual: true, reason: 'Hệ này chưa hỗ trợ tự cài.' };
+  },
 };
+
+/**
+ * macOS: gắn DMG (không hiện Finder), chép .app trong đó ra cạnh bundle đang chạy bằng ditto (giữ nguyên chữ ký/metadata),
+ * đổi tên hoán chỗ (bundle cũ → .old), gỡ DMG, hẹn xoá bundle cũ sau khi thoát rồi mở lại. Tệp do chính ứng dụng tải nên không
+ * mang cờ quarantine ⇒ Gatekeeper không hỏi lại. Không ghi được vào thư mục chứa ứng dụng thì trả manual để người dùng cài tay.
+ */
+async function installOnMac(file) {
+  const bundle = path.resolve(app.getPath('exe'), '..', '..', '..');
+  if (!bundle.endsWith('.app')) return { manual: true, reason: 'Không xác định được vị trí ứng dụng đang chạy.' };
+  if (bundle.includes('/AppTranslocation/') || bundle.startsWith('/Volumes/')) return { manual: true, reason: 'Ứng dụng đang chạy từ vị trí tạm (chưa được kéo vào Applications).' };
+  const parent = path.dirname(bundle);
+  try { fs.accessSync(parent, fs.constants.W_OK); } catch { return { manual: true, reason: `Không có quyền ghi vào ${parent}.` }; }
+
+  const mount = fs.mkdtempSync(path.join(os.tmpdir(), 'zca-update-'));
+  const base = path.basename(bundle, '.app');
+  const staging = path.join(parent, `.${base}-update-${process.pid}.app`);
+  const old = path.join(parent, `.${base}-old-${process.pid}.app`);
+  try {
+    await run('hdiutil', ['attach', '-nobrowse', '-readonly', '-noverify', '-quiet', '-mountpoint', mount, file]);
+  } catch (err) {
+    fs.rmSync(mount, { recursive: true, force: true });
+    return { manual: true, reason: `Không mở được tệp DMG: ${String(err?.stderr || err?.message || err).trim().slice(0, 200)}` };
+  }
+  try {
+    const appName = fs.readdirSync(mount).find((n) => n.endsWith('.app'));
+    if (!appName) throw new Error('Trong tệp tải về không có ứng dụng .app.');
+    fs.rmSync(staging, { recursive: true, force: true });
+    await run('ditto', [path.join(mount, appName), staging]);
+    if (!fs.existsSync(path.join(staging, 'Contents', 'Info.plist'))) throw new Error('Bản chép ra thiếu Contents/Info.plist.');
+    fs.renameSync(bundle, old);
+    try { fs.renameSync(staging, bundle); } catch (err) { fs.renameSync(old, bundle); throw err; }
+  } catch (err) {
+    fs.rmSync(staging, { recursive: true, force: true });
+    await run('hdiutil', ['detach', mount, '-quiet', '-force']).catch(() => {});
+    fs.rmSync(mount, { recursive: true, force: true });
+    return { manual: true, reason: `Không thay được ứng dụng: ${String(err?.stderr || err?.message || err).trim().slice(0, 200)}` };
+  }
+  await run('hdiutil', ['detach', mount, '-quiet', '-force']).catch(() => {});
+  fs.rmSync(mount, { recursive: true, force: true });
+  // Bundle cũ vẫn đang chạy tiến trình này — xoá sau khi đã thoát (tiến trình mới chạy từ bundle mới ở đúng đường dẫn cũ).
+  spawn('/bin/sh', ['-c', `sleep 8; rm -rf "${old.replace(/"/g, '\\"')}"`], { detached: true, stdio: 'ignore' }).unref();
+  setTimeout(() => { app.relaunch(); app.quit(); }, 600);
+  return { ok: true, relaunch: true };
+}
+
+/**
+ * Windows: chạy bộ cài NSIS ngầm (/S) — bộ cài per-user không cần quyền quản trị; --force-run để nó mở lại ứng dụng khi xong.
+ * Ứng dụng tự thoát ngay sau đó để bộ cài thay được tệp.
+ */
+function installOnWindows(file) {
+  try {
+    spawn(file, ['--updated', '/S', '--force-run'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  } catch (err) {
+    return { manual: true, reason: `Không chạy được bộ cài: ${err?.message ?? err}` };
+  }
+  setTimeout(() => app.quit(), 800);
+  return { ok: true, relaunch: true };
+}
 
 async function startCore() {
   const { startApp } = await import('../src/app.js');

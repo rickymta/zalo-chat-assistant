@@ -1,5 +1,6 @@
 /**
- * Kiểm tra bản cập nhật (KHÔNG tự tải, KHÔNG tự cài — bản chưa ký, người dùng tự tải rồi cài như lần đầu).
+ * Kiểm tra bản cập nhật; từ 0.0.2 tải bộ cài trong ứng dụng, đối chiếu SHA-256 rồi nhờ vỏ Electron cài (platform.installUpdate).
+ * Bản chưa ký nên không dùng autoUpdater của Electron (macOS bắt buộc chữ ký); Node thuần chỉ báo và mở trình duyệt.
  *
  * Hợp đồng: platform/API-CONTRACT.md mục 3 và 6.
  *   GET <máy chủ>/api/releases/check?platform=&arch=&version=&channel=stable
@@ -13,6 +14,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { DATA_DIR } from './config.js';
 
 /** Chờ máy chủ tối đa 10 giây — lâu hơn coi như không kết nối được. */
@@ -23,6 +27,28 @@ const FIRST_DELAY_MS = 20_000;
 const PERIOD_MS = 6 * 3600e3;
 /** Chặn ghi chú phát hành quá dài (máy chủ lạ / lỗi) làm phình file và giao diện. */
 const MAX_NOTES = 40_000;
+/** Tải bộ cài (~100–130 MB) có thể lâu trên mạng chậm — cho tối đa 30 phút rồi mới coi là hỏng. */
+const DOWNLOAD_TIMEOUT_MS = 30 * 60e3;
+/** Thư mục chứa bộ cài đã tải; mỗi lần tải mới sẽ dọn tệp cũ. */
+const UPDATES_DIR = path.join(DATA_DIR, 'updates');
+
+function emptyInstall() {
+  return { phase: 'idle', progress: 0, received: 0, total: null, file: null, version: null, error: null, manual: false };
+}
+/** Tên tệp lấy từ URL (đã lọc ký tự lạ); không đoán được thì đặt theo phiên bản + đuôi theo hệ. */
+function safeFileName(url, version) {
+  let name = '';
+  try { name = decodeURIComponent(new URL(url).pathname.split('/').pop() || ''); } catch { /* URL lạ */ }
+  name = name.replace(/[^\w.\- ()]+/g, '_').replace(/^\.+/, '').slice(0, 120);
+  if (!/\.(dmg|exe|zip|pkg|msi)$/i.test(name)) name = `update-${version}${process.platform === 'win32' ? '.exe' : '.dmg'}`;
+  return name;
+}
+function sha256File(file) {
+  return new Promise((resolve, reject) => {
+    const h = crypto.createHash('sha256');
+    fs.createReadStream(file).on('data', (d) => h.update(d)).on('end', () => resolve(h.digest('hex'))).on('error', reject);
+  });
+}
 
 function semverParts(v) {
   const m = String(v ?? '').trim().replace(/^v/i, '').match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?/);
@@ -73,6 +99,8 @@ function normalizeRelease(r) {
 export function createUpdater({ auth, settings, platform, log, events, version }) {
   const stateFile = path.join(DATA_DIR, 'update.json');
   const current = String(version || platform?.appVersion || '0.0.0');
+  /** Tự cài được khi vỏ Electron cung cấp installUpdate (macOS: đổi bundle từ DMG; Windows: chạy Setup ngầm). Node thuần: không. */
+  const canInstall = typeof platform?.installUpdate === 'function' && (process.platform === 'darwin' || process.platform === 'win32');
 
   const state = {
     checking: false,
@@ -86,6 +114,9 @@ export function createUpdater({ auth, settings, platform, log, events, version }
     latest: null,
     mandatory: false,
     skippedVersion: '',
+    canInstall,
+    /** Tiến trình tải + cài bản mới ngay trong ứng dụng (không lưu ra file — mở lại là bắt đầu lại). */
+    install: emptyInstall(),
   };
 
   let firstTimer = null;
@@ -94,7 +125,7 @@ export function createUpdater({ auth, settings, platform, log, events, version }
   const emit = () => { try { events?.emit('update', status()); } catch { /* bỏ qua */ } };
 
   function status() {
-    return { ...state, latest: state.latest ? { ...state.latest } : null };
+    return { ...state, latest: state.latest ? { ...state.latest } : null, install: { ...state.install } };
   }
 
   /** Bản đã bỏ qua thì không hiện thanh báo nữa — trừ khi bản đó bắt buộc. */
@@ -136,9 +167,110 @@ export function createUpdater({ auth, settings, platform, log, events, version }
     return String(auth?.serverUrl || '').replace(/\/+$/, '');
   }
 
+  /** Chuyển lỗi mạng của Node thành câu người dùng đọc được. */
+  function friendly(err) {
+    const code = err?.cause?.code ?? '';
+    if (err?.name === 'TimeoutError') return 'Tải quá lâu (hơn 30 phút) — kiểm tra mạng rồi thử lại.';
+    if (err?.name === 'TypeError' || code) return `Không kết nối được máy chủ tải về${code ? ` (${code})` : ''}.`;
+    return err?.message ?? String(err);
+  }
+
+  /**
+   * Tải bộ cài của bản mới nhất về DATA_DIR/updates rồi đối chiếu SHA-256 công bố. Chạy nền; giao diện theo dõi qua status().
+   * Không có SHA-256 từ máy chủ thì KHÔNG cài (không thể biết tệp còn nguyên hay không) — đẩy người dùng sang tải bằng trình duyệt.
+   */
+  async function download() {
+    const l = state.latest;
+    if (!state.newer || !l?.downloadUrl) throw Object.assign(new Error('Chưa có bản cập nhật để tải.'), { status: 400 });
+    if (!canInstall) throw Object.assign(new Error('Máy này chưa tự cài được — hãy tải bằng trình duyệt.'), { status: 501 });
+    if (['downloading', 'verifying', 'installing'].includes(state.install.phase)) return status();
+    if (!/^[0-9a-f]{64}$/i.test(l.sha256 || '')) {
+      state.install = { ...emptyInstall(), phase: 'error', version: l.version, manual: true, error: 'Máy chủ không công bố SHA-256 cho bản này nên không tự cài được.' };
+      emit(); return status();
+    }
+    fs.mkdirSync(UPDATES_DIR, { recursive: true });
+    const file = path.join(UPDATES_DIR, safeFileName(l.downloadUrl, l.version));
+    // Đã tải xong lần trước (cùng nội dung) ⇒ dùng lại, không tải nữa.
+    try {
+      if (fs.existsSync(file) && (await sha256File(file)).toLowerCase() === l.sha256.toLowerCase()) {
+        const size = fs.statSync(file).size;
+        state.install = { ...emptyInstall(), phase: 'ready', progress: 1, received: size, total: size, file, version: l.version };
+        emit(); return status();
+      }
+    } catch { /* tệp hỏng ⇒ tải lại */ }
+    for (const n of fs.readdirSync(UPDATES_DIR)) { try { fs.rmSync(path.join(UPDATES_DIR, n), { recursive: true, force: true }); } catch { /* bỏ qua */ } }
+    state.install = { ...emptyInstall(), phase: 'downloading', version: l.version, total: l.fileSize || null, file };
+    emit();
+    const tmp = file + '.part';
+    (async () => {
+      try {
+        const res = await fetch(l.downloadUrl, { redirect: 'follow', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+        if (!res.ok || !res.body) throw new Error(`Máy chủ trả lỗi ${res.status} khi tải tệp.`);
+        const len = Number(res.headers.get('content-length'));
+        if (Number.isFinite(len) && len > 0) state.install.total = len;
+        let lastEmit = 0;
+        const counter = new Transform({
+          transform(chunk, _enc, cb) {
+            state.install.received += chunk.length;
+            if (state.install.total) state.install.progress = Math.min(0.999, state.install.received / state.install.total);
+            const now = Date.now();
+            if (now - lastEmit > 400) { lastEmit = now; emit(); }
+            cb(null, chunk);
+          },
+        });
+        await pipeline(Readable.fromWeb(res.body), counter, fs.createWriteStream(tmp));
+        state.install.phase = 'verifying'; emit();
+        const sum = await sha256File(tmp);
+        if (sum.toLowerCase() !== l.sha256.toLowerCase()) {
+          fs.rmSync(tmp, { force: true });
+          throw new Error('Tệp tải về không khớp SHA-256 công bố (có thể tải lỗi giữa chừng) — hãy thử lại.');
+        }
+        fs.renameSync(tmp, file);
+        state.install.phase = 'ready'; state.install.progress = 1;
+        log.info(`Đã tải bản ${l.version} (${state.install.received} byte, SHA-256 khớp) — chờ người dùng bấm cài.`);
+      } catch (err) {
+        try { fs.rmSync(tmp, { force: true }); } catch { /* bỏ qua */ }
+        state.install.phase = 'error'; state.install.error = friendly(err);
+        log.warn(`Không tải được bản ${l.version}: ${state.install.error}`);
+      } finally {
+        emit();
+      }
+    })();
+    return status();
+  }
+
+  /** Cài tệp đã tải (đối chiếu SHA-256 lần nữa ngay trước khi cài) rồi để vỏ Electron thay ứng dụng và mở lại. */
+  async function install() {
+    const it = state.install;
+    if (it.phase !== 'ready' || !it.file || !fs.existsSync(it.file)) throw Object.assign(new Error('Chưa tải xong bản cập nhật.'), { status: 400 });
+    const sum = await sha256File(it.file);
+    if (sum.toLowerCase() !== String(state.latest?.sha256 || '').toLowerCase()) {
+      state.install = { ...emptyInstall(), phase: 'error', version: it.version, error: 'Tệp đã tải không còn khớp SHA-256 — hãy tải lại.' };
+      emit(); return status();
+    }
+    state.install.phase = 'installing'; emit();
+    try {
+      const r = await platform.installUpdate({ file: it.file, version: it.version });
+      if (r?.manual) {
+        state.install.phase = 'error'; state.install.manual = true;
+        state.install.error = r.reason || 'Không tự cài được trên máy này.';
+        log.warn(`Không tự cài được bản ${it.version}: ${state.install.error}`);
+      } else {
+        log.info(`Đang cài bản ${it.version} — ứng dụng sẽ tự đóng và mở lại.`);
+      }
+    } catch (err) {
+      state.install.phase = 'error'; state.install.error = err?.message ?? String(err);
+      log.warn(`Lỗi khi cài bản ${it.version}: ${state.install.error}`);
+    }
+    emit();
+    return status();
+  }
+
   const updater = {
     serverUrl,
     status,
+    download,
+    install,
 
     /**
      * Hỏi máy chủ có bản mới không. `manual` = người dùng bấm nút (bỏ qua công tắc tự kiểm tra).
@@ -158,6 +290,8 @@ export function createUpdater({ auth, settings, platform, log, events, version }
         const data = await res.json();
         const latest = normalizeRelease(data?.latest);
         state.latest = latest;
+        // Máy chủ đổi sang bản khác trong lúc đã tải xong bản cũ ⇒ bỏ tệp cũ, chờ người dùng tải lại.
+        if (!['idle', 'downloading', 'verifying', 'installing'].includes(state.install.phase) && state.install.version !== latest?.version) state.install = emptyInstall();
         // So semver tại đây là nguồn sự thật; cờ mandatory lấy theo máy chủ (nó còn xét minVersion).
         state.mandatory = !!latest && compareSemver(latest.version, state.current) > 0 && (!!data?.mandatory || !!latest.mandatory);
         state.lastError = null;
