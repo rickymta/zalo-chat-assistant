@@ -31,3 +31,31 @@ Lưu ý: lịch chỉ chạy khi Claude Cowork đang mở (đóng thì chạy b�
 nhỏ nên rất rẻ; lượt có dữ liệu mới tốn token theo số hội thoại. Ứng dụng vẫn giữ nhịp cập nhật mỗi giờ tròn làm nền.
 Lần chạy đầu Cowork hỏi quyền ghi file (Write) — duyệt một lần trong mục Scheduled; các lần sau tự chạy.
 Hộp thoại 📊 Báo cáo trong ứng dụng đọc `ket-qua/bao-cao/<ngày>.json`; chưa có file thì hiện số liệu của ứng dụng.
+
+## Chạy không phải cấp quyền lại mỗi lượt
+
+Mỗi lượt lịch là một phiên mới, quyền bấm "Cho phép" trong lượt trước KHÔNG được giữ. Cách bền là khai quy tắc cho phép ở
+**cấu hình người dùng** `~/.claude/settings.json` (lịch trong Claude desktop chỉ đọc cấp người dùng, không đọc
+`.claude/settings.local.json` của dự án). Thêm vào khối `permissions.allow` (giữ các mục đang có; đường dẫn tuyệt đối dùng
+tiền tố `//`, có dấu cách vẫn viết thẳng, không cần thoát):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/<tên-máy>/Documents/Zalo Chat Assistant/**)",
+      "Edit(//Users/<tên-máy>/Documents/Zalo Chat Assistant/ket-qua/**)",
+      "Agent"
+    ]
+  }
+}
+```
+
+- `Edit(...)` bao luôn công cụ Write (quy tắc `Write(...)` riêng bị bỏ qua). Chỉ mở ghi trong `ket-qua/`, không mở `du-lieu/`
+  và `huong-dan/` — đúng ràng buộc của lịch.
+- `Agent` cho phép gọi subagent (tuần tự từng hội thoại) mà không hỏi.
+- Trong prompt của lịch ghi rõ **chỉ dùng Read, Glob, Write, Agent; không dùng Bash** — mọi lệnh Bash vẫn sẽ hỏi quyền.
+- Không nên dùng `permissions.defaultMode: "bypassPermissions"` chỉ để lịch chạy trơn: nó tắt hỏi quyền cho MỌI phiên.
+  `"defaultMode": "acceptEdits"` (trong `permissions`) cũng được nhưng chỉ tự duyệt ghi file trong thư mục làm việc, vẫn
+  phải có `Read(...)` và `Agent` ở trên.
+- Sửa xong, đợi lượt kế của lịch (hoặc bấm *Run now* trong mục Scheduled) và kiểm tra lượt đó không dừng hỏi quyền nữa.
