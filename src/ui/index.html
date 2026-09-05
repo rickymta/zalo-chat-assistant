@@ -311,8 +311,16 @@
   .ws-line { flex: none; padding: 5px 16px; font-size: 13px; color: var(--muted); background: #fbfcfe; border-bottom: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-height: 32px; }
   .zapp.mac .ws-line { padding-left: 16px; }
   #reencryptBar { flex: none; padding: 8px 16px 0; }
-  .cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 340px 1fr 370px; }
-  .cols.noside { grid-template-columns: 340px 1fr; } .cols.noside .sidecol { display: none; }
+  /* Lưới 3 cột + 2 thanh kéo; độ rộng cột 1 và 3 là biến CSS do JS đặt (kéo được, nhớ theo máy); cột giữa minmax(0,1fr) để không bao giờ đẩy cột 3 ra ngoài cửa sổ. */
+  .cols { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr) 6px var(--c3, 340px); }
+  .cols.noside { grid-template-columns: var(--c1, 300px) 6px minmax(0, 1fr); }
+  .cols.noside .sidecol, .cols.noside .gutter[data-gutter="2"] { display: none; }
+  .convcol, .chatcol, .sidecol { min-width: 0; }
+  .gutter { cursor: col-resize; position: relative; z-index: 2; background: var(--bg); }
+  .gutter::after { content: ""; position: absolute; top: 0; bottom: 0; left: 2px; width: 2px; border-radius: 2px; background: transparent; transition: background .15s; }
+  .gutter:hover::after, .gutter.active::after { background: var(--primary); }
+  body.resizing { cursor: col-resize; user-select: none; }
+  body.resizing .msgs, body.resizing .vlist { pointer-events: none; }
   .sidecol { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
   .side-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); min-height: 58px; }
   .side-head b { font-size: 15px; }
@@ -335,8 +343,8 @@
   .tpl .t b { display: block; font-size: 14px; } .tpl .t span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #btnSideToggle.active { background: #eef4ff; border-color: #c7dcff; }
   .tpl-dlg { width: 640px; }
-  @media (max-width: 1280px) { .cols { grid-template-columns: 320px 1fr 330px; } }
-  @media (max-width: 1000px) { .cols:not(.noside) { grid-template-columns: 300px 1fr; } .cols:not(.noside) .sidecol { display: none; } }
+  .sidecol .sug-card, .sidecol .side-sec { overflow-wrap: anywhere; min-width: 0; }
+  .side-head b { white-space: nowrap; } .side-head #sideMeta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .convcol { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
   .convcol .toolbar { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
   .convcol .toolbar input[type=search] { width: 100%; height: 40px; }
@@ -415,6 +423,56 @@
   .rp-tl { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: var(--muted); line-height: 1.55; }
   .rp-tl b { color: #1f2937; font-weight: 600; }
   @media (max-width: 900px) { .cols { grid-template-columns: 300px 1fr; } .brand-mini b { display: none; } .rp-tiles { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── Mật độ gọn (người dùng 05/09/2026: chữ và khoảng cách đang to) ── */
+  .zapp, .settings-dlg { font-size: 14px; }
+  .zapp button { height: 36px; padding: 0 12px; border-radius: 10px; font-size: 14px; }
+  .zapp button.sm { height: 30px; padding: 0 10px; font-size: 13px; border-radius: 8px; }
+  .zapp button.icon { width: 36px; font-size: 16px; }
+  .zapp button.link { height: auto; padding: 0; }
+  .zapp input[type=text], .zapp input[type=search], .zapp input[type=number], .zapp select { height: 36px; font-size: 14px; padding: 0 10px; }
+  .topbar { min-height: 50px; padding: 6px 12px; gap: 8px; }
+  .topbar select, .topbar button { height: 36px; }
+  .brand-mini { font-size: 14px; } .brand-mini .logo { width: 28px; height: 28px; font-size: 15px; border-radius: 8px; }
+  .zstrip .avatar.sm { width: 30px; height: 30px; font-size: 12px; }
+  .chipstat { font-size: 12px; padding: 2px 9px; }
+  .ws-line { font-size: 12.5px; min-height: 28px; padding: 4px 12px; }
+  .convcol .toolbar { padding: 8px 10px; gap: 6px; }
+  .convcol .toolbar input[type=search] { height: 34px; }
+  .zapp .chip { height: 30px; padding: 0 12px; font-size: 13px; }
+  .conv { height: 64px; padding: 8px 10px; gap: 10px; }
+  .zapp .conv .avatar { width: 40px; height: 40px; font-size: 14px; }
+  .conv .nm { font-size: 14px; } .conv .pv { font-size: 13px; } .conv .tm { font-size: 12px; }
+  .convcol .foot { font-size: 11.5px; padding: 4px 10px; }
+  .zapp .chat-head { padding: 8px 14px; min-height: 56px; gap: 10px; }
+  .zapp .chat-head .who { min-width: 140px; }
+  .zapp .chat-head .who b { font-size: 15px; } .zapp .chat-head .who .small { font-size: 12.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .zapp .chat-head button { flex: none; white-space: nowrap; }
+  .zapp .chat-head .avatar { width: 40px; height: 40px; font-size: 14px; }
+  .msgs { padding: 10px 14px 12px; }
+  .zapp .chatcol .bubble { font-size: 14px; padding: 8px 12px; border-radius: 14px; max-width: 78%; }
+  .zapp .chatcol .bubble .meta { font-size: 11.5px; } .zapp .chatcol .bubble .time { font-size: 11px; } .zapp .chatcol .bubble .quote { font-size: 13px; }
+  .day-sep { font-size: 12px; }
+  .composer { padding: 8px 10px; }
+  .composer textarea { font-size: 14px; min-height: 40px; padding: 8px 10px; }
+  .side-head { min-height: 50px; padding: 8px 10px; }
+  .side-head b { font-size: 14px; }
+  .side-body { padding: 10px; gap: 10px; }
+  .side-sec, .sidecol .sug-card { padding: 10px; border-radius: 10px; }
+  .side-sec .sec-head b, .sidecol .sug-card .head .ttl { font-size: 14px; }
+  .sidecol .sug-card .reply { font-size: 14px; padding: 10px 12px; line-height: 1.5; }
+  .sidecol .sug-card .ctx, .sidecol .sug-card .reason, .sidecol .sug-card .warnnew { font-size: 13px; }
+  .sidecol .sug-card .head .meta { font-size: 12px; }
+  .sc-sum { font-size: 13.5px; line-height: 1.5; }
+  .sidecol .rp-list, .sidecol .rp-tl { font-size: 13px; }
+  .zapp .pill, .settings-dlg .pill { font-size: 12px; padding: 2px 8px; }
+  .tpl .t b { font-size: 13.5px; } .tpl .t span { font-size: 12.5px; }
+  .settings-dlg .card { padding: 14px 16px; } .settings-dlg .card h2 { font-size: 16px; }
+  .settings-dlg .settings-head h2 { font-size: 18px; }
+  .rp-tiles .tile { padding: 12px 16px; } .rp-tiles .tile .v { font-size: 26px; }
+  .rp-sum, .rp-hl, .rp-actions { font-size: 14px; }
+  .rp-top b { font-size: 15px; }
+  .setting .txt b { font-size: 14px; } .setting .txt span { font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -514,15 +572,17 @@
       <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
       <div class="foot" id="convFoot"></div>
     </aside>
+    <div class="gutter" data-gutter="1" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 
     <section class="chatcol">
-      <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden>📁 Đưa riêng hội thoại này cho Claude</button><button class="sm" id="btnSideToggle" title="Bật/tắt cột trợ lý Claude">💡 Trợ lý</button></div>
+      <div class="chat-head" id="chatHead"><div class="avatar" id="chatAvatar">?</div><div class="who"><b id="chatName">Chọn một hội thoại</b><span class="muted small" id="chatMeta">Tin nhắn sẽ hiện ở đây</span></div><button class="sm" id="chatExportBtn" hidden title="Đưa riêng hội thoại này vào gói dữ liệu cho Claude">📁 Cho Claude</button><button class="sm" id="btnSideToggle" title="Bật/tắt cột trợ lý Claude">💡 Trợ lý</button></div>
       <div class="msgs" id="msgs"><div class="msgs-top" id="msgsTop"></div><div id="msgsList"><div class="empty"><div class="big">💬</div>Chọn một hội thoại bên trái để xem tin nhắn.</div></div></div>
       <div class="composer" id="composer" hidden>
         <textarea id="composeText" rows="2" placeholder="Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
         <button class="primary" id="btnSend">Gửi</button>
       </div>
     </section>
+    <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 
     <aside class="sidecol" id="sidecol">
       <div class="side-head"><b>💡 Trợ lý Claude</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
@@ -756,7 +816,7 @@
   document.addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (!b) return; const p = b.dataset.open === 'workspace' ? state.paths.workspaceDir : state.paths.dataDir; api('/api/open', { method: 'POST', body: { path: p } }).catch((err) => toast(err.message)); });
 
   // ── Danh sách hội thoại: cuộn ảo (hàng cao cố định, tải theo trang) ────────
-  const ROW_H = 72, PAGE = 100, OVERSCAN = 6;
+  const ROW_H = 64, PAGE = 100, OVERSCAN = 6; // ROW_H phải bằng chiều cao .conv trong CSS
   const vlist = {
     scroll: null, spacer: null, total: 0, rows: [], pages: new Set(), loading: new Set(), gen: 0,
     init() { this.scroll = $('#convScroll'); this.spacer = $('#convSpacer'); this.scroll.addEventListener('scroll', () => this.render()); new ResizeObserver(() => this.render()).observe(this.scroll); },
@@ -939,7 +999,30 @@
   }
   // Ẩn/hiện cột trợ lý — nhớ lựa chọn; màn hẹp (< 1000px) mặc định ẩn.
   const SIDE_KEY = 'zca.sideHidden';
-  function setSide(hidden) { $('.cols').classList.toggle('noside', hidden); try { localStorage.setItem(SIDE_KEY, hidden ? '1' : '0'); } catch { /* bỏ qua */ } $('#btnSideToggle').classList.toggle('active', !hidden); }
+  function setSide(hidden) { $('.cols').classList.toggle('noside', hidden); try { localStorage.setItem(SIDE_KEY, hidden ? '1' : '0'); } catch { /* bỏ qua */ } $('#btnSideToggle').classList.toggle('active', !hidden); applyCols(); }
+  // ── Kéo đổi độ rộng cột 1 và 3 (cột giữa nhận phần còn lại, tối thiểu 360px); nhớ theo máy; bấm đôi thanh kéo = mặc định.
+  const COLS_KEY = 'zca.cols', COL_DEF = { c1: 300, c3: 340 }; const colw = { ...COL_DEF };
+  try { const saved = JSON.parse(localStorage.getItem(COLS_KEY) || '{}'); if (Number.isFinite(saved.c1)) colw.c1 = saved.c1; if (Number.isFinite(saved.c3)) colw.c3 = saved.c3; } catch { /* bỏ qua */ }
+  function applyCols() {
+    const el = $('.cols'); const total = el.clientWidth || window.innerWidth; const side = !el.classList.contains('noside'); const minChat = 360, g = 12;
+    colw.c1 = Math.round(Math.max(240, Math.min(colw.c1, 520))); colw.c3 = Math.round(Math.max(260, Math.min(colw.c3, 640)));
+    if (side && colw.c1 + colw.c3 + minChat + g > total) colw.c3 = Math.max(260, total - colw.c1 - minChat - g);
+    if (side && colw.c1 + colw.c3 + minChat + g > total) colw.c1 = Math.max(240, total - colw.c3 - minChat - g);
+    el.style.setProperty('--c1', colw.c1 + 'px'); el.style.setProperty('--c3', colw.c3 + 'px');
+    if (vlist.scroll) vlist.render();
+  }
+  const saveCols = () => { try { localStorage.setItem(COLS_KEY, JSON.stringify(colw)); } catch { /* bỏ qua */ } };
+  $$('.gutter').forEach((gt) => {
+    gt.addEventListener('mousedown', (e) => {
+      e.preventDefault(); const which = gt.dataset.gutter; const startX = e.clientX; const start = { ...colw };
+      gt.classList.add('active'); document.body.classList.add('resizing');
+      const move = (ev) => { const dx = ev.clientX - startX; if (which === '1') colw.c1 = start.c1 + dx; else colw.c3 = start.c3 - dx; applyCols(); };
+      const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); gt.classList.remove('active'); document.body.classList.remove('resizing'); saveCols(); };
+      window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+    });
+    gt.addEventListener('dblclick', () => { if (gt.dataset.gutter === '1') colw.c1 = COL_DEF.c1; else colw.c3 = COL_DEF.c3; applyCols(); saveCols(); });
+  });
+  window.addEventListener('resize', () => applyCols());
   function initSide() { let v = null; try { v = localStorage.getItem(SIDE_KEY); } catch { /* bỏ qua */ } setSide(v === null ? window.innerWidth < 1000 : v === '1'); }
   $('#btnSideToggle').onclick = () => setSide(!$('.cols').classList.contains('noside'));
   $('#btnSideHide').onclick = () => setSide(true);
