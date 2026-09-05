@@ -445,7 +445,10 @@
   .conv .nm { font-size: 14px; } .conv .pv { font-size: 13px; } .conv .tm { font-size: 12px; }
   .convcol .foot { font-size: 11.5px; padding: 4px 10px; }
   .zapp .chat-head { padding: 8px 14px; min-height: 56px; gap: 10px; }
-  .zapp .chat-head .who { min-width: 140px; }
+  .zapp .chat-head .who { min-width: 110px; }
+  /* Khung chat hẹp (< 480px): ẩn nút "Cho Claude" để tên hội thoại và nút Trợ lý còn chỗ; nút Cập nhật ở thanh trên vẫn đưa dữ liệu cho Claude. */
+  .chatcol { container-type: inline-size; }
+  @container (max-width: 480px) { .chat-head #chatExportBtn { display: none; } }
   .zapp .chat-head .who b { font-size: 15px; } .zapp .chat-head .who .small { font-size: 12.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .zapp .chat-head button { flex: none; white-space: nowrap; }
   .zapp .chat-head .avatar { width: 40px; height: 40px; font-size: 14px; }
@@ -1001,7 +1004,7 @@
   const SIDE_KEY = 'zca.sideHidden';
   function setSide(hidden) { $('.cols').classList.toggle('noside', hidden); try { localStorage.setItem(SIDE_KEY, hidden ? '1' : '0'); } catch { /* bỏ qua */ } $('#btnSideToggle').classList.toggle('active', !hidden); applyCols(); }
   // ── Kéo đổi độ rộng cột 1 và 3 (cột giữa nhận phần còn lại, tối thiểu 360px); nhớ theo máy; bấm đôi thanh kéo = mặc định.
-  const COLS_KEY = 'zca.cols', COL_DEF = { c1: 300, c3: 340 }; const colw = { ...COL_DEF };
+  const COLS_KEY = 'zca.cols', COL_DEF = { c1: 280, c3: 340 }; const colw = { ...COL_DEF };
   try { const saved = JSON.parse(localStorage.getItem(COLS_KEY) || '{}'); if (Number.isFinite(saved.c1)) colw.c1 = saved.c1; if (Number.isFinite(saved.c3)) colw.c3 = saved.c3; } catch { /* bỏ qua */ }
   function applyCols() {
     const el = $('.cols'); const total = el.clientWidth || window.innerWidth; const side = !el.classList.contains('noside'); const minChat = 360, g = 12;
