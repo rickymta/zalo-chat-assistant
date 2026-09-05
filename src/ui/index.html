@@ -367,7 +367,27 @@
   .settings-head h2 { font-size: 20px; }
   .settings-body { overflow: auto; padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
   .settings-body .card h2 { font-size: 17px; }
-  @media (max-width: 900px) { .cols { grid-template-columns: 300px 1fr; } .brand-mini b { display: none; } }
+  .report-dlg { width: 980px; }
+  .report-dlg .settings-head { flex-wrap: wrap; row-gap: 8px; }
+  .report-dlg .settings-head h2 { white-space: nowrap; margin-right: 4px; }
+  .report-dlg .settings-head select { max-width: 200px; }
+  .rp-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rp-tiles .tile .v { font-size: 30px; }
+  .rp-sum { line-height: 1.55; margin: 6px 0 4px; }
+  .rp-hl { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
+  .rp-actions { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; }
+  .rp-actions a { text-decoration: none; }
+  .rp-conv { display: flex; gap: 12px; padding: 12px 6px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 10px; }
+  .rp-conv:hover { background: #f4f7fc; }
+  .rp-conv:first-of-type { border-top: 0; }
+  .rp-body { flex: 1; min-width: 0; }
+  .rp-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rp-top b { font-size: 16px; }
+  .rp-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .rp-tags .tag { margin: 0; background: #eef2f7; color: var(--muted); }
+  .rp-list { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .rp-list.todo b { color: var(--warn); } .rp-list.ask b { color: var(--bad); }
+  @media (max-width: 900px) { .cols { grid-template-columns: 300px 1fr; } .brand-mini b { display: none; } .rp-tiles { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
@@ -451,6 +471,7 @@
     <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
     <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
     <button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>
+    <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
     <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
   </header>
   <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
@@ -477,6 +498,12 @@
     </section>
   </div>
 </div>
+
+<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
+<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span><span class="grow"></span><button class="sm" id="rpCopy">Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>Mở bản .md</button><button class="sm" id="btnReportClose">Đóng</button></div>
+  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
+</div></dialog>
 
 <!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
 <dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
@@ -889,6 +916,55 @@
   $('#btnClearWs').onclick = async () => { if (!confirm('Xoá toàn bộ nội dung du-lieu/ trong thư mục Claude? Cơ sở dữ liệu gốc không bị ảnh hưởng.')) return; try { await api('/api/workspace/clear', { method: 'POST' }); toast('Đã xoá dữ liệu đã chuẩn bị.'); await refreshState(); } catch (err) { toast(err.message); } };
   async function loadLogs() { try { const rows = await api('/api/logs?n=150'); $('#logbox').textContent = rows.map((r) => '[' + new Date(r.ts).toLocaleTimeString('vi-VN') + '] ' + r.level.toUpperCase() + ' ' + r.message).join('\n'); } catch { /* bỏ qua */ } }
   $('#logDetails').addEventListener('toggle', (e) => { if (e.target.open) loadLogs(); });
+
+  // ── Báo cáo ngày ─────────────────────────────────────────────────────────
+  const REL = { 'khach-hang': 'Khách hàng', 'dong-nghiep': 'Đồng nghiệp', 'doi-tac': 'Đối tác', 'ban-be': 'Bạn bè', 'nhom': 'Nhóm', 'khac': 'Khác' };
+  const SENT = { 'binh-thuong': ['', 'Bình thường'], 'tich-cuc': ['ok', 'Tích cực'], 'lo-lang': ['warn', 'Lo lắng'], 'khong-hai-long': ['bad', 'Không hài lòng'], 'khan': ['bad', 'Khẩn'] };
+  const report = { dates: [], today: null, date: null, data: null };
+  const fmtDate = (d) => d.split('-').reverse().join('/');
+  async function openReport() {
+    $('#dlgReport').showModal(); $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
+    try { const d = await api('/api/report/dates'); report.dates = d.dates; report.today = d.today; if (!report.date) report.date = d.dates.includes(d.today) ? d.today : (d.dates[0] || d.today); renderDateSelect(); await loadReport(); } catch (err) { $('#rpBody').innerHTML = '<div class="empty">' + esc(err.message) + '</div>'; }
+  }
+  function renderDateSelect() {
+    const sel = $('#rpDate'); const all = [...new Set([report.today, ...report.dates])].filter(Boolean).sort().reverse();
+    sel.innerHTML = all.map((d) => '<option value="' + d + '">' + (d === report.today ? 'Hôm nay · ' : '') + fmtDate(d) + '</option>').join('');
+    sel.value = report.date;
+    $('#rpPrev').disabled = all.indexOf(report.date) >= all.length - 1; $('#rpNext').disabled = all.indexOf(report.date) <= 0;
+  }
+  async function loadReport() {
+    const r = await api('/api/report?date=' + encodeURIComponent(report.date)); report.data = r;
+    $('#rpSource').textContent = r.hasClaude ? 'Tổng hợp bởi Claude lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp của Claude cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
+    $('#rpOpenMd').hidden = !r.mdPath; $('#rpOpenMd').onclick = () => api('/api/open', { method: 'POST', body: { path: r.mdPath } }).catch((e) => toast(e.message));
+    const o = r.overview;
+    const tiles = '<div class="rp-tiles"><div class="tile"><div class="v">' + num(o.conversations) + '</div><div class="l">Hội thoại có tin</div></div><div class="tile"><div class="v">' + num(o.messages) + '</div><div class="l">Tin nhắn · ' + num(o.inbound) + ' đến / ' + num(o.outbound) + ' đi</div></div><div class="tile ' + (o.needReply ? 'hot' : '') + '"><div class="v">' + num(o.needReply) + '</div><div class="l">Chưa trả lời</div></div><div class="tile ' + (o.tasksForYou ? 'hot' : '') + '"><div class="v">' + num(o.tasksForYou) + '</div><div class="l">Việc cần làm</div></div></div>';
+    const overview = (o.claudeSummary || (o.highlights || []).length) ? '<div class="card"><h2>Tổng quan</h2>' + (o.claudeSummary ? '<p class="rp-sum">' + esc(o.claudeSummary) + '</p>' : '') + ((o.highlights || []).length ? '<ul class="rp-hl">' + o.highlights.map((h) => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + '</div>' : '';
+    const accOf = (a) => a.accountId || r.conversations.find((c) => c.threadId === String(a.threadId))?.accountId || '';
+    const actions = (r.actionItems || []).length ? '<div class="card"><h2>✅ Việc cần làm (' + r.actionItems.length + ')</h2><ul class="rp-actions">' + r.actionItems.map((a) => '<li><a href="#" data-openconv="' + esc(accOf(a) + '|' + a.threadId) + '"><b>' + esc(a.name || '') + '</b></a> — ' + esc(a.task || '') + (a.due ? ' <span class="faint">(' + esc(a.due) + ')</span>' : '') + '</li>').join('') + '</ul></div>' : '';
+    const convs = r.conversations.length ? '<div class="card"><h2>Từng hội thoại (' + r.conversations.length + ')</h2>' + r.conversations.map((c) => {
+      const cl = c.claude; const [scls, slabel] = cl?.sentiment ? (SENT[cl.sentiment] || ['', cl.sentiment]) : ['', ''];
+      return '<div class="rp-conv" data-openconv="' + esc((c.accountId || '') + '|' + c.threadId) + '">' + avatarHtml(c.avatarUrl, c.name, 'sm') + '<div class="rp-body"><div class="rp-top"><b>' + (c.isGroup ? '👥 ' : '') + esc(c.name || c.threadId) + '</b>' + (cl?.relation ? '<span class="pill">' + esc(REL[cl.relation] || cl.relation) + '</span>' : '') + (slabel ? '<span class="pill ' + scls + '">' + slabel + '</span>' : '') + (c.unread ? '<span class="badge-unread">' + c.unread + '</span>' : '') + '<span class="grow"></span><span class="faint small">' + (c.messages ? num(c.messages) + ' tin (' + num(c.inbound) + ' đến/' + num(c.outbound) + ' đi) · ' + fmtClock(c.firstAt) + '–' + fmtClock(c.lastAt) : 'không có tin trong ngày') + '</span></div>' +
+        (cl?.summary ? '<div class="rp-sum">' + esc(cl.summary) + '</div>' : '<div class="rp-sum faint">Chưa có tóm tắt của Claude — tin cuối: ' + esc(c.lastPreview || '') + (c.lastOutbound ? ' (Bạn)' : '') + '</div>') +
+        ((cl?.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
+        ((cl?.decisions || []).length ? '<div class="rp-list"><b>Đã chốt:</b> ' + cl.decisions.map(esc).join(' · ') + '</div>' : '') +
+        ((cl?.tasksForYou || []).length ? '<div class="rp-list todo"><b>Việc của Bạn:</b> ' + cl.tasksForYou.map(esc).join(' · ') + '</div>' : '') +
+        ((cl?.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b> ' + cl.openQuestions.map(esc).join(' · ') + '</div>' : '') +
+        '</div></div>';
+    }).join('') + '</div>' : '<div class="card"><div class="empty">Không có hội thoại nào có tin trong ngày này.</div></div>';
+    $('#rpBody').innerHTML = tiles + overview + actions + convs;
+  }
+  $('#btnReport').onclick = openReport;
+  $('#btnReportClose').onclick = () => $('#dlgReport').close();
+  $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
+  const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
+  $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);
+  $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; $('#dlgReport').close(); openConversation(key); });
+  $('#rpCopy').onclick = async () => {
+    const r = report.data; if (!r) return;
+    const lines = ['# Báo cáo ngày ' + fmtDate(r.date), '', r.overview.claudeSummary || '', ...(r.overview.highlights || []).map((h) => '- ' + h), '', 'Hội thoại có tin: ' + r.overview.conversations + ' · Tin: ' + r.overview.messages + ' · Chưa trả lời: ' + r.overview.needReply + ' · Việc cần làm: ' + r.overview.tasksForYou, ''];
+    for (const c of r.conversations) { lines.push('## ' + (c.isGroup ? '[Nhóm] ' : '') + (c.name || c.threadId) + (c.messages ? ' — ' + c.messages + ' tin' : '')); if (c.claude?.summary) lines.push(c.claude.summary); if (c.claude?.tasksForYou?.length) lines.push('Việc của Bạn: ' + c.claude.tasksForYou.join('; ')); if (c.claude?.openQuestions?.length) lines.push('Chưa trả lời: ' + c.claude.openQuestions.join('; ')); lines.push(''); }
+    try { await navigator.clipboard.writeText(lines.join('\n')); toast('Đã sao chép báo cáo.'); } catch { toast('Không sao chép được.'); }
+  };
 
   // ── QR ───────────────────────────────────────────────────────────────────
   async function openQr() {

@@ -44,11 +44,18 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
    Claude ghi kết quả vào `ket-qua/` (bản `.md` cho người đọc **và** `de-xuat.json` cho máy đọc). Ứng dụng theo dõi thư mục
    này: hội thoại có gợi ý hiện nhãn **💡 Có gợi ý**; mở hội thoại thấy thẻ gợi ý (ưu tiên, tóm tắt, câu trả lời, ghi chú)
    → bấm **Dùng gợi ý này** để điền vào ô soạn → sửa → **Gửi**. Gợi ý cũ hơn tin mới nhất được cảnh báo "có tin mới sau gợi ý".
+5. **📊 Báo cáo ngày** (nút ở thanh trên): một hộp thoại tổng hợp **toàn bộ hội thoại trong ngày** — số hội thoại/tin đến/tin
+   đi/chưa trả lời/việc cần làm (đếm từ dữ liệu trên máy), phần *Tổng quan* và *Việc cần làm* do Claude viết, rồi từng hội
+   thoại một thẻ: quan hệ (khách hàng/đồng nghiệp/đối tác/bạn bè/nhóm), tóm tắt, chủ đề, đã chốt, việc của Bạn, câu chưa trả
+   lời, sắc thái. Bấm vào thẻ hoặc việc cần làm để mở đúng hội thoại; ◀ ▶ xem ngày trước/sau (45 ngày gần nhất); **Sao
+   chép báo cáo** ra Markdown để dán vào Zalo/email; **Mở bản .md** mở file Claude đã viết. Ngày chưa được Claude tổng hợp
+   vẫn hiện số liệu của ứng dụng (kèm tóm tắt lấy từ gợi ý gần nhất nếu có). Nguồn: `ket-qua/bao-cao/YYYY-MM-DD.json`.
 
 **Tự động hoá hoàn toàn với lịch của Claude Cowork:** ứng dụng cập nhật `du-lieu/` **3 phút sau tin nhắn cuối** (và mỗi giờ
 tròn làm nền); trong Claude Cowork tạo một *scheduled task* chạy mỗi 5 phút (`*/5 7-22 * * *`) với nội dung: đọc `huong-dan/00`, bỏ qua nếu
-`de-xuat.json` mới hơn `du-lieu/.trang-thai.json`, ngược lại tổng hợp mọi hội thoại và ghi `ket-qua/de-xuat.json` +
-`YYYY-MM-DD-tong-hop.md`. Ứng dụng nhận file mới trong vài giây và gắn 💡 vào từng hội thoại. Lịch chỉ chạy khi Claude
+`de-xuat.json` mới hơn `du-lieu/.trang-thai.json`, ngược lại **tổng hợp từng hội thoại một** (subagent Claude Sonnet, tuần
+tự) và ghi `ket-qua/bao-cao/YYYY-MM-DD.json` + `.md` (báo cáo ngày), `ket-qua/de-xuat.json` (gợi ý) và
+`YYYY-MM-DD-tong-hop.md`. Ứng dụng nhận file mới trong vài giây: gắn 💡 vào từng hội thoại và làm mới hộp thoại Báo cáo. Lịch chỉ chạy khi Claude
 Cowork đang mở (đóng thì chạy bù ở lần mở sau). Mẫu prompt đầy đủ: `docs/cowork-scheduled-task.md`.
 
 Thư mục làm việc (ứng dụng tự tạo và cập nhật):
@@ -57,7 +64,7 @@ Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 |---|---|---|
 | `CLAUDE.md`, `huong-dan/` | Ứng dụng (mỗi lần mở) | Chỉ dẫn cho Claude + tham chiếu MedDental |
 | `du-lieu/` | Ứng dụng (nút Cập nhật) | Hội thoại đã **giải mã**: `00-INDEX.md`, `hoi-thoai/*.md`, CSV, Excel (tuỳ chọn) — **ghi đè** mỗi lần |
-| `ket-qua/` | Claude | Tổng hợp + đề xuất |
+| `ket-qua/` | Claude | `bao-cao/YYYY-MM-DD.json|.md` (báo cáo ngày — nguồn của nút 📊), `de-xuat.json` (gợi ý), `YYYY-MM-DD-tong-hop.md` |
 
 ### Những điều phải biết
 

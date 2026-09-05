@@ -14,10 +14,14 @@ Việc cần làm mỗi lần chạy:
    de-xuat.json được tạo SAU lần cập nhật dữ liệu gần nhất thì dữ liệu chưa đổi — KẾT THÚC, chỉ ghi "Dữ liệu chưa đổi, bỏ qua."
 2. Ngược lại đọc theo thứ tự: huong-dan/00-chi-dan-cho-claude.md, du-lieu/README-DU-LIEU.md, du-lieu/00-INDEX.md, rồi
    huong-dan/01…06 và huong-dan/tham-chieu-meddental/ khi cần.
-3. Tổng hợp TẤT CẢ hội thoại trong du-lieu/hoi-thoai/ và đề xuất phản hồi cho từng hội thoại theo phân loại kind
-   (tra-loi / theo-doi / nhom / khong-can kèm reason) và quy tắc viết ở huong-dan/03.
-4. Ghi ket-qua/YYYY-MM-DD-tong-hop.md (ghi đè file cùng ngày) VÀ ghi đè ket-qua/de-xuat.json theo huong-dan/04 mục E
-   (threadId/accountId lấy từ dòng "Mã thread"/"Mã tài khoản" đầu file hội thoại; createdAt ISO 8601 có +07:00).
+3. Xử lý TUẦN TỰ từng hội thoại trong du-lieu/hoi-thoai/ (mỗi hội thoại một subagent dùng model Claude Sonnet, xong hội
+   thoại này mới sang hội thoại kế). Sản phẩm CHÍNH là bản TỔNG HỢP nội dung từng hội thoại (quan hệ, tóm tắt, chủ đề, đã
+   chốt, việc của Bạn, câu chưa trả lời, sắc thái); đề xuất phản hồi chỉ là một phần kèm theo, phân loại kind
+   (tra-loi / theo-doi / nhom / khong-can kèm reason) theo quy tắc viết ở huong-dan/03. Giữ khái niệm của Zalo: "Bạn" là
+   chủ tài khoản, người còn lại gọi theo tên; không mặc định ai là "khách".
+4. Ghi ba đầu ra (ghi đè file cùng ngày), theo huong-dan/04: ket-qua/bao-cao/YYYY-MM-DD.json + .md (mục F — báo cáo ngày
+   gồm overview, conversations, actionItems), ket-qua/de-xuat.json (mục E), ket-qua/YYYY-MM-DD-tong-hop.md
+   (threadId/accountId lấy từ dòng "Mã thread"/"Mã tài khoản" đầu file hội thoại; createdAt/generatedAt ISO 8601 có +07:00).
 
 Ràng buộc: KHÔNG gửi tin nhắn, KHÔNG sửa/xoá trong du-lieu/ và huong-dan/, chỉ ghi vào ket-qua/. Không bịa giá, lịch,
 thông tin không có trong dữ liệu; chỗ chưa chắc ghi [CẦN XÁC NHẬN: …] ở phần ghi chú. Kết thúc bằng 2–3 dòng tóm tắt.
@@ -25,3 +29,5 @@ thông tin không có trong dữ liệu; chỗ chưa chắc ghi [CẦN XÁC NH�
 
 Lưu ý: lịch chỉ chạy khi Claude Cowork đang mở (đóng thì chạy bù ở lần mở sau). Lượt "dữ liệu chưa đổi" chỉ đọc hai file JSON
 nhỏ nên rất rẻ; lượt có dữ liệu mới tốn token theo số hội thoại. Ứng dụng vẫn giữ nhịp cập nhật mỗi giờ tròn làm nền.
+Lần chạy đầu Cowork hỏi quyền ghi file (Write) — duyệt một lần trong mục Scheduled; các lần sau tự chạy.
+Hộp thoại 📊 Báo cáo trong ứng dụng đọc `ket-qua/bao-cao/<ngày>.json`; chưa có file thì hiện số liệu của ứng dụng.

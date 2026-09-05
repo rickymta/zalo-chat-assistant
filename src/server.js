@@ -10,6 +10,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import Fastify from 'fastify';
 import { updateWorkspaceData, clearWorkspaceData, workspaceInfo } from './workspace.js';
+import { listReportDates, loadReport, dayKeyVn } from './reports.js';
 
 const defaultPlatform = {
   name: 'node',
@@ -202,6 +203,13 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/suggestions', async () => suggestions?.all() ?? { count: 0, items: [] });
   app.post('/api/suggestions/refresh', async () => suggestions?.refresh() ?? { count: 0 });
   app.get('/api/conversations/:accountId/:threadId/suggestions', async (req) => suggestions?.forThread(req.params.accountId, req.params.threadId) ?? []);
+
+  // ── Báo cáo ngày ─────────────────────────────────────────────────────────────
+  app.get('/api/report/dates', async () => ({ today: dayKeyVn(Date.now()), dates: listReportDates(paths.workspaceDir, db) }));
+  app.get('/api/report', withUi(async (req) => {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query?.date ?? '')) ? req.query.date : dayKeyVn(Date.now());
+    return loadReport(paths.workspaceDir, db, date);
+  }));
 
   // ── Thư mục làm việc với Claude ──────────────────────────────────────────────
   app.get('/api/workspace', async () => workspaceInfo(paths.workspaceDir));

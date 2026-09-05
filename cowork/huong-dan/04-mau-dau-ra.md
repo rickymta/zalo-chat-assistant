@@ -132,3 +132,38 @@ Quy tắc:
 - `priority`: `P1` | `P2` | `P3` (tin theo dõi thường `P3`; `khong-can` để `null`).
 - Một hội thoại chỉ một mục; nếu có phương án A/B thì ghép vào `reply` bằng hai đoạn có tiêu đề "Phương án A:" / "Phương án B:".
 - File `.md` vẫn là bản người đọc; `de-xuat.json` là bản máy đọc — hai bản phải khớp nhau.
+
+## F. BẮT BUỘC kèm BÁO CÁO NGÀY `ket-qua/bao-cao/YYYY-MM-DD.json` (+ `.md`)
+
+Tổng hợp nội dung là sản phẩm chính; gợi ý phản hồi chỉ là một mục. Mỗi lần chạy, ngoài `de-xuat.json`, ghi đè báo cáo của
+NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong hộp thoại "📊 Báo cáo":
+
+```json
+{
+  "date": "2026-09-05",
+  "generatedAt": "2026-09-05T10:40:00+07:00",
+  "overview": {
+    "summary": "3–5 câu: hôm nay có gì đáng chú ý trên toàn bộ hội thoại (việc lớn, người cần ưu tiên, rủi ro).",
+    "highlights": ["Chị Lan (Invisalign) chờ báo giá từ sáng", "Nhóm CRM chốt lịch demo thứ 3", "Anh Hùng đổi giờ khám"]
+  },
+  "conversations": [
+    {
+      "threadId": "1001", "accountId": "770338730752256045", "name": "Nguyễn Thị Lan",
+      "relation": "khach-hang",
+      "summary": "2–4 câu tóm tắt DIỄN BIẾN hội thoại trong ngày (ai nói gì, kết quả tới đâu).",
+      "topics": ["Giá Invisalign", "Cơ sở gần Thanh Xuân"],
+      "decisions": ["Chị Lan sẽ qua khám thứ 7"],
+      "tasksForYou": ["Gửi bảng giá tham khảo Invisalign", "Giữ lịch 9h thứ 7 Khuất Duy Tiến"],
+      "openQuestions": ["Bọc răng sứ có bảo hành không?"],
+      "sentiment": "binh-thuong",
+      "kind": "tra-loi"
+    }
+  ],
+  "actionItems": [ { "threadId": "1001", "name": "Nguyễn Thị Lan", "task": "Gửi bảng giá tham khảo Invisalign", "due": "hôm nay" } ]
+}
+```
+
+Quy tắc: `relation` ∈ `khach-hang | dong-nghiep | doi-tac | ban-be | nhom | khac` (suy từ nội dung); `sentiment` ∈
+`binh-thuong | tich-cuc | lo-lang | khong-hai-long | khan`; `kind` như mục E. Mỗi hội thoại CÓ TIN trong ngày là một mục;
+hội thoại không có tin mới trong ngày thì không đưa vào. `actionItems` gom mọi việc của Bạn từ các hội thoại, ưu tiên
+theo độ khẩn. File `.md` cùng tên là bản người đọc: tiêu đề ngày, đoạn tổng quan, điểm nổi bật, rồi mỗi hội thoại một mục.

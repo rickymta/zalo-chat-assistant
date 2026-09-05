@@ -435,6 +435,25 @@ export function openDb(dbPath) {
     },
     getContact(accountId, userId) { return decRow(st.getContact.get(accountId, userId), ENC.contacts); },
 
+    // ── Báo cáo ngày ─────────────────────────────────────────────────────────
+    /** Hội thoại có tin trong [from, to) kèm số tin mỗi chiều — dùng cho báo cáo ngày. */
+    activityByRange(from, to) {
+      const rows = db.prepare(`
+        SELECT c.*, a.total, a.inbound, a.outbound, a.first_at, a.last_at
+        FROM (SELECT account_id, thread_id, COUNT(*) total, SUM(CASE WHEN is_outbound=0 THEN 1 ELSE 0 END) inbound, SUM(CASE WHEN is_outbound=1 THEN 1 ELSE 0 END) outbound, MIN(event_time) first_at, MAX(event_time) last_at
+              FROM messages WHERE event_time >= ? AND event_time < ? GROUP BY account_id, thread_id) a
+        JOIN conversations c ON c.account_id = a.account_id AND c.thread_id = a.thread_id
+        ORDER BY a.last_at DESC`).all(from, to).map(decConversation);
+      const totals = rows.reduce((t, r) => ({ messages: t.messages + r.total, inbound: t.inbound + r.inbound, outbound: t.outbound + r.outbound }), { messages: 0, inbound: 0, outbound: 0 });
+      return { rows, totals };
+    },
+    /** Các ngày (giờ VN, yyyy-mm-dd) có tin trong N ngày gần nhất. */
+    activeDays(days = 45) {
+      const since = Date.now() - days * 86400e3;
+      const rows = db.prepare(`SELECT DISTINCT date(event_time / 1000 + 7 * 3600, 'unixepoch') AS d FROM messages WHERE event_time >= ? ORDER BY d DESC`).all(since);
+      return rows.map((r) => r.d);
+    },
+
     // ── Cảm xúc (reaction) ───────────────────────────────────────────────────
     /** icon rỗng = gỡ cảm xúc. Trả true nếu có thay đổi. */
     setReaction({ accountId, threadId, msgId, reactorId, icon, ts }) {
