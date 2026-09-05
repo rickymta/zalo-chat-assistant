@@ -1,0 +1,5 @@
+# Override tạm khi migrate từ máy quản trị: mở Mongo ra 127.0.0.1:27017. Dùng xong chạy lại `docker compose up -d mongo` (không kèm file này) để đóng cổng.
+services:
+  mongo:
+    ports:
+      - "127.0.0.1:27017:27017"
