@@ -530,6 +530,11 @@ export function openDb(dbPath) {
     },
     listExports() { return st.listExports.all(); },
 
+    /** Xoá TOÀN BỘ dữ liệu hội thoại (đổi danh tính / thoát chế độ dùng thử). Phiên Zalo trong sessions/ không nằm trong DB. */
+    resetAll() {
+      db.transaction(() => { for (const t of ['reactions', 'messages', 'conversations', 'contacts', 'exports', 'accounts']) db.exec(`DELETE FROM ${t}`); })();
+      try { db.exec('VACUUM'); } catch { /* bỏ qua */ }
+    },
     close() { db.close(); },
   };
 }

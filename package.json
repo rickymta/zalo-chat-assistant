@@ -16,7 +16,7 @@
     "app": "node scripts/ensure-native.js electron && electron .",
     "icon": "bash scripts/make-icon.sh",
     "dist": "node scripts/ensure-native.js electron && electron-builder --mac dmg",
-    "dist:all": "node scripts/ensure-native.js electron && electron-builder --mac dmg --arm64 --x64"
+    "dist:x64": "node scripts/ensure-native.js electron-x64 && electron-builder --mac dmg --x64"
   },
   "dependencies": {
     "better-sqlite3": "^12.0.0",

@@ -41,6 +41,16 @@ export async function startApp({ platform, port = PORT } = {}) {
 
   const security = {
     reencrypt: null,
+    ownerFile: path.join(DATA_DIR, 'owner.json'),
+    readOwner() { try { return JSON.parse(fs.readFileSync(this.ownerFile, 'utf8')); } catch { return null; } },
+    /** Ghi danh tính đang mở khoá DB — để lần đăng nhập bằng danh tính KHÁC biết dữ liệu hiện có không đọc được. */
+    markOwner() { if (!auth.user?.id) return; try { fs.writeFileSync(this.ownerFile, JSON.stringify({ userId: auth.user.id, email: auth.user.email ?? null, mode: auth.mode, at: Date.now() }, null, 2)); } catch { /* bỏ qua */ } },
+    ownerConflict(newUserId) {
+      const o = this.readOwner(); if (!o?.userId || o.userId === newUserId) return null;
+      const st = db.stats(); if (!st.messages && !st.conversations) return null;
+      return { needsReset: true, previous: { email: o.email ?? null, mode: o.mode ?? 'server' }, messages: st.messages, conversations: st.conversations };
+    },
+    resetData() { manager.stopAll(); db.resetAll(); try { fs.unlinkSync(this.ownerFile); } catch { /* không có */ } log.warn('Đã xoá toàn bộ dữ liệu hội thoại trên máy (đổi danh tính / thoát dùng thử).'); },
     get unlocked() { return db.unlocked; },
     status() {
       return { unlocked: db.unlocked, keyVersion: auth.keyVersion, keyCount: auth.keys.length, reencrypt: this.reencrypt, pending: db.unlocked ? db.countNeedingReencrypt() : null };
@@ -58,6 +68,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       if (!auth.keys.length || !auth.user?.id) { log.error('Phiên đăng nhập không có chuỗi mã hoá.'); return false; }
       cipher.setKeys(auth.user.id, auth.keys, auth.keyVersion);
       db.setCipher(cipher);
+      this.markOwner();
       log.info(`Đã mở khoá dữ liệu (khoá phiên bản ${auth.keyVersion}) cho ${auth.user.email}.`);
       events.emit('auth', auth.publicState());
       void manager.restoreAll();

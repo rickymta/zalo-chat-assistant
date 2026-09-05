@@ -66,6 +66,28 @@ Thư mục làm việc (ứng dụng tự tạo và cập nhật):
 | `du-lieu/` | Ứng dụng (nút Cập nhật) | Hội thoại đã **giải mã**: `00-INDEX.md`, `hoi-thoai/*.md`, CSV, Excel (tuỳ chọn) — **ghi đè** mỗi lần |
 | `ket-qua/` | Claude | `bao-cao/YYYY-MM-DD.json|.md` (báo cáo ngày — nguồn của nút 📊), `de-xuat.json` (gợi ý), `YYYY-MM-DD-tong-hop.md` |
 
+### Dùng thử trên máy khác không có Docker
+
+Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá
+ngay trên máy đó (`data/auth.json`, quyền 600). Mọi thứ khác — quét QR Zalo, lưu tin mã hoá, cột trợ lý, báo cáo, lịch
+Cowork — hoạt động y như tài khoản thật. Giới hạn: chuỗi mã hoá không được sao lưu ở đâu khác nên **dữ liệu chỉ đọc được trên
+máy đó**; *Đăng xuất* trong chế độ này **xoá** dữ liệu thử; chuyển sang tài khoản thật cũng phải xoá (ứng dụng hỏi xác nhận,
+trả 409 kèm số tin/hội thoại nếu chưa đồng ý).
+
+Các bước trên máy thử (macOS):
+
+1. Chép file `.dmg` sang, kéo vào Applications, lần đầu **chuột phải → Mở** (hoặc `xattr -dr com.apple.quarantine`). Bản
+   `arm64` cho Mac chip Apple; Mac Intel cần bản `x64` (`npm run dist:x64`).
+2. Mở ứng dụng → **Bắt đầu dùng thử** → thanh trên **Đăng nhập Zalo (QR)**. Để *Cài đặt → Giữ máy không ngủ* và *Tự mở khi bật máy* bật.
+3. Cài Claude desktop, trỏ Cowork vào `~/Documents/Zalo Chat Assistant`. Thêm vào `~/.claude/settings.json` của máy đó
+   `permissions.allow` với đường dẫn tương ứng (xem `docs/cowork-scheduled-task.md`), rồi tạo scheduled task bằng mẫu prompt
+   trong cùng file — đổi `/Users/<tên-máy>`.
+4. Kết thúc thử: Cài đặt → Đăng xuất (xoá dữ liệu thử) hoặc đăng ký tài khoản thật.
+
+Cách khác không cần chế độ thử: giữ máy chủ Docker ở máy này, trên máy kia bấm *Máy chủ → Đổi* và nhập `http://<IP-máy-này>:4789`
+(compose đã mở cổng trên mọi giao diện mạng; cần cùng mạng LAN, máy này thức và tường lửa cho phép). Cách này giữ đúng mô hình
+tài khoản thật và đổi chuỗi mã hoá đồng bộ giữa các máy.
+
 ### Những điều phải biết
 
 - **Hội thoại 1-1 chỉ có tin từ lúc kết nối Zalo trở đi** (cộng tin Zalo gửi bù khi nối lại). Zalo không có API lịch sử 1-1.

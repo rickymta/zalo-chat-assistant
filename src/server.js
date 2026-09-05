@@ -89,7 +89,14 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const r = path.resolve(p);
     return [paths.dataDir, paths.workspaceDir].some((base) => r === path.resolve(base) || r.startsWith(path.resolve(base) + path.sep));
   };
-  const withUi = (fn) => async (req, reply) => { try { return await fn(req, reply); } catch (err) { return reply.code(err.status ?? err.statusCode ?? 400).send({ error: err.message ?? String(err) }); } };
+  const withUi = (fn) => async (req, reply) => { try { return await fn(req, reply); } catch (err) { return reply.code(err.status ?? err.statusCode ?? 400).send({ error: err.message ?? String(err), ...(err.payload ?? {}) }); } };
+  /** DB đang giữ dữ liệu của danh tính khác ⇒ 409 kèm số liệu để giao diện hỏi người dùng có xoá không. */
+  const guardOwner = async (newUserId, resetData, undo) => {
+    const conflict = security.ownerConflict(newUserId);
+    if (!conflict) return;
+    if (!resetData) { if (undo) await undo(); throw Object.assign(new Error('Máy này đang giữ dữ liệu của danh tính khác — cần xoá trước khi đăng nhập danh tính mới.'), { status: 409, payload: conflict }); }
+    security.resetData();
+  };
 
   // ── Giao diện ────────────────────────────────────────────────────────────────
   app.get('/', async (_req, reply) => reply.type('text/html; charset=utf-8').send(fs.readFileSync(path.join(paths.uiDir, 'index.html'), 'utf8')));
@@ -131,21 +138,32 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
 
   // ── Đăng nhập máy chủ xác thực (bridge giữ phiên) ─────────────────────────────
   app.post('/api/auth/login', withUi(async (req) => {
-    const { email, password, serverUrl } = req.body ?? {};
+    const { email, password, serverUrl, resetData } = req.body ?? {};
     await auth.login({ email: String(email ?? '').trim(), password: String(password ?? ''), serverUrl });
+    await guardOwner(auth.user?.id, !!resetData, () => auth.logout());
     await security.unlock({ syncWithServer: false });
     return { ok: true, auth: auth.publicState() };
   }));
   app.post('/api/auth/register', withUi(async (req) => {
-    const { email, password, name, registrationCode, serverUrl } = req.body ?? {};
+    const { email, password, name, registrationCode, serverUrl, resetData } = req.body ?? {};
     await auth.register({ email: String(email ?? '').trim(), password: String(password ?? ''), name, registrationCode, serverUrl });
+    await guardOwner(auth.user?.id, !!resetData, () => auth.logout());
     await security.unlock({ syncWithServer: false });
     return { ok: true, auth: auth.publicState() };
   }));
   app.post('/api/auth/forgot', withUi(async (req) => auth.forgotPassword(String(req.body?.email ?? '').trim(), req.body?.serverUrl)));
   app.post('/api/auth/reset', withUi(async (req) => auth.resetPassword(String(req.body?.email ?? '').trim(), String(req.body?.code ?? ''), String(req.body?.newPassword ?? ''), req.body?.serverUrl)));
   app.post('/api/auth/change-password', withUi(async (req) => auth.changePassword(String(req.body?.currentPassword ?? ''), String(req.body?.newPassword ?? ''))));
-  app.post('/api/auth/logout', withUi(async () => { security.lock(); await auth.logout(); return { ok: true }; }));
+  // Chế độ DÙNG THỬ không máy chủ (máy không có Docker): danh tính + chuỗi mã hoá sinh cục bộ; dữ liệu chỉ đọc trên máy này.
+  app.post('/api/auth/local', withUi(async (req) => {
+    if (auth.isLoggedIn) throw Object.assign(new Error('Đang đăng nhập rồi.'), { status: 400 });
+    await guardOwner('__danh-tinh-moi__', !!req.body?.resetData, null);
+    auth.loginLocal({ name: req.body?.name });
+    await security.unlock({ syncWithServer: false });
+    return { ok: true, auth: auth.publicState() };
+  }));
+  // Đăng xuất: tài khoản máy chủ giữ dữ liệu (đăng nhập lại là đọc được); chế độ dùng thử thì khoá mất theo ⇒ xoá luôn dữ liệu thử.
+  app.post('/api/auth/logout', withUi(async () => { const local = auth.mode === 'local'; security.lock(); if (local) security.resetData(); await auth.logout(); return { ok: true, wiped: local }; }));
   app.post('/api/auth/server-url', withUi(async (req) => ({ serverUrl: auth.setServerUrl(req.body?.url) })));
   app.get('/api/auth/ping', withUi(async (req) => ({ ok: true, server: await auth.ping(req.query?.url) })));
 

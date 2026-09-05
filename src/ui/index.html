@@ -416,6 +416,16 @@
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.active { background: var(--primary); color: #fff; }
   .rp-conv.brief { padding: 8px 6px; } .rp-conv.brief .rp-sum { margin-top: 2px; }
+  .seg.sm button { height: 24px; padding: 0 8px; font-size: 12px; }
+  .sidecol .sec-head .seg { margin-right: 4px; }
+  .trial-box { margin-top: 16px; padding: 12px 14px; border: 1px dashed #c9d2de; border-radius: 12px; display: flex; gap: 12px; align-items: center; font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .trial-box b { display: block; color: var(--text); font-size: 14px; margin-bottom: 2px; }
+  .trial-box button { flex: none; }
+  /* Màn đăng nhập trong cửa sổ hẹp (~1000px): không cuộn ngang, ẩn cột giới thiệu, ô dùng thử xuống dòng. */
+  .login-wrap { padding: 16px; box-sizing: border-box; overflow: auto; }
+  .login-shell { max-width: calc(100vw - 32px); }
+  @media (max-width: 1120px) { .login-shell { grid-template-columns: 1fr; width: 620px; min-height: 0; } .login-hero { display: none; } .login-card { padding: 28px 26px; } }
+  @media (max-width: 1120px) { .trial-box { flex-wrap: wrap; } .trial-box button { width: 100%; } }
   .settings-foot { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 22px; border-top: 1px solid var(--line); background: var(--panel); }
   .ws-line #wsLine { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ws-line .grow { display: none; }
@@ -560,6 +570,10 @@
         <div class="links"><span><a href="#" data-tab="login">← Quay lại đăng nhập</a></span></div>
       </form>
 
+      <div class="trial-box" id="trialBox">
+        <div><b>Dùng thử không cần máy chủ</b><span>Máy này tự tạo chuỗi mã hoá riêng — không cần Docker hay tài khoản. Dữ liệu chỉ đọc được trên chính máy này; đăng xuất hoặc chuyển sang tài khoản thật sẽ xoá dữ liệu thử.</span></div>
+        <button type="button" class="sm" id="btnTrial">Bắt đầu dùng thử</button>
+      </div>
       <div class="server-line">
         <span>Máy chủ: <code id="serverUrlText"></code></span>
         <a href="#" id="serverToggle">Đổi</a>
@@ -648,7 +662,7 @@
     <div class="card">
       <h2>Tài khoản đăng nhập</h2>
       <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
-      <details><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
         <div class="form" style="margin-top:10px; max-width:420px">
           <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
           <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
@@ -749,7 +763,7 @@
     const res = await fetch(url, { ...opt, headers, body: opt.body ? JSON.stringify(opt.body) : undefined });
     const data = await res.json().catch(() => ({}));
     if (res.status === 423) { state.locked = true; showLogin(); }
-    if (!res.ok) throw new Error(data.error || ('Lỗi ' + res.status));
+    if (!res.ok) { const e = new Error(data.error || ('Lỗi ' + res.status)); e.status = res.status; e.data = data; throw e; }
     return data;
   };
   let toastTimer;
@@ -771,8 +785,17 @@
   $('#serverToggle').onclick = (e) => { e.preventDefault(); const ed = $('#serverEdit'); ed.hidden = !ed.hidden; if (!ed.hidden) $('#serverUrl').focus(); };
   $('#serverUrl').addEventListener('input', () => { $('#serverUrlText').textContent = $('#serverUrl').value.trim() || state.auth.serverUrl || ''; });
   const serverUrl = () => $('#serverUrl').value.trim() || undefined;
-  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await api('/api/auth/login', { method: 'POST', body: { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() } }); $('#liPassword').value = ''; await refreshState(); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
-  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await api('/api/auth/register', { method: 'POST', body: { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() } }); await refreshState(); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
+  /** 409 needsReset: máy đang giữ dữ liệu của danh tính khác — hỏi người dùng có xoá để tiếp tục không. */
+  const confirmReset = (err) => err?.status === 409 && err?.data?.needsReset && confirm('Máy này đang giữ ' + num(err.data.messages) + ' tin nhắn / ' + num(err.data.conversations) + ' hội thoại của ' + (err.data.previous?.mode === 'local' ? 'chế độ dùng thử' : ('tài khoản ' + (err.data.previous?.email || 'khác'))) + '.\nDữ liệu đó KHÔNG đọc được bằng danh tính mới.\n\nXOÁ toàn bộ dữ liệu cũ trên máy này và tiếp tục?');
+  /** Gọi đăng nhập/đăng ký; gặp 409 và người dùng đồng ý xoá thì gọi lại với resetData. */
+  const authCall = async (path, body) => { try { return await api(path, { method: 'POST', body }); } catch (err) { if (confirmReset(err)) return api(path, { method: 'POST', body: { ...body, resetData: true } }); throw err; } };
+  $('#formLogin').onsubmit = async (e) => { e.preventDefault(); setErr('#liErr', ''); await busy($('#liBtn'), 'Đang đăng nhập…', async () => { try { await authCall('/api/auth/login', { email: $('#liEmail').value, password: $('#liPassword').value, serverUrl: serverUrl() }); $('#liPassword').value = ''; await refreshState(); toast('Đã đăng nhập và mở khoá dữ liệu.'); } catch (err) { setErr('#liErr', err.message); } }); };
+  $('#btnTrial').onclick = async () => {
+    setErr('#liErr', '');
+    if (!confirm('Dùng thử KHÔNG cần máy chủ trên máy này?\n\n• Ứng dụng tự tạo chuỗi mã hoá riêng, không cần Docker hay tài khoản.\n• Vẫn quét QR Zalo, lưu tin, tổng hợp bằng Claude như bình thường.\n• Dữ liệu chỉ đọc được trên máy này. Đăng xuất hoặc chuyển sang tài khoản thật sẽ XOÁ dữ liệu thử.')) return;
+    await busy($('#btnTrial'), 'Đang tạo…', async () => { try { await authCall('/api/auth/local', {}); await refreshState(); toast('Đã vào chế độ dùng thử. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#liErr', err.message); } });
+  };
+  $('#formRegister').onsubmit = async (e) => { e.preventDefault(); setErr('#rgErr', ''); if ($('#rgPassword').value !== $('#rgPassword2').value) { setErr('#rgErr', 'Hai mật khẩu không khớp.'); return; } await busy($('#rgBtn'), 'Đang tạo…', async () => { try { await authCall('/api/auth/register', { email: $('#rgEmail').value, password: $('#rgPassword').value, name: $('#rgName').value, registrationCode: $('#rgCode').value || undefined, serverUrl: serverUrl() }); await refreshState(); toast('Đã tạo tài khoản. Bước tiếp: đăng nhập Zalo bằng mã QR ở thanh trên.'); } catch (err) { setErr('#rgErr', err.message); } }); };
   $('#fgSend').onclick = async () => { setErr('#fgErr', ''); if (!$('#fgEmail').value.trim()) return setErr('#fgErr', 'Nhập email trước.'); await busy($('#fgSend'), 'Đang gửi…', async () => { try { const r = await api('/api/auth/forgot', { method: 'POST', body: { email: $('#fgEmail').value, serverUrl: serverUrl() } }); const h = $('#fgHint'); h.hidden = false; h.textContent = r.delivery === 'server-log' ? 'ℹ️ Máy chủ chưa cấu hình gửi email: mã đặt lại nằm trong nhật ký máy chủ — hãy hỏi quản trị viên rồi nhập ở bước 2.' : '✅ Đã gửi mã tới email (hiệu lực 30 phút). Nhập mã ở bước 2.'; $('#fgCode').focus(); } catch (err) { setErr('#fgErr', err.message); } }); };
   $('#formForgot').onsubmit = async (e) => { e.preventDefault(); setErr('#fgErr', ''); if (!$('#fgCode').value.trim()) return setErr('#fgErr', 'Nhập mã 8 ký tự đã nhận.'); await busy($('#fgBtn'), 'Đang đặt lại…', async () => { try { await api('/api/auth/reset', { method: 'POST', body: { email: $('#fgEmail').value, code: $('#fgCode').value, newPassword: $('#fgPassword').value, serverUrl: serverUrl() } }); toast('Đã đặt lại mật khẩu — hãy đăng nhập.'); $('#liEmail').value = $('#fgEmail').value; switchTab('login'); } catch (err) { setErr('#fgErr', err.message); } }); };
   $('#btnPing').onclick = async () => { $('#pingResult').textContent = 'Đang kiểm tra…'; try { const r = await api('/api/auth/ping?url=' + encodeURIComponent(serverUrl() || '')); $('#pingResult').textContent = '✅ Máy chủ trả lời (' + num(r.server?.users) + ' tài khoản' + (r.server?.smtp ? ', có gửi email' : ', chưa cấu hình email') + ').'; } catch (err) { $('#pingResult').textContent = '❌ ' + err.message; } };
@@ -782,7 +805,9 @@
     const s = await api('/api/state');
     Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power });
     if (s.locked) { showLogin(); return; }
+    const justUnlocked = $('#appView').hidden;
     showApp();
+    if (justUnlocked && !state.templates?.length) void loadTemplates();
     try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
     renderTop(); renderReencrypt(); renderPower();
     if ($('#dlgSettings').open) renderSettings();
@@ -1014,16 +1039,21 @@
     $('#sideMeta').textContent = cl ? 'Báo cáo ' + fmtDate(cl.date) + ' · ' + fmtClock(cl.generatedAt) : (sugs.length ? 'Gợi ý ' + fmtTime(sugs[0].writtenAt) : '');
     if (!cl) { box.innerHTML = '<div class="sec-head"><b>📝 Tóm tắt của Claude</b></div><div class="sc-sum faint">Chưa có tóm tắt cho hội thoại này trong báo cáo ngày. Claude cập nhật vài phút sau tin nhắn mới (khi Claude Cowork đang mở).</div>'; return; }
     const [scls, slabel] = cl.sentiment ? (SENT[cl.sentiment] || ['', cl.sentiment]) : ['', ''];
-    box.innerHTML = '<div class="sec-head"><b>📝 Tóm tắt của Claude</b>' + (cl.relation ? '<span class="pill" title="' + esc(cl.relationNote || '') + '">' + esc(REL[cl.relation] || cl.relation) + '</span>' : '') + (slabel ? '<span class="pill ' + scls + '">' + slabel + '</span>' : '') + '<span class="grow"></span><button class="link" id="btnSideReport">Mở báo cáo</button></div>' +
-      (cl.summary ? '<div class="sc-sum">' + esc(cl.summary).replace(/\n+/g, '<br>') + '</div>' : '') +
-      ((cl.timeline || []).length ? '<ul class="rp-tl">' + cl.timeline.map((t) => '<li>' + (t.time ? '<b>' + esc(t.time) + '</b> ' : '') + esc(t.what) + '</li>').join('') + '</ul>' : '') +
-      ((cl.keyFacts || []).length ? '<div class="rp-list facts"><b>Thông tin đáng nhớ:</b><ul>' + cl.keyFacts.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
+    const lv = report.level; const nT = (cl.tasksForYou || []).length, nQ = (cl.openQuestions || []).length;
+    const head = '<div class="sec-head"><b>📝 Tóm tắt của Claude</b>' + (cl.relation ? '<span class="pill" title="' + esc(cl.relationNote || '') + '">' + esc(REL[cl.relation] || cl.relation) + '</span>' : '') + (slabel ? '<span class="pill ' + scls + '">' + slabel + '</span>' : '') + '<span class="grow"></span>' + segHtml('sideLevel') + '<button class="link" id="btnSideReport">Mở báo cáo</button></div>';
+    let body;
+    if (lv === 'brief') body = '<div class="sc-sum">' + esc(briefOf(cl)) + (nT || nQ ? ' <span class="faint small">· ' + [nT ? nT + ' việc của Bạn' : '', nQ ? nQ + ' câu chưa trả lời' : ''].filter(Boolean).join(' · ') + '</span>' : '') + '</div>';
+    else body = (cl.summary ? '<div class="sc-sum">' + paras(cl.summary) + '</div>' : '') +
+      (lv === 'full' && (cl.timeline || []).length ? '<ul class="rp-tl">' + cl.timeline.map((t) => '<li>' + (t.time ? '<b>' + esc(t.time) + '</b> ' : '') + esc(t.what) + '</li>').join('') + '</ul>' : '') +
+      (lv === 'full' && (cl.keyFacts || []).length ? '<div class="rp-list facts"><b>Thông tin đáng nhớ:</b><ul>' + cl.keyFacts.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
       ((cl.decisions || []).length ? '<div class="rp-list"><b>Đã chốt:</b> ' + cl.decisions.map(esc).join(' · ') + '</div>' : '') +
       ((cl.tasksForYou || []).length ? '<div class="rp-list todo"><b>Việc của Bạn:</b><ul>' + cl.tasksForYou.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
       ((cl.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b><ul>' + cl.openQuestions.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
-      ((cl.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '');
+      (lv === 'full' && (cl.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '');
+    box.innerHTML = head + body;
     $('#btnSideReport').onclick = openReport;
   }
+  $('#sideClaude').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   // Ẩn/hiện cột trợ lý — nhớ lựa chọn; màn hẹp (< 1000px) mặc định ẩn.
   const SIDE_KEY = 'zca.sideHidden';
   function setSide(hidden) { $('.cols').classList.toggle('noside', hidden); try { localStorage.setItem(SIDE_KEY, hidden ? '1' : '0'); } catch { /* bỏ qua */ } $('#btnSideToggle').classList.toggle('active', !hidden); applyCols(); }
@@ -1056,7 +1086,7 @@
   // Tin nhắn mẫu
   state.templates = []; let tplEditing = null;
   const applyTpl = (text) => text.replace(/\[tên\]/gi, () => (chat.conv && !chat.conv.is_group && chat.conv.name) ? chat.conv.name : '[tên]');
-  async function loadTemplates() { try { const r = await api('/api/templates'); state.templates = r.items || []; } catch (err) { state.templates = []; toast('Không tải được tin nhắn mẫu: ' + err.message); } renderTemplates(); }
+  async function loadTemplates() { if (state.locked) return; try { const r = await api('/api/templates'); state.templates = r.items || []; } catch (err) { state.templates = []; if (err.status !== 423) toast('Không tải được tin nhắn mẫu: ' + err.message); } renderTemplates(); }
   function renderTemplates() {
     const list = $('#tplList');
     if (!state.templates.length) { list.innerHTML = '<div class="empty small">Chưa có mẫu nào — bấm ＋ Thêm.</div>'; return; }
@@ -1080,8 +1110,12 @@
   // ── Cài đặt (hộp thoại) ───────────────────────────────────────────────────
   function renderSettings() {
     const u = state.auth.user || {};
-    $('#settingsSub').textContent = u.email ? 'Đăng nhập: ' + u.email : '';
-    $('#accountKv').innerHTML = '<div>Email</div><div><b>' + esc(u.email || '') + '</b>' + (u.name ? ' · ' + esc(u.name) : '') + '</div><div>Máy chủ</div><div>' + esc(state.auth.serverUrl || '') + (state.auth.loggedIn ? ' <span class="pill ok">Còn phiên</span>' : ' <span class="pill bad">Hết phiên — cần đăng nhập lại</span>') + '</div>' + (state.auth.lastServerError ? '<div>Lần gần nhất</div><div class="small" style="color:var(--bad)">' + esc(state.auth.lastServerError) + '</div>' : '');
+    const local = state.auth.mode === 'local';
+    $('#settingsSub').textContent = local ? 'Chế độ dùng thử — không máy chủ' : (u.email ? 'Đăng nhập: ' + u.email : '');
+    $('#cpDetails').hidden = local;
+    $('#accountKv').innerHTML = local
+      ? '<div>Chế độ</div><div><span class="pill warn">Dùng thử — không máy chủ</span> ' + esc(u.name || '') + '</div><div>Lưu ý</div><div class="small muted">Chuỗi mã hoá do máy này tự tạo, không sao lưu ở đâu khác: dữ liệu chỉ đọc được trên máy này. Đăng xuất sẽ XOÁ dữ liệu thử. Muốn dùng lâu dài, đăng xuất rồi đăng ký tài khoản trên máy chủ.</div>'
+      : '<div>Email</div><div><b>' + esc(u.email || '') + '</b>' + (u.name ? ' · ' + esc(u.name) : '') + '</div><div>Máy chủ</div><div>' + esc(state.auth.serverUrl || '') + (state.auth.loggedIn ? ' <span class="pill ok">Còn phiên</span>' : ' <span class="pill bad">Hết phiên — cần đăng nhập lại</span>') + '</div>' + (state.auth.lastServerError ? '<div>Lần gần nhất</div><div class="small" style="color:var(--bad)">' + esc(state.auth.lastServerError) + '</div>' : '');
     const sec = state.security || {}; const r = sec.reencrypt;
     $('#securityKv').innerHTML = '<div>Chuỗi mã hoá</div><div>Phiên bản <b>' + num(sec.keyVersion) + '</b> · đang giữ ' + num(sec.keyCount) + ' phiên bản để giải mã dữ liệu cũ</div><div>Trạng thái</div><div>' + (r?.running ? '🔐 Đang mã hoá lại: ' + (r.table || '') + ' ' + num(r.done) + '/' + num(r.total) : (sec.pending ? '⚠️ ' + num(sec.pending) + ' dòng chưa ở phiên bản hiện tại' : '✅ Toàn bộ dữ liệu ở phiên bản hiện tại')) + (r && !r.running && r.finishedAt ? ' · lần gần nhất ' + fmtTime(r.finishedAt) + (r.error ? ' — lỗi: ' + esc(r.error) : '') : '') + '</div>';
     const list = visibleAccounts();
@@ -1130,7 +1164,7 @@
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
   };
-  $('#btnLogoutApp').onclick = async () => { if (!confirm('Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).')) return; try { $('#dlgSettings').close(); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
+  $('#btnLogoutApp').onclick = async () => { const msg = state.auth.mode === 'local' ? 'Thoát chế độ dùng thử?\nTOÀN BỘ dữ liệu thử trên máy này (tin nhắn, hội thoại) sẽ bị XOÁ vì chuỗi mã hoá không được lưu ở đâu khác. Phiên Zalo cần quét QR lại.' : 'Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).'; if (!confirm(msg)) return; try { $('#dlgSettings').close(); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
   $('#cpBtn').onclick = async () => { $('#cpMsg').textContent = ''; try { await api('/api/auth/change-password', { method: 'POST', body: { currentPassword: $('#cpCurrent').value, newPassword: $('#cpNew').value } }); $('#cpMsg').textContent = '✅ Đã đổi mật khẩu.'; $('#cpCurrent').value = ''; $('#cpNew').value = ''; } catch (err) { $('#cpMsg').textContent = '❌ ' + err.message; } };
   $('#btnRotate').onclick = async () => { if (!confirm('Đổi chuỗi mã hoá?\nMáy chủ sẽ cấp chuỗi mới và ứng dụng mã hoá lại TOÀN BỘ dữ liệu trên máy (chạy nền). Máy khác dùng cùng tài khoản sẽ tự lấy chuỗi mới khi mở.')) return; await busy($('#btnRotate'), 'Đang đổi…', async () => { try { const r = await api('/api/security/rotate-key', { method: 'POST' }); toast('Đã đổi sang phiên bản ' + r.version + ' — đang mã hoá lại.'); await refreshState(); } catch (err) { toast(err.message); } }); };
   $('#btnReencrypt').onclick = async () => { try { await api('/api/security/reencrypt', { method: 'POST' }); toast('Đã bắt đầu mã hoá lại phần còn thiếu.'); } catch (err) { toast(err.message); } };
@@ -1149,8 +1183,12 @@
   const paras = (t) => esc(t).split(/\n\s*\n/).map((p) => '<p>' + p.replace(/\n+/g, '<br>') + '</p>').join('');
   const firstSentences = (t, n) => { const m = String(t || '').replace(/\s+/g, ' ').match(/[^.!?…]+[.!?…]+(\s|$)/g); return m ? m.slice(0, n).join('').trim() : String(t || ''); };
   const briefOf = (cl) => cl?.brief || firstSentences(cl?.summary, 2);
+  const LEVEL_SHORT = { full: 'Chi tiết', medium: 'Vừa đủ', brief: 'Cô đọng' };
+  function segHtml(id) { return '<div class="seg sm" id="' + id + '">' + ['full', 'medium', 'brief'].map((l) => '<button type="button" data-level="' + l + '" class="' + (report.level === l ? 'active' : '') + '" title="' + esc(LEVEL_LABEL[l]) + '">' + LEVEL_SHORT[l] + '</button>').join('') + '</div>'; }
   function renderLevelSeg() { $$('#rpLevel button').forEach((b) => { b.classList.toggle('active', b.dataset.level === report.level); b.title = LEVEL_LABEL[b.dataset.level]; }); }
-  $('#rpLevel').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (!b) return; report.level = b.dataset.level; try { localStorage.setItem('zca.reportLevel', report.level); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data) renderReportBody(report.data); });
+  /** Một mức dùng chung cho hộp Báo cáo và cột trợ lý; nhớ theo máy. */
+  function setLevel(l) { if (!['full', 'medium', 'brief'].includes(l)) return; report.level = l; try { localStorage.setItem('zca.reportLevel', l); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data && $('#dlgReport').open) renderReportBody(report.data); if (chat.key) renderSideClaude(); }
+  $('#rpLevel').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   const fmtDate = (d) => d.split('-').reverse().join('/');
   async function openReport() {
     $('#dlgReport').showModal(); $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
@@ -1255,7 +1293,7 @@
 
   // ── Realtime ─────────────────────────────────────────────────────────────
   let reloadTimer, esRetry = 3000;
-  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
+  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); void loadTemplates(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
@@ -1265,9 +1303,9 @@
   }
 
   (async () => {
-    vlist.init(); initSide(); void loadTemplates();
+    vlist.init(); initSide();
     try { await refreshState(); } catch (err) { toast('Không kết nối được với ứng dụng: ' + err.message); }
-    if (!state.locked) vlist.reset();
+    if (!state.locked) { vlist.reset(); void loadTemplates(); }
     connectEvents();
     setInterval(() => { refreshState().catch(() => {}); }, 30000);
   })();
