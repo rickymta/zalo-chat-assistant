@@ -1,10 +1,11 @@
 # Triển khai nền tảng lên máy chủ — volcanion.vn
 
 Mục tiêu: `https://volcanion.vn` là trang chính (tải ứng dụng, lịch sử phiên bản, bài viết, đăng nhập/đăng ký, **API cho ứng
-dụng desktop**), `https://admin.volcanion.vn` là khu quản trị (bài viết, phiên bản, người dùng, nội dung trang chủ). nginx
-của máy chủ nhận mọi request ở 80/443 và chuyển vào container web (127.0.0.1:4790); các cổng khác không mở ra ngoài.
-Cơ sở dữ liệu là **MongoDB** (container `mongo` trong compose, hoặc Mongo sẵn có qua `MONGO_URL`). Máy chủ xác thực cũ
-(`server/`, SQLite) **không triển khai**.
+dụng desktop**), `https://admin.volcanion.vn` là khu quản trị (bài viết, phiên bản, người dùng, nội dung trang chủ).
+**Một lệnh `docker compose up -d` chạy cả máy chủ**: `mongo` + `api` + `web` + `edge` (Caddy nhận 80/443, tự xin và gia hạn
+chứng chỉ Let's Encrypt, điều hướng theo tên miền). Máy chủ chỉ mở 80/443; api/web gắn loopback. Cơ sở dữ liệu là **MongoDB**
+(container `mongo`, hoặc Mongo sẵn có qua `MONGO_URL`). Máy chủ xác thực cũ (`server/`, SQLite) **không triển khai**.
+Không cần cài nginx/certbot trên máy chủ (nginx vẫn chạy *bên trong* ảnh web để phục vụ SPA và proxy `/api`).
 
 ## 0. Không cần tên miền riêng cho API hay cập nhật
 
@@ -25,11 +26,13 @@ DNS cần 3 bản ghi A (hoặc AAAA) trỏ về máy chủ: `volcanion.vn`, `ww
 ## 1. Chuẩn bị máy chủ (Ubuntu 22.04/24.04)
 
 ```bash
-sudo apt update && sudo apt install -y ca-certificates curl nginx certbot rsync
+sudo apt update && sudo apt install -y ca-certificates curl rsync
 curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker "$USER"   # đăng nhập lại để nhóm docker có hiệu lực
 sudo ufw allow OpenSSH && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw enable
-sudo mkdir -p /var/www/certbot
 ```
+
+Máy chủ **không được** có nginx/apache nào khác đang giữ cổng 80/443 (`sudo ss -ltnp | grep -E ':80 |:443 '` phải trống) —
+service `edge` cần hai cổng đó để nhận request và để Let's Encrypt kiểm chứng tên miền.
 
 Docker bind cổng qua iptables nên **có thể vượt qua ufw** — vì thế compose gắn api/web vào `127.0.0.1` (`BIND_IP`), không
 phải mở rồi chặn. Kiểm tra sau khi chạy: `ss -ltnp | grep -E '4789|4790'` phải thấy `127.0.0.1:` chứ không phải `0.0.0.0:`.
@@ -51,41 +54,44 @@ cd ~/zca-platform && cp .env.production.example .env && chmod 600 .env && nano .
 ```
 
 Điền: `JWT_SECRET` (**giữ nguyên giá trị đang dùng ở máy hiện tại** nếu chuyển dữ liệu — xem mục 6; máy mới hoàn toàn thì
-`openssl rand -base64 48`), `ADMIN_EMAILS`, `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS` (đã điền sẵn ba tên miền),
-`ALLOW_REGISTRATION`/`REGISTRATION_CODE` theo ý muốn, SMTP nếu có. Dùng Mongo ngoài thì đổi `MONGO_URL` và về sau chạy
-`docker compose up -d api web` (không kéo service `mongo`).
+`openssl rand -base64 48`), `ADMIN_EMAILS`, `ACME_EMAIL` (email nhận cảnh báo chứng chỉ), `ALLOW_REGISTRATION`/`REGISTRATION_CODE`
+theo ý muốn, SMTP nếu có. Các dòng đã điền sẵn và **phải giữ**: `COMPOSE_PROFILES=server` (bật service `edge`), `DOMAIN`,
+`ADMIN_DOMAIN`, `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS`, `BIND_IP=127.0.0.1`. Dùng Mongo ngoài thì đổi `MONGO_URL`
+và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 
-## 4. Chạy nền tảng
+## 4. Chạy — một lệnh
 
 ```bash
 cd ~/zca-platform
-docker compose up -d --build            # mongo + api + web; lần đầu build mất vài phút
-docker compose ps
-curl -s http://127.0.0.1:4789/health    # {"status":"ok",...}
-curl -sI http://127.0.0.1:4790/ | head -1
+docker compose up -d --build            # lần đầu: build api + web (vài phút) rồi lên mongo → api → web → edge
+docker compose ps                        # 4 container: zca-mongo, zca-api, zca-web (healthy), zca-edge
+docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên
 ```
 
-## 5. nginx + HTTPS (Let's Encrypt, gia hạn tự động theo webroot)
+Thứ tự khởi động do `depends_on` + healthcheck lo: web chờ api khoẻ, edge chờ web khoẻ. Những lần sau chỉ cần
+`docker compose up -d` (không `--build` nếu mã không đổi). Máy khởi động lại thì Docker tự kéo cả bộ lên (`restart: unless-stopped`).
 
-```bash
-sudo cp deploy/nginx/volcanion.vn.conf     /etc/nginx/sites-available/volcanion.vn
-sudo cp deploy/nginx/volcanion.vn-ssl.conf /etc/nginx/sites-available/volcanion.vn-ssl
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo ln -sf /etc/nginx/sites-available/volcanion.vn /etc/nginx/sites-enabled/volcanion.vn
-sudo nginx -t && sudo systemctl reload nginx                       # lúc này chỉ có HTTP + ACME
+## 5. HTTPS — tự động, không có bước riêng
 
-sudo certbot certonly --webroot -w /var/www/certbot \
-  -d volcanion.vn -d www.volcanion.vn -d admin.volcanion.vn \
-  --email quandh@meddental.vn --agree-tos --no-eff-email \
-  --deploy-hook "systemctl reload nginx"
+Service `edge` (Caddy, cấu hình `deploy/caddy/Caddyfile`) xin chứng chỉ Let's Encrypt cho `DOMAIN`, `www.DOMAIN`,
+`ADMIN_DOMAIN` ngay lần đầu lên và tự gia hạn; chứng chỉ nằm ở volume `caddy-data` (mất volume thì xin lại, không sao).
+Điều hướng:
 
-sudo ln -sf /etc/nginx/sites-available/volcanion.vn-ssl /etc/nginx/sites-enabled/volcanion.vn-ssl
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot renew --dry-run                                       # xác nhận gia hạn tự động chạy được
-```
+| Tên miền | Xử lý |
+|---|---|
+| `www.volcanion.vn` | 301 → `https://volcanion.vn/...` |
+| `volcanion.vn` | → web; `/admin*` và `/api/admin/*` trả **404**; tệp tải lên tối đa 10 MB; HSTS |
+| `admin.volcanion.vn` | `/` → 302 `/admin`; → web; tệp tải lên tối đa 600 MB (bộ cài); `X-Robots-Tag: noindex` |
+| `http://…` | 308 → https |
 
-Nếu `nginx -t` báo thiếu `/etc/letsencrypt/options-ssl-nginx.conf` hoặc `ssl-dhparams.pem` (bản certbot cũ không tạo kèm):
-`sudo apt install -y python3-certbot-nginx` rồi `nginx -t` lại, hoặc xoá hai dòng đó trong file `-ssl.conf`.
+Điều kiện để xin được chứng chỉ: DNS của cả 3 tên đã trỏ về máy **trước** khi `up`, cổng 80/443 tới được từ Internet. Chưa
+trỏ DNS mà đã `up` thì Caddy chỉ báo lỗi và thử lại theo lịch (không chặn api/web); trỏ xong nó tự xin, không cần khởi động lại.
+Thử trên máy dev: `.env` để `DOMAIN=localhost`, `ADMIN_DOMAIN=admin.localhost` ⇒ Caddy dùng chứng chỉ nội bộ tự ký, không gọi
+Let's Encrypt (`curl -k --resolve admin.localhost:443:127.0.0.1 https://admin.localhost/`).
+
+**Máy chủ đã có nginx riêng?** Bỏ `COMPOSE_PROFILES=server` (không chạy `edge`) và dùng hai file trong `deploy/nginx/`
+(`volcanion.vn.conf` HTTP + ACME webroot, `volcanion.vn-ssl.conf` hai khối 443) với certbot của máy chủ — nội dung điều hướng
+tương đương bảng trên; nginx trỏ về `127.0.0.1:4790`.
 
 ## 6. Chuyển dữ liệu từ máy hiện tại (tài khoản, chuỗi mã hoá, bộ cài)
 
@@ -116,6 +122,8 @@ curl -s https://volcanion.vn/health
 curl -s "https://volcanion.vn/api/releases/latest?platform=darwin&arch=arm64" | head -c 300
 curl -sI https://volcanion.vn/admin | head -1              # 404 — khu quản trị không phục vụ ở tên miền chính
 curl -sI https://admin.volcanion.vn/ | head -3              # 302 → /admin
+curl -sI http://volcanion.vn/ | head -1                     # 308 → https
+ss -ltnp | grep -E '4789|4790'                              # phải là 127.0.0.1:… (không lộ ra ngoài)
 ```
 
 Mở `https://volcanion.vn/tai-ve` trên máy Mac và máy Windows để xem trang tự nhận diện nền tảng; đăng nhập
@@ -134,8 +142,9 @@ Mở `https://volcanion.vn/tai-ve` trên máy Mac và máy Windows để xem tra
 ## 9. Vận hành
 
 ```bash
-# Cập nhật mã (sau rsync lại thư mục platform/):
-docker compose build api web && docker compose up -d api web
+# Cập nhật mã (sau rsync lại thư mục platform/): một lệnh, chỉ dựng lại ảnh có mã đổi
+docker compose up -d --build
+# Dừng / chạy lại cả bộ (giữ dữ liệu): docker compose down   |   docker compose up -d
 # Sao lưu định kỳ (cron hằng ngày): mongodump + /data
 docker exec zca-mongo mongodump --quiet --db zca --gzip --archive=/tmp/zca.dump && docker cp zca-mongo:/tmp/zca.dump ~/backup/zca-$(date +%F).dump
 docker run --rm --volumes-from zca-api -v ~/backup:/out alpine:3 tar czf /out/data-$(date +%F).tgz -C /data .
@@ -146,4 +155,6 @@ sudo tail -f /var/log/nginx/access.log
 
 - `docker compose up -d` **không** tự kéo/dựng ảnh mới nếu ảnh cùng tag đã có — luôn `build` (hoặc `pull`) trước `up`.
 - Không mở 27017 ra ngoài; Mongo chỉ nói chuyện với api trong mạng Docker. Cần truy cập từ máy dev: `ssh -L 27017:…`.
-- Chứng chỉ gia hạn tự động bởi timer của certbot (`systemctl list-timers | grep certbot`), deploy-hook đã reload nginx.
+- Chứng chỉ do Caddy tự gia hạn (kiểm tra: `docker compose logs edge | grep -i renew`). Đổi tên miền: sửa `DOMAIN`/`ADMIN_DOMAIN`
+  trong `.env` rồi `docker compose up -d edge`.
+- `docker compose down -v` XOÁ volume (Mongo + bộ cài + chứng chỉ) — không dùng trên máy chủ thật.

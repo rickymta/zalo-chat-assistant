@@ -1,0 +1,59 @@
+# Cổng vào HTTPS (service `edge` trong docker-compose.yml). Biến lấy từ .env: DOMAIN, ADMIN_DOMAIN, ACME_EMAIL.
+# Caddy tự xin + gia hạn chứng chỉ Let's Encrypt cho cả ba tên; đặt DOMAIN=localhost để thử trên máy dev
+# (Caddy dùng chứng chỉ nội bộ tự ký, không gọi Let's Encrypt).
+
+{
+	email {$ACME_EMAIL:admin@localhost}
+}
+
+# www → không www
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+# Trang chính + API cho ứng dụng desktop + tệp cài (/downloads)
+{$DOMAIN} {
+	encode gzip
+
+	# Khu quản trị chỉ phục vụ ở ADMIN_DOMAIN.
+	@admin path /admin /admin/* /api/admin /api/admin/*
+	respond @admin 404
+
+	# Trang chính không nhận tệp tải lên lớn.
+	request_body {
+		max_size 10MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	# nginx trong container web phục vụ SPA và proxy /api, /downloads, /uploads sang api.
+	# flush_interval -1: stream thẳng tệp cài .dmg/.exe về trình duyệt, không đệm.
+	reverse_proxy web:80 {
+		flush_interval -1
+	}
+}
+
+# Quản trị: cùng ứng dụng web, mở thẳng khu /admin; nhận tệp cài tới 600 MB.
+{$ADMIN_DOMAIN} {
+	encode gzip
+	redir / /admin 302
+
+	request_body {
+		max_size 600MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	reverse_proxy web:80 {
+		flush_interval -1
+	}
+}

@@ -1,9 +1,16 @@
-# Nền tảng web Zalo Chat Assistant: mongo + api (4789) + web (4790).
-# Chạy: cp .env.example .env → điền JWT_SECRET → docker compose up -d
-# Máy chủ thật (volcanion.vn, nginx + HTTPS ở máy chủ): xem DEPLOY.md.
+# Nền tảng web Zalo Chat Assistant — MỘT lệnh cho cả máy chủ:  docker compose up -d
 #
-# ⚠️ `docker compose up -d` KHÔNG tự kéo ảnh mới nếu máy đã có ảnh cùng tag.
-#    Triển khai luôn là hai bước: `docker compose pull <svc> && docker compose up -d <svc>`.
+#   mongo  ── cơ sở dữ liệu (không mở cổng ra ngoài)
+#   api    ── Express + Mongoose, cổng 4789 (chỉ loopback: BIND_IP)
+#   web    ── React SPA + nginx trong ảnh, proxy /api, /downloads, /uploads sang api (chỉ loopback)
+#   edge   ── Caddy: nhận 80/443, tự xin và gia hạn chứng chỉ Let's Encrypt, điều hướng
+#             DOMAIN → web (chặn /admin), ADMIN_DOMAIN → web (/ → /admin). CHỈ chạy khi .env có COMPOSE_PROFILES=server.
+#
+# Máy dev (Mac): cp .env.example .env → docker compose up -d      → mongo + api + web (edge không chạy).
+# Máy chủ thật:  cp .env.production.example .env, điền JWT_SECRET/DOMAIN/ACME_EMAIL, giữ COMPOSE_PROFILES=server
+#                → docker compose up -d                            → thêm edge, HTTPS tự động. Chi tiết: DEPLOY.md.
+#
+# ⚠️ `docker compose up -d` KHÔNG tự dựng lại ảnh khi mã đổi: sau khi rsync mã mới chạy `docker compose up -d --build`.
 
 services:
   mongo:
@@ -31,8 +38,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    # BIND_IP mặc định 127.0.0.1: chỉ máy này (và nginx của máy chủ) nhìn thấy; máy chủ thật chỉ mở 80/443.
-    # Cần máy khác trong mạng LAN gọi thẳng vào api (thử nghiệm) thì đặt BIND_IP=0.0.0.0 trong .env.
+    # BIND_IP mặc định 127.0.0.1: chỉ máy này thấy (Docker vượt qua ufw nếu gắn 0.0.0.0). Cần máy khác trong LAN
+    # gọi thẳng api để thử nghiệm thì đặt BIND_IP=0.0.0.0 trong .env.
     ports:
       - "${BIND_IP:-127.0.0.1}:${API_PORT:-4789}:4789"
     environment:
@@ -58,8 +65,8 @@ services:
       APP_NAME: ${APP_NAME:-Zalo Chat Assistant}
     volumes:
       - zca-data:/data
+    # HEALTHCHECK khai trong api/Dockerfile (wget /health) — web chờ api khoẻ rồi mới lên.
 
-  # Do nhóm web dựng (platform/web). nginx trong ảnh proxy /api, /downloads, /uploads sang api:4789.
   web:
     build:
       context: ./web
@@ -68,10 +75,38 @@ services:
     container_name: zca-web
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "${BIND_IP:-127.0.0.1}:${WEB_PORT:-4790}:80"
+    # HEALTHCHECK khai trong web/Dockerfile.
+
+  # Cổng vào HTTPS cho máy chủ thật. Caddy tự xin chứng chỉ Let's Encrypt cho DOMAIN, www.DOMAIN, ADMIN_DOMAIN
+  # ngay lần đầu chạy (cần DNS đã trỏ về máy và cổng 80/443 mở), tự gia hạn, lưu ở volume caddy-data.
+  edge:
+    image: caddy:2-alpine
+    container_name: zca-edge
+    restart: unless-stopped
+    profiles: ["server"]
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      # Mặc định localhost để máy dev không cần khai; máy chủ thật đặt DOMAIN/ADMIN_DOMAIN trong .env.
+      DOMAIN: ${DOMAIN:-localhost}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.${DOMAIN:-localhost}}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
 
 volumes:
   zca-mongo:
   zca-data:
+  caddy-data:
+  caddy-config:
