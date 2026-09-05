@@ -260,14 +260,30 @@
   .kv code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
   .split { flex: 1; min-height: 0; height: auto; }
   .tag.sug { background: #fff8e1; color: #92400e; }
-  .sug-card { flex: none; border-top: 1px solid var(--line); background: #fffbeb; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 40%; overflow: auto; }
-  .sug-card .head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-  .sug-card .prio { font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+  .tag.sug.follow { background: #ecfdf5; color: #047857; }
+  .tag.sug.none { background: #f1f5f9; color: #64748b; }
+  .sug-card { flex: none; border-top: 1px solid var(--line); background: #fff; padding: 12px 16px 12px 14px; display: flex; flex-direction: column; gap: 10px; max-height: 42%; overflow: auto; border-left: 4px solid #f59e0b; }
+  .sug-card.follow { border-left-color: #10b981; }
+  .sug-card.none { border-left-color: #94a3b8; background: #f8fafc; }
+  .sug-card .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; top: -12px; background: inherit; padding: 2px 0 6px; margin-top: -2px; }
+  .sug-card .head .ttl { font-weight: 700; font-size: 15px; }
+  .sug-card .head .meta { font-size: 13px; color: var(--faint); }
+  .sug-card .prio { font-weight: 800; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); letter-spacing: .3px; }
   .sug-card .prio.p1 { background: var(--bad-soft); color: var(--bad); }
-  .sug-card .reply { white-space: pre-wrap; font-size: 15px; background: #fff; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 12px; }
-  .sug-card .notes { font-size: 13px; color: var(--muted); white-space: pre-wrap; }
-  .sug-card .acts { display: inline-flex; gap: 8px; flex-wrap: wrap; }
-  .sug-card .head { position: sticky; top: 0; background: #fffbeb; padding-bottom: 4px; }
+  .sug-card .prio.p3 { background: var(--ok-soft); color: var(--ok); }
+  .sug-card .kind { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #fff8e1; color: #92400e; }
+  .sug-card.follow .kind { background: #ecfdf5; color: #047857; }
+  .sug-card.none .kind { background: #e2e8f0; color: #475569; }
+  .sug-card .warnnew { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; }
+  .sug-card .ctx { font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .sug-card .ctx b { color: var(--text); font-weight: 600; }
+  .sug-card .reply { position: relative; white-space: pre-wrap; font-size: 15.5px; line-height: 1.6; background: #eef4ff; border: 1px solid #c7dcff; border-radius: 14px 14px 14px 4px; padding: 12px 14px; color: var(--text); }
+  .sug-card .reply::before { content: "Tin sẽ gửi"; position: absolute; top: -9px; left: 12px; font-size: 11px; font-weight: 700; color: var(--primary); background: #fff; padding: 0 6px; border-radius: 6px; }
+  .sug-card details.more { font-size: 13px; color: var(--muted); }
+  .sug-card details.more summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+  .sug-card details.more div { white-space: pre-wrap; margin-top: 6px; line-height: 1.5; }
+  .sug-card .acts { display: inline-flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .sug-card .reason { font-size: 14px; color: var(--muted); }
   .composer { flex: none; border-top: 1px solid var(--line); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-end; background: #fff; }
   .composer textarea { flex: 1; min-height: 46px; max-height: 160px; resize: vertical; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
   .composer textarea:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
@@ -476,7 +492,7 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const state = { locked: true, auth: {}, security: {}, accounts: [], stats: {}, settings: {}, paths: {}, platform: {}, workspace: {}, filter: 'all', q: '', selected: null, qrKey: null, qrTimer: null, view: 'chats', tab: 'login' };
-  const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi.';
+  const PROMPT = 'Đọc huong-dan/00-chi-dan-cho-claude.md rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại.';
 
   const fmtTime = (ms) => ms ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ms)) : '';
   const fmtClock = (ms) => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
@@ -550,7 +566,7 @@
     $('#zaloStrip').innerHTML = '<div class="zalo">' + zalo + '</div>' +
       '<span class="chipstat">⏳ <b>' + num(s.waiting) + '</b> chờ trả lời</span><span class="chipstat">📩 ' + num(s.today) + ' tin hôm nay</span>' + (s.groups ? '<span class="chipstat">👥 ' + num(s.groups) + ' nhóm</span>' : '') +
       (job ? '<span class="chipstat">⏳ nhập lịch sử nhóm ' + job.done + '/' + job.total + '</span>' : '') +
-      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '') +
+      (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '') +
       '<span class="grow"></span><select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>' +
       '<button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button><button data-open="workspace" title="Mở thư mục làm việc trong Finder">Mở thư mục</button>';
     $('#presetSel').value = state.settings.defaultPreset || 'waiting';
@@ -603,7 +619,7 @@
     const key = c.account_id + '|' + c.thread_id;
     const w = waiting ? waitingLabel(c) : null;
     const who = c.last_message_outbound ? 'Mình' : (c.is_group ? (c.last_message_sender || '') : '');
-    const tag = (c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>')) + ((state.sugByKey || {})[key]?.length ? ' <span class="tag sug">💡 Có gợi ý</span>' : '');
+    const tag = (c.is_group ? '<span class="tag grp">👥 Nhóm</span>' : (w ? '<span class="tag ' + w.cls + '">' + w.text + '</span>' : '<span class="tag ok">Đã trả lời</span>')) + (((state.sugByKey || {})[key] || []).length ? (() => { const s = (state.sugByKey[key].find((x) => x.reply) || state.sugByKey[key][0]); return s.reply ? ' <span class="tag sug ' + (s.kind === 'theo-doi' ? 'follow' : '') + '">💡 ' + (s.kind === 'theo-doi' ? 'Gợi ý theo dõi' : 'Có gợi ý') + '</span>' : ' <span class="tag sug none">Claude: không cần nhắn</span>'; })() : '');
     return '<div class="conv ' + (state.selected === key ? 'active' : '') + '" data-key="' + esc(key) + '">' + avatarHtml(c.avatar_url, c.name) + '<div class="body"><div class="top"><span class="nm">' + esc(c.name || (c.is_group ? 'Nhóm ' : 'Khách ') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div><div class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</div>' + tag + '</div></div>';
   }
   document.addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it) return; state.selected = it.dataset.key; $$('.conv').forEach((x) => x.classList.toggle('active', x.dataset.key === state.selected)); loadMessages(); });
@@ -646,16 +662,27 @@
     $('#btnSend').disabled = !canSend; $('#composeText').disabled = !canSend;
     $('#composeText').placeholder = canSend ? 'Soạn tin trả lời… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
   }
+  const KIND = { 'tra-loi': ['', 'Trả lời'], 'theo-doi': ['follow', 'Theo dõi'], 'nhom': ['', 'Nhóm'], 'khong-can': ['none', 'Không cần nhắn'] };
   function renderSuggestion(accountId, threadId) {
     const list = (state.sugByKey || {})[accountId + '|' + threadId] || [];
     const card = $('#sugCard');
-    if (!list.length) { card.hidden = true; card.innerHTML = ''; return; }
-    const it = list[0];
+    if (!list.length) { card.hidden = true; card.innerHTML = ''; card.className = 'sug-card'; return; }
+    const it = list.find((x) => x.reply) || list[0];
+    const [kcls, klabel] = KIND[it.kind] || KIND['tra-loi'];
     card.hidden = false;
-    card.innerHTML = '<div class="head"><span class="prio ' + (it.priority === 'P1' ? 'p1' : '') + '">' + esc(it.priority || 'Gợi ý') + '</span><b>💡 Gợi ý từ Claude</b> · ' + fmtTime(it.writtenAt) + (it.hasNewer ? ' · <span style="color:var(--warn)">⚠️ có tin mới sau gợi ý — đọc lại trước khi gửi</span>' : '') + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '<span class="acts" style="margin-left:auto"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span></div>' +
-      (it.summary ? '<div class="notes">' + esc(it.summary) + '</div>' : '') +
+    card.className = 'sug-card ' + kcls;
+    const prio = it.priority ? '<span class="prio ' + (it.priority === 'P1' ? 'p1' : it.priority === 'P3' ? 'p3' : '') + '">' + esc(it.priority) + '</span>' : '';
+    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ Claude</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
+      (it.reply ? '<span class="acts"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span>' : '') + '</div>';
+    const warn = it.hasNewer ? '<div class="warnnew">⚠️ Có tin mới sau khi Claude viết gợi ý — đọc lại hội thoại trước khi gửi.</div>' : '';
+    if (!it.reply) {
+      card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '');
+      return;
+    }
+    card.innerHTML = head + warn +
+      (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') +
       '<div class="reply">' + esc(it.reply) + '</div>' +
-      (it.notes ? '<div class="notes">📝 ' + esc(it.notes) + '</div>' : '');
+      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của Claude' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
     $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
     $('#btnCopySug').onclick = async () => { try { await navigator.clipboard.writeText(it.reply); toast('Đã sao chép gợi ý.'); } catch { toast('Không sao chép được.'); } };
   }

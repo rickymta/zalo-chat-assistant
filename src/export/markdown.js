@@ -194,10 +194,10 @@ export async function exportMarkdown({
   readme.push('');
   if (workspaceMode) {
     readme.push('1. Claude Cowork đã/sẽ được trỏ vào thư mục CHA của thư mục này (`Zalo Chat Assistant`, nơi có `CLAUDE.md` và `huong-dan/`).');
-    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."* Dữ liệu ở `du-lieu/`, kết quả ghi vào `ket-qua/`.');
+    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại."* Dữ liệu ở `du-lieu/`, kết quả ghi vào `ket-qua/`.');
   } else {
     readme.push('1. Mở Claude Cowork, chọn thư mục này làm thư mục làm việc.');
-    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*');
+    readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại."*');
   }
   readme.push('3. Kết quả (bản tổng hợp + đề xuất phản hồi) là ĐỀ XUẤT — tư vấn viên đọc, sửa rồi tự gửi trên Zalo. Ứng dụng này không gửi tin.');
   readme.push('');

@@ -19,6 +19,7 @@ Gói: <tên thư mục gói> · <n> hội thoại chờ trả lời đã xử l�
 
 ```
 ## [P2] Nguyễn Thị Lan — du-lieu/hoi-thoai/001-nguyen-thi-lan.md
+**Loại gợi ý:** trả lời (khách nhắn cuối)
 
 **Tóm tắt:** Khách hỏi giá niềng răng trong suốt lúc 08:10; tư vấn viên đã giới thiệu hai phương pháp và xin ảnh; khách
 gửi ảnh (không đọc được nội dung) và hỏi cơ sở gần Thanh Xuân lúc 08:40. Chưa ai trả lời từ đó (chờ 3,2 giờ).
@@ -110,6 +111,7 @@ soạn tin). Mỗi lần bàn giao, ngoài file `.md` ở mục A–D, **ghi đ�
       "threadId": "1001",
       "accountId": "770338730752256045",
       "name": "Nguyễn Thị Lan",
+      "kind": "tra-loi",
       "priority": "P2",
       "summary": "Hỏi giá Invisalign, đã gửi ảnh, hỏi cơ sở gần Thanh Xuân; chờ 3,2 giờ.",
       "reply": "Chị Lan ơi, em nhận được ảnh rồi ạ…\nChị ở Thanh Xuân thì tiện nhất là MedDental Khuất Duy Tiến…",
@@ -124,7 +126,9 @@ soạn tin). Mỗi lần bàn giao, ngoài file `.md` ở mục A–D, **ghi đ�
 Quy tắc:
 
 - `threadId` và `accountId` lấy từ dòng "Mã thread" / "Mã tài khoản" ở đầu file hội thoại — **bắt buộc có `threadId`**.
-- `reply` là **đúng văn bản dán vào Zalo** (nhiều dòng dùng `\n`, không markdown). Không có đề xuất thì **không đưa mục đó vào** `items`.
-- `priority`: `P1` | `P2` | `P3` | `Nhóm`. Hội thoại "không cần trả lời" không đưa vào.
+- `kind`: `tra-loi` | `theo-doi` | `nhom` | `khong-can` (xem file 00). **MỌI hội thoại trong gói đều có một mục**; với
+  `khong-can` thì `reply` là chuỗi rỗng và bắt buộc có `reason` (một câu, vd "Khách đã cảm ơn và kết, chờ khách chủ động").
+- `reply` là **đúng văn bản dán vào Zalo** (nhiều dòng dùng `\n`, không markdown).
+- `priority`: `P1` | `P2` | `P3` (tin theo dõi thường `P3`; `khong-can` để `null`).
 - Một hội thoại chỉ một mục; nếu có phương án A/B thì ghép vào `reply` bằng hai đoạn có tiêu đề "Phương án A:" / "Phương án B:".
 - File `.md` vẫn là bản người đọc; `de-xuat.json` là bản máy đọc — hai bản phải khớp nhau.

@@ -9,7 +9,7 @@ Trỏ Claude Cowork vào **đúng thư mục này** một lần. Ứng dụng Za
 | `du-lieu/` | Ứng dụng | Dữ liệu hội thoại đã giải mã — **ghi đè** mỗi lần bấm "Cập nhật dữ liệu cho Claude" |
 | `ket-qua/` | Claude | Bản tổng hợp và đề xuất phản hồi |
 
-Câu mở đầu mỗi phiên: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ trả lời và đề xuất phản hồi."*
+Câu mở đầu mỗi phiên: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại."*
 
 Ứng dụng tự cập nhật `du-lieu/` theo chu kỳ (mặc định 60 phút, đổi trong Cài đặt) và ngay sau khi mở khoá — luôn chỉ có MỘT gói.
 Gói kiểu cũ (`yyyyMMdd-HHmmss/`) nếu còn được dồn vào `_goi-cu/` (xoá được).

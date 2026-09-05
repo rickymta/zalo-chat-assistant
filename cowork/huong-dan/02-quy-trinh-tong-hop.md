@@ -80,3 +80,18 @@ có việc của mình chưa làm ⇒ **P2**; còn lại chỉ tóm tắt, khôn
 **Đề xuất phản hồi trong nhóm** (chỉ khi có câu hỏi hướng tới mình): viết ngắn hơn 1-1, gọi tên người hỏi ở đầu
 ("Chị Lan ơi, …"), tránh nói chuyện riêng của một khách trước nhiều người (số tiền, bệnh sử) — đề nghị nhắn riêng khi
 cần; mọi quy tắc ở file 03 vẫn áp dụng.
+
+## 8. Hội thoại ĐÃ trả lời — gợi ý tin theo dõi (`kind = theo-doi`)
+
+Tin cuối là của MÌNH không có nghĩa là xong việc. Xét lần lượt, chọn MỘT lý do mạnh nhất để nhắn tiếp; không có thì `khong-can`:
+
+| Tình huống trong hội thoại | Tin theo dõi nên đề xuất |
+|---|---|
+| Mình hỏi khách một câu (ngày khám, ảnh, SĐT…) đã quá 24 giờ chưa được trả lời | Nhắc nhẹ, hỏi lại đúng một câu, kèm gợi ý mặc định ("hoặc em giữ cho chị sáng thứ 7 nhé?") |
+| Đã chốt lịch hẹn trong 1–2 ngày tới | Nhắc lịch: giờ, cơ sở, địa chỉ, chuẩn bị gì; hỏi khách có đổi không |
+| Lịch hẹn đã qua mà không thấy tin sau đó | Hỏi thăm sau khám/điều trị, dặn lưu ý theo dịch vụ (`tham-chieu-meddental/dich-vu.md`), mời liên hệ nếu bất thường |
+| Mình đã hứa việc gì (gửi bảng giá, hỏi bác sĩ, gọi lại) mà chưa thấy làm | Thực hiện lời hứa: nội dung cần gửi để trống chỗ `[…]`, ghi rõ trong Ghi chú |
+| Khách quan tâm dịch vụ nhưng im lặng > 3 ngày | Một tin mở lại nhẹ nhàng (thông tin hữu ích ngắn + lời mời), KHÔNG giọng thúc ép, không bịa ưu đãi |
+| Khách chỉ cảm ơn / ok / sticker; hoặc đang chờ khách tự thu xếp | `khong-can`, `reason`: "khách đã kết, chờ khách chủ động" |
+
+Tin theo dõi ngắn hơn tin trả lời (2–4 câu), luôn có một câu hỏi mở để khách dễ đáp; mọi quy tắc file 03 vẫn áp dụng.

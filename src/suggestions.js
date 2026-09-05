@@ -33,6 +33,7 @@ function parseSections(md) {
     priority: s.priority, name: s.name, file: s.file,
     summary: pick(s.fields, 'tóm tắt'),
     reply: pick(s.fields, 'đề xuất phản hồi'),
+    kind: /theo dõi/i.test(pick(s.fields, 'loại gợi ý')) ? 'theo-doi' : (s.priority === 'Nhóm' ? 'nhom' : 'tra-loi'),
     notes: pick(s.fields, 'ghi chú'),
     nextAction: pick(s.fields, 'hành động tiếp'),
   })).filter((s) => s.reply);
@@ -91,7 +92,7 @@ export class SuggestionStore extends EventEmitter {
     const items = [];
     const seen = new Set();
     const push = (it, stamp) => {
-      const key = `${it.threadId ?? it.file ?? it.name}|${(it.reply ?? '').slice(0, 40)}`;
+      const key = `${it.threadId ?? it.file ?? it.name}|${(it.reply || it.reason || '').slice(0, 40)}`;
       if (seen.has(key)) return;
       seen.add(key);
       items.push({ ...it, writtenAt: stamp });
@@ -105,8 +106,11 @@ export class SuggestionStore extends EventEmitter {
         const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
         const stamp = fs.statSync(jsonPath).mtimeMs;
         for (const r of list) {
-          if (!r || typeof r.reply !== 'string' || !r.reply.trim()) continue;
-          push({ source: 'de-xuat.json', threadId: r.threadId ? String(r.threadId) : null, accountId: r.accountId ? String(r.accountId) : null, name: r.name ?? null, priority: r.priority ?? null, summary: r.summary ?? '', reply: r.reply.trim(), notes: r.notes ?? '', nextAction: r.nextAction ?? '', file: r.file ?? null }, stamp);
+          if (!r) continue;
+          const reply = typeof r.reply === 'string' ? r.reply.trim() : '';
+          const kind = r.kind ?? (reply ? 'tra-loi' : 'khong-can');
+          if (!reply && kind !== 'khong-can') continue;
+          push({ source: 'de-xuat.json', threadId: r.threadId ? String(r.threadId) : null, accountId: r.accountId ? String(r.accountId) : null, name: r.name ?? null, kind, reason: r.reason ?? '', priority: r.priority ?? null, summary: r.summary ?? '', reply, notes: r.notes ?? '', nextAction: r.nextAction ?? '', file: r.file ?? null }, stamp);
         }
       } catch (err) { this.log?.warn(`de-xuat.json không đọc được: ${err?.message ?? err}`); }
     }
@@ -147,6 +151,10 @@ export class SuggestionStore extends EventEmitter {
       it.id = `${it.source}:${it.threadId ?? it.name ?? ''}:${Math.round(it.writtenAt)}`;
     }
 
+    // Cùng hội thoại: ưu tiên mục có reply; khong-can chỉ giữ khi không có mục nào khác
+    const withReply = new Set(items.filter((i) => i.reply && i.threadId).map((i) => i.threadId));
+    const pruned = items.filter((i) => i.reply || !withReply.has(i.threadId));
+    items.length = 0; items.push(...pruned);
     const changed = JSON.stringify(items.map((i) => [i.id, i.reply])) !== JSON.stringify(this.items.map((i) => [i.id, i.reply]));
     this.items = items;
     this.files = files;
@@ -155,7 +163,7 @@ export class SuggestionStore extends EventEmitter {
     return this.summary();
   }
 
-  summary() { return { count: this.items.length, resolved: this.items.filter((i) => i.threadId).length, updatedAt: this.updatedAt, files: this.files }; }
+  summary() { return { count: this.items.length, withReply: this.items.filter((i) => i.reply).length, resolved: this.items.filter((i) => i.threadId).length, updatedAt: this.updatedAt, files: this.files }; }
   all() { return { ...this.summary(), items: this.items }; }
   forThread(accountId, threadId) { return this.items.filter((i) => i.threadId === String(threadId) && (!i.accountId || i.accountId === String(accountId))); }
 }

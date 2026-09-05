@@ -1,8 +1,8 @@
 # 00 · Chỉ dẫn cho Claude (Claude Cowork) — tổng hợp tin nhắn Zalo và đề xuất phản hồi
 
 > File này dành cho **trợ lý AI**. Người dùng: mở Claude Cowork tại thư mục làm việc `Zalo Chat Assistant` (thư mục có
-> `CLAUDE.md`, do ứng dụng tạo trong Documents), rồi nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ
-> trả lời và đề xuất phản hồi."* Trong thư mục cũng có bản sao tên `CLAUDE.md` để công cụ của Claude tự nạp.
+> `CLAUDE.md`, do ứng dụng tạo trong Documents), rồi nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội
+> thoại trong `du-lieu/` và đề xuất phản hồi cho từng hội thoại."* Trong thư mục cũng có bản sao tên `CLAUDE.md` để công cụ của Claude tự nạp.
 
 ## Vai trò
 
@@ -32,10 +32,16 @@ gói này. Việc của bạn:
 
 ## Quy trình cho yêu cầu mặc định "tổng hợp và đề xuất phản hồi"
 
-1. **Xác định phạm vi**: mặc định chỉ các hội thoại 1-1 có "Chờ trả lời = Có" trong `00-INDEX.md`; hội thoại
-   "Loại = Nhóm" xử lý theo mục 7 của file 02 (tóm tắt nhóm), đưa vào phần riêng của báo cáo. Người dùng nói
-   "tất cả", "hôm nay", hoặc nêu tên khách thì làm theo. Gói quá lớn (trên 40 hội thoại chờ) ⇒ làm **bảng ưu tiên
-   trước**, xử lý nhóm P1 rồi hỏi người dùng có tiếp không.
+1. **Phạm vi = MỌI hội thoại trong `du-lieu/00-INDEX.md`** (người dùng chốt 05/09/2026), mỗi hội thoại đúng MỘT mục trong
+   `ket-qua/de-xuat.json`, phân loại `kind`:
+   - `tra-loi` — khách nhắn cuối, cần trả lời (khung ở file 02 mục 2–3);
+   - `theo-doi` — mình đã trả lời rồi: đề xuất tin THEO DÕI hợp lý (nhắc lịch, hỏi kết quả, chăm sóc sau điều trị, chốt
+     việc đã hứa) — file 02 mục 8; không có gì đáng nhắn thì dùng `khong-can`;
+   - `nhom` — nhóm chat: gợi ý khi có câu hỏi hướng tới mình hoặc việc của mình (file 02 mục 7), còn lại `khong-can`;
+   - `khong-can` — không nên nhắn gì lúc này (khách chỉ cảm ơn/ok, đang chờ khách thực hiện, nhóm không liên quan…):
+     `reply` để trống và ghi `reason` một câu.
+   Người dùng nêu tên khách hoặc kiểu riêng thì làm theo. Gói quá lớn (trên 40 hội thoại) ⇒ làm `tra-loi` và P1 trước,
+   rồi hỏi người dùng có tiếp không.
 2. **Đọc từng file** trong `du-lieu/hoi-thoai/` theo thứ tự ưu tiên (file 02, mục 3). Đọc **toàn bộ** file, tập trung 20–40
    tin cuối, nhưng phải nắm bối cảnh đầu hội thoại (dịch vụ đang quan tâm, cơ sở đã hẹn, lời đã hứa).
 3. **Rút thông tin** theo khung ở file 02, mục 2. Không suy đoán những gì không có trong tin nhắn; chỗ chưa rõ ghi
@@ -71,6 +77,7 @@ không dùng. Không dùng markdown trong nội dung tin nhắn (Zalo không hi�
 
 ## Khi người dùng yêu cầu việc khác
 
+- "Chỉ hội thoại đang chờ": lọc "Chờ trả lời = Có", chỉ `kind = tra-loi`.
 - "Báo cáo ngày/tuần": theo mẫu C ở file 04 — số liệu, nhóm chủ đề, câu hỏi lặp lại, cảnh báo, đề xuất mẫu tin.
 - "Tìm khách hỏi về X": lọc theo từ khoá trong `du-lieu/hoi-thoai/`, liệt kê tên + file + tin liên quan.
 - "Viết mẫu tin nhắc lịch / chăm sóc sau điều trị": viết theo file 03, thêm chỗ trống `[tên]`, `[giờ]`, `[cơ sở]`.
