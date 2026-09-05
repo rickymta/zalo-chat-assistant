@@ -48,6 +48,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   autoUpdateMinutes: 60,
   /** Cập nhật gói N phút sau TIN NHẮN CUỐI (yên lặng N phút thì chạy; có tin tiếp thì đếm lại). 0 = tắt. */
   quietMinutes: 3,
+  /** Giữ máy không tự ngủ khi ứng dụng chạy (màn hình vẫn tắt/khoá được). Máy ngủ = Zalo mất kết nối; tin đến lúc đó chỉ có lại nếu Zalo gửi bù. */
+  keepAwake: true,
   /** Khi listener nối lại, tự yêu cầu Zalo gửi phần tin đã bỏ lỡ lúc tắt máy. */
   syncOldOnConnect: true,
   /** Hội thoại có tin cuối là của KHÁCH và đã quá số giờ này ⇒ đánh dấu "quá hạn trả lời". */

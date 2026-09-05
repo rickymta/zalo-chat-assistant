@@ -143,15 +143,17 @@ NGÀY HÔM NAY (giờ Việt Nam) — ứng dụng hiện báo cáo này trong h
   "date": "2026-09-05",
   "generatedAt": "2026-09-05T10:40:00+07:00",
   "overview": {
-    "summary": "3–5 câu: hôm nay có gì đáng chú ý trên toàn bộ hội thoại (việc lớn, người cần ưu tiên, rủi ro).",
+    "summary": "6–10 câu, viết theo từng MẢNG VIỆC/chủ đề (không gom chung chung): việc gì, ai liên quan, tiến độ tới đâu, mốc giờ/hạn/con số được nhắc, còn treo gì, ai đang chờ Bạn. Người không đọc hội thoại vẫn nắm được toàn cảnh ngày.",
     "highlights": ["Chị Lan (Invisalign) chờ báo giá từ sáng", "Nhóm CRM chốt lịch demo thứ 3", "Anh Hùng đổi giờ khám"]
   },
   "conversations": [
     {
       "threadId": "1001", "accountId": "770338730752256045", "name": "Nguyễn Thị Lan",
       "relation": "khach-hang", "relationNote": "Khách hỏi giá niềng, chưa từng đến khám",
-      "summary": "2–4 câu tóm tắt DIỄN BIẾN hội thoại trong ngày (ai nói gì, kết quả tới đâu).",
+      "summary": "5–8 câu tường thuật DIỄN BIẾN theo thời gian: ai nói gì, Bạn phản hồi thế nào, số liệu/tên tài liệu/đường link/mốc giờ/hạn được nhắc, kết quả tới đâu, còn gì treo. Hội thoại trên 30 tin cho phép tới 10 câu. KHÔNG rút gọn thành 1–2 câu.",
       "topics": ["Giá Invisalign", "Cơ sở gần Thanh Xuân"],
+      "timeline": [ { "time": "08:10", "what": "Chị Lan hỏi giá niềng trong suốt" }, { "time": "08:25", "what": "Bạn giới thiệu 2 phương pháp, xin ảnh" }, { "time": "08:40", "what": "Chị gửi ảnh răng + hỏi cơ sở gần Thanh Xuân — chưa được trả lời" } ],
+      "keyFacts": ["Ở Thanh Xuân, muốn đến cơ sở gần", "Đã gửi 1 ảnh răng lúc 08:40", "Bạn đã hứa: bác sĩ tư vấn sơ bộ sau khi có ảnh"],
       "decisions": ["Chị Lan sẽ qua khám thứ 7"],
       "tasksForYou": ["Gửi bảng giá tham khảo Invisalign", "Giữ lịch 9h thứ 7 Khuất Duy Tiến"],
       "openQuestions": ["Bọc răng sứ có bảo hành không?"],
@@ -168,6 +170,17 @@ dung; đồng nghiệp/nội bộ/cấp trên/cấp dưới → `dong-nghiep`; n
 nhóm hỗn hợp/cộng đồng) — KHÔNG viết câu vào trường này; muốn giải thích thì thêm `"relationNote": "≤ 1 câu"`. `sentiment`
 chỉ nhận 5 mã `binh-thuong | tich-cuc | lo-lang | khong-hai-long | khan` (không dùng `trung-tinh`). `kind` như mục E.
 `generatedAt` bắt buộc (ISO 8601 có +07:00). Mỗi mục `actionItems` gồm đúng các khoá `threadId`, `name`, `task`, và tuỳ chọn
-`due`, `priority` (P1/P2/P3) — không đổi tên khoá (ví dụ không dùng `conversation` thay `name`). Mỗi hội thoại CÓ TIN trong ngày là một mục;
+`due`, `priority` (P1/P2/P3) — không đổi tên khoá (ví dụ không dùng `conversation` thay `name`).
+
+**Độ chi tiết (người dùng yêu cầu 05/09/2026 — bản tổng hợp đang quá ngắn):** `summary` của từng hội thoại 5–8 câu (tới 10
+câu nếu hội thoại dài), `timeline` 3–8 mốc chính trong ngày theo giờ, `keyFacts` 2–8 dòng ngắn gồm số liệu, tên người/tài
+liệu/đường link, hạn, quyết định — mọi con số và tên riêng xuất hiện trong hội thoại phải có mặt ở `summary` hoặc `keyFacts`.
+`topics` 2–6 mục. `overview.summary` 6–10 câu theo từng mảng việc. Thà dài mà đủ còn hơn ngắn mà thiếu; chỉ được cô đọng khi
+hội thoại chỉ có 1–2 tin xã giao.
+
+**Khoảng trống dữ liệu:** nếu `du-lieu/.trang-thai.json` có mảng `gaps` (máy tính ngủ / mất kết nối; cũng được ghi ở cuối
+`du-lieu/README-DU-LIEU.md`) thì (1) nêu trong `overview.summary` một câu "tin trong khoảng HH:MM–HH:MM có thể thiếu";
+(2) với hội thoại có tin sát khoảng đó, KHÔNG kết luận "chưa ai trả lời"/"im lặng" — ghi "có thể thiếu tin" trong
+`openQuestions` hoặc `notes`; (3) không đề xuất câu trả lời kiểu trách người kia không hồi âm. Mỗi hội thoại CÓ TIN trong ngày là một mục;
 hội thoại không có tin mới trong ngày thì không đưa vào. `actionItems` gom mọi việc của Bạn từ các hội thoại, ưu tiên
 theo độ khẩn. File `.md` cùng tên là bản người đọc: tiêu đề ngày, đoạn tổng quan, điểm nổi bật, rồi mỗi hội thoại một mục.

@@ -89,3 +89,11 @@ không dùng. Không dùng markdown trong nội dung tin nhắn (Zalo không hi�
 - "Viết mẫu tin nhắc lịch / chăm sóc sau điều trị": viết theo file 03, thêm chỗ trống `[tên]`, `[giờ]`, `[cơ sở]`.
 - "Kiểm tra tư vấn viên trả lời có đúng không": đối chiếu tin MÌNH với quy tắc file 03/05, nêu chỗ nên sửa, không phán xét.
 - Yêu cầu trái với điều cấm: nói rõ vì sao không làm và đưa phương án thay thế.
+
+## Độ chi tiết và khoảng trống dữ liệu
+
+- Bản tổng hợp là để người dùng KHÔNG cần đọc lại hội thoại: mỗi hội thoại 5–8 câu diễn biến theo thời gian + mốc chính
+  (`timeline`) + thông tin đáng nhớ (`keyFacts`: số liệu, tên, tài liệu, link, hạn). Tổng quan ngày 6–10 câu theo từng mảng
+  việc. Không rút gọn thành 1–2 câu (chi tiết ở `04-mau-dau-ra.md` mục F).
+- `du-lieu/.trang-thai.json` có `gaps` ⇒ máy tính đã ngủ/mất kết nối trong khoảng đó, tin có thể thiếu: nêu rõ trong tổng quan,
+  không kết luận "không ai trả lời" quanh khoảng ấy, không viết câu trả lời trách móc.

@@ -73,6 +73,11 @@ Thư mục làm việc (ứng dụng tự tạo và cập nhật):
   — endpoint cũ trong zca-js 2.1.2 đã bị Zalo bỏ, trả 404). Thử 05/09/2026: Zalo trả `isFiltered=1`, 0 tin cho cả 65 nhóm ⇒
   **đừng trông vào lịch sử nhóm**; tin nhóm được lưu đầy đủ từ lúc kết nối. Tự thử lại 24 giờ/lần.
 - **Không mở Zalo Web (chat.zalo.me) trên trình duyệt** cùng lúc — sẽ làm mất kết nối; Zalo trên điện thoại dùng bình thường.
+- **Máy ngủ / khoá màn hình**: khoá màn hình KHÔNG ảnh hưởng (ứng dụng vẫn chạy, vẫn lưu tin). Máy **ngủ** thì Zalo mất kết
+  nối; khi thức, ứng dụng tự nối lại, xin Zalo gửi bù tin bỏ lỡ (độ sâu do Zalo quyết) và ghi khoảng trống vào
+  `du-lieu/.trang-thai.json` (+ cuối `README-DU-LIEU.md`) để Claude biết tin có thể thiếu; thanh trên hiện cảnh báo 💤. Mặc định
+  *Cài đặt → Giữ máy không ngủ khi ứng dụng chạy* **bật** (giữ hệ thống thức, màn hình vẫn tắt/khoá được; gập MacBook vẫn
+  ngủ theo hệ điều hành). Lịch Claude Cowork cũng chỉ chạy khi máy thức và Claude desktop đang mở — lượt lỡ chạy bù khi mở lại.
 - **Tài khoản Zalo có thể bị khoá** vì giao thức không chính thức. Dùng số công ty cấp.
 - **Mã hoá**: tin nhắn, tên, số điện thoại, xem trước, đính kèm trong SQLite được mã hoá bằng khoá dẫn xuất từ chuỗi máy chủ
   cấp (HKDF theo user id + AES-256-GCM). Khoá/thời gian/cờ (thread id, mốc giờ, loại) giữ nguyên để lọc và sắp. Máy chủ

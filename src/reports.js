@@ -43,7 +43,9 @@ function normSentiment(raw) {
 }
 function pickClaude(c) {
   const { relation, relationNote } = normRelation(c.relation, c.relationNote, c.kind === 'nhom' || /nh[oó]m/i.test(String(c.type ?? '')));
-  return { relation, relationNote, summary: c.summary ?? '', topics: c.topics ?? [], decisions: c.decisions ?? [], tasksForYou: c.tasksForYou ?? [], openQuestions: c.openQuestions ?? [], sentiment: normSentiment(c.sentiment), kind: c.kind ?? null, source: c.source };
+  const timeline = (Array.isArray(c.timeline) ? c.timeline : []).map((t) => (t && typeof t === 'object') ? { time: t.time ?? t.at ?? '', what: t.what ?? t.text ?? t.event ?? '' } : { time: '', what: String(t ?? '') }).filter((t) => t.what);
+  const keyFacts = (Array.isArray(c.keyFacts) ? c.keyFacts : []).map((k) => String(k ?? '')).filter(Boolean);
+  return { relation, relationNote, summary: c.summary ?? '', topics: c.topics ?? [], keyFacts, timeline, decisions: c.decisions ?? [], tasksForYou: c.tasksForYou ?? [], openQuestions: c.openQuestions ?? [], sentiment: normSentiment(c.sentiment), kind: c.kind ?? null, source: c.source };
 }
 // actionItems: chấp nhận cả kiểu {conversation, priority, file} Claude tự đặt; gắn threadId qua file → tên hội thoại.
 function normActionItems(items, conversations, byThread) {
@@ -59,6 +61,29 @@ function normActionItems(items, conversations, byThread) {
     const task = a.task ?? a.viec ?? a.text ?? a.title ?? '';
     return task ? { threadId: tid, accountId: conv?.accountId ?? a.accountId ?? null, name: name ?? conv?.name ?? '', task: String(task), due: a.due ?? a.han ?? null, priority: a.priority ?? null } : null;
   }).filter(Boolean);
+}
+
+const entryCache = { path: null, mtime: 0, byThread: new Map(), date: null, generatedAt: null };
+/** Mục tổng hợp của Claude cho MỘT hội thoại — lấy từ bao-cao của hôm nay, không có thì file mới nhất. */
+export function claudeEntryFor(root, threadId) {
+  const dir = path.join(root, 'ket-qua', 'bao-cao');
+  let file = path.join(dir, `${dayKeyVn(Date.now())}.json`);
+  if (!fs.existsSync(file)) {
+    let latest = null;
+    try { latest = fs.readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().pop() ?? null; } catch { /* chưa có */ }
+    if (!latest) return null;
+    file = path.join(dir, latest);
+  }
+  let st; try { st = fs.statSync(file); } catch { return null; }
+  if (entryCache.path !== file || entryCache.mtime !== st.mtimeMs) {
+    const j = readJson(file);
+    entryCache.path = file; entryCache.mtime = st.mtimeMs; entryCache.byThread = new Map();
+    entryCache.date = j?.date ?? path.basename(file, '.json');
+    entryCache.generatedAt = Date.parse(j?.generatedAt ?? '') || st.mtimeMs;
+    for (const c of (j?.conversations ?? [])) if (c?.threadId) entryCache.byThread.set(String(c.threadId), c);
+  }
+  const c = entryCache.byThread.get(String(threadId));
+  return c ? { date: entryCache.date, generatedAt: entryCache.generatedAt, ...pickClaude({ ...c, source: 'bao-cao' }) } : null;
 }
 
 export function listReportDates(root, db) {

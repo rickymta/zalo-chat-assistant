@@ -5,7 +5,7 @@
  * Dữ liệu: ~/Library/Application Support/Zalo Chat Assistant/data   (CSDL, phiên đăng nhập, log)
  * Gói xuất: ~/Documents/Zalo Chat Assistant/                        (người dùng dễ tìm trong Finder)
  */
-import { clipboard, app, BrowserWindow, Menu, shell, dialog } from 'electron';
+import { clipboard, app, BrowserWindow, Menu, shell, dialog, powerSaveBlocker, powerMonitor } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -36,6 +36,14 @@ const platform = {
   revealPath(p) { shell.openPath(p); },
   copyText(t) { clipboard.writeText(String(t ?? '')); return true; },
   getAutoStart() { try { return !!app.getLoginItemSettings().openAtLogin; } catch { return false; } },
+  blockerId: null,
+  /** Chống ngủ: 'prevent-app-suspension' giữ hệ thống thức nhưng vẫn cho tắt màn hình (tương đương caffeinate -i). */
+  setKeepAwake(v) {
+    if (v) { if (this.blockerId == null || !powerSaveBlocker.isStarted(this.blockerId)) this.blockerId = powerSaveBlocker.start('prevent-app-suspension'); }
+    else if (this.blockerId != null) { try { powerSaveBlocker.stop(this.blockerId); } catch { /* bỏ qua */ } this.blockerId = null; }
+    return this.getKeepAwake();
+  },
+  getKeepAwake() { return this.blockerId != null && powerSaveBlocker.isStarted(this.blockerId); },
   setAutoStart(v) { try { app.setLoginItemSettings({ openAtLogin: !!v, openAsHidden: true }); } catch { /* bỏ qua */ } return this.getAutoStart(); },
 };
 
@@ -110,6 +118,11 @@ app.whenReady().then(async () => {
     fs.mkdirSync(dataDir, { recursive: true });
     fs.mkdirSync(workspaceDir, { recursive: true });
     core = await startCore();
+    // Máy ngủ/thức: báo lõi để ghi khoảng trống, nối lại Zalo và xin tin bỏ lỡ. Khoá màn hình không ảnh hưởng.
+    powerMonitor.on('suspend', () => core?.power?.onSuspend('sleep'));
+    powerMonitor.on('resume', () => core?.power?.onResume('sleep'));
+    powerMonitor.on('lock-screen', () => core?.log?.info('Màn hình đã khoá — ứng dụng vẫn chạy và lưu tin.'));
+    powerMonitor.on('unlock-screen', () => core?.log?.info('Màn hình đã mở khoá.'));
     buildMenu();
     createWindow(core.url);
   } catch (err) {

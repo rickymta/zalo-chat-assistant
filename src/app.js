@@ -8,6 +8,9 @@
  * màn đăng nhập; Zalo KHÔNG được kết nối vì không có khoá để lưu tin.
  */
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
   DATA_DIR, SESSIONS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
@@ -150,7 +153,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       if (!db.stats().conversations) { log.info('Tự cập nhật gói Claude: chưa có hội thoại nào, bỏ qua.'); return null; }
       this.running = true;
       try {
-        const r = await updateWorkspaceData({ db, params: presetParams(s.defaultPreset ?? 'waiting', { includeExcel: !!s.includeExcel }, s), root: WORKSPACE_DIR, log, settings: s });
+        const r = await updateWorkspaceData({ db, params: presetParams(s.defaultPreset ?? 'waiting', { includeExcel: !!s.includeExcel }, s), root: WORKSPACE_DIR, log, settings: s, gaps: power.recentGaps(48) });
         this.lastResult = r; this.lastRunAt = Date.now();
         log.info(`Tự cập nhật gói Claude (${reason}): ${r.ok ? `${r.conversations} hội thoại, ${r.messages} tin` : r.error}.`);
       } catch (err) {
@@ -173,12 +176,65 @@ export async function startApp({ platform, port = PORT } = {}) {
   const suggestions = new SuggestionStore({ root: WORKSPACE_DIR, db, log });
   suggestions.on('changed', (s) => events.emit('suggestions', s));
 
+  /**
+   * Máy ngủ / thức. Lúc máy ngủ Zalo mất kết nối; tin đến trong lúc đó chỉ lấy lại được nếu Zalo gửi bù khi nối lại.
+   * Ghi lại từng khoảng trống để (1) giao diện báo người dùng, (2) gói du-lieu/ mang theo cho Claude biết tin có thể thiếu.
+   * Chống ngủ: Electron dùng powerSaveBlocker (qua platform.setKeepAwake), chạy Node trên macOS dùng caffeinate — màn
+   * hình vẫn tắt/khoá được, chỉ hệ thống không tự ngủ. Gập MacBook vẫn ngủ theo hệ điều hành.
+   */
+  const POWER_FILE = path.join(DATA_DIR, 'power.json');
+  const power = {
+    sleepingSince: null, gaps: [], caffeinate: null,
+    load() { try { const j = JSON.parse(fs.readFileSync(POWER_FILE, 'utf8')); this.gaps = Array.isArray(j.gaps) ? j.gaps.slice(-50) : []; } catch { this.gaps = []; } },
+    save() { try { fs.writeFileSync(POWER_FILE, JSON.stringify({ gaps: this.gaps.slice(-50) }, null, 2)); } catch { /* bỏ qua */ } },
+    recentGaps(hours = 48) { const since = Date.now() - hours * 3600e3; return this.gaps.filter((g) => g.to >= since); },
+    supported() { return typeof platform?.setKeepAwake === 'function' || process.platform === 'darwin'; },
+    active() { if (typeof platform?.getKeepAwake === 'function') return !!platform.getKeepAwake(); return !!this.caffeinate; },
+    status() { return { supported: this.supported(), keepAwake: !!loadSettings().keepAwake, active: this.active(), sleepingSince: this.sleepingSince, lastGap: this.gaps.at(-1) ?? null, gaps24h: this.recentGaps(24).length }; },
+    applyKeepAwake() {
+      const want = !!loadSettings().keepAwake;
+      if (typeof platform?.setKeepAwake === 'function') {
+        try { platform.setKeepAwake(want); log.info(want ? 'Đã bật chống ngủ máy (màn hình vẫn tắt được).' : 'Đã tắt chống ngủ máy.'); } catch (err) { log.warn(`Không đặt được chế độ chống ngủ: ${err?.message ?? err}`); }
+        return;
+      }
+      if (process.platform !== 'darwin') return;
+      if (want && !this.caffeinate) {
+        try { this.caffeinate = spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore' }); this.caffeinate.on('exit', () => { this.caffeinate = null; }); this.caffeinate.on('error', (err) => { log.warn(`caffeinate lỗi: ${err?.message ?? err}`); this.caffeinate = null; }); log.info('Đã bật chống ngủ máy (caffeinate).'); }
+        catch (err) { log.warn(`Không chạy được caffeinate: ${err?.message ?? err}`); }
+      }
+      if (!want && this.caffeinate) { try { this.caffeinate.kill(); } catch { /* bỏ qua */ } this.caffeinate = null; log.info('Đã tắt chống ngủ máy.'); }
+    },
+    onSuspend(kind = 'sleep') {
+      if (this.sleepingSince) return;
+      this.sleepingSince = Date.now();
+      log.warn('Máy bắt đầu ngủ — Zalo sẽ mất kết nối cho tới khi máy thức.');
+      events.emit('power', this.status());
+    },
+    onResume(kind = 'sleep') {
+      const from = this.sleepingSince; this.sleepingSince = null;
+      if (from) {
+        const gap = { from, to: Date.now(), kind };
+        this.gaps.push(gap); this.gaps = this.gaps.slice(-50); this.save();
+        log.warn(`Máy thức sau ${Math.round((gap.to - from) / 60e3)} phút ngủ — nối lại Zalo và xin tin bỏ lỡ.`);
+      } else log.info('Máy thức — kiểm tra lại kết nối Zalo.');
+      events.emit('power', this.status());
+      if (!db.unlocked) return;
+      setTimeout(() => { void manager.resyncAll(); }, 4000);
+      // Cập nhật gói cho Claude sau khi tin bù đã về — khoảng trống được ghi vào du-lieu/.trang-thai.json + README.
+      setTimeout(() => { void automation.run('sau khi máy thức'); }, 90000);
+    },
+    stop() { if (this.caffeinate) { try { this.caffeinate.kill(); } catch { /* bỏ qua */ } this.caffeinate = null; } },
+  };
+  power.load();
+
   const paths = { dataDir: DATA_DIR, workspaceDir: WORKSPACE_DIR, coworkDir: COWORK_DIR, uiDir: UI_DIR };
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
   log.info(`Zalo Chat Assistant đang chạy tại ${url} — dữ liệu ở ${DATA_DIR} — thư mục Claude: ${WORKSPACE_DIR}`);
+
+  power.applyKeepAwake();
 
   // Mở khoá SAU khi HTTP đã sẵn sàng để giao diện lên ngay; Zalo chỉ khôi phục khi đã có khoá.
   if (auth.isLoggedIn) void security.unlock();
@@ -191,10 +247,11 @@ export async function startApp({ platform, port = PORT } = {}) {
     log.info('Đang dừng…');
     automation.stop();
     suggestions.stop();
+    power.stop();
     manager.stopAll();
     try { await Promise.race([server.close(), new Promise((r) => setTimeout(r, 3000))]); } catch { /* bỏ qua */ }
     try { db.close(); } catch { /* bỏ qua */ }
   }
 
-  return { url, stop, log, db, manager, auth, security };
+  return { url, stop, log, db, manager, auth, security, power };
 }

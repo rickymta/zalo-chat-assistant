@@ -303,6 +303,20 @@ export class ZaloManager extends EventEmitter {
     }
   }
 
+  /**
+   * Sau khi máy thức: phiên còn sống thì xin Zalo gửi bù tin bỏ lỡ (socket chết thật thì zca-js tự nối lại và sự kiện
+   * 'connected' sẽ gọi requestOld); phiên đã đóng thì khởi động lại từ cookie đã lưu. Tuần tự, có nghỉ giữa các phiên.
+   */
+  async resyncAll() {
+    for (const id of this.listSavedSessionIds()) {
+      const acc = this.db.getAccount(id);
+      if (acc?.status === 'logged_out' || acc?.status === 'need_relogin') continue;
+      if (this.live.has(id)) { const r = this.requestOld(id); if (!r.ok) this.log.warn(`Xin tin bỏ lỡ cho ${id} thất bại: ${r.error}`); }
+      else await this.start(id);
+      await sleep(1500);
+    }
+  }
+
   /** Xin Zalo gửi lại phần tin đã bỏ lỡ (cơ chế "offline sync" của Zalo Web — độ sâu do máy chủ Zalo quyết). */
   requestOld(id) {
     const live = this.live.get(id);

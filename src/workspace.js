@@ -84,7 +84,7 @@ function clearDir(dir) {
  * Ghi đè du-lieu/ bằng dữ liệu mới. params như runExport: { accountIds, from, to, includeGroups, onlyWaiting,
  * onlyGroups, threadIds, fullHistory, includeExcel, includeJsonl }.
  */
-export async function updateWorkspaceData({ db, params, root, log, settings }) {
+export async function updateWorkspaceData({ db, params, root, log, settings, gaps = [] }) {
   const L = workspaceLayout(root);
   const selection = resolveSelection(db, params);
   if (!selection.length) return { ok: false, error: 'Không có hội thoại nào khớp lựa chọn.' };
@@ -100,8 +100,14 @@ export async function updateWorkspaceData({ db, params, root, log, settings }) {
     const x = await exportExcel({ db, selection, from: msgFrom, to: msgTo, outDir: L.dataDir, accountsById, waitingHours });
     excelPath = x.filePath;
   }
-  const result = { ok: true, dir: L.dataDir, root, conversations: md.conversations, messages: md.messages, waiting: md.waiting, excelPath, updatedAt: Date.now(), preset: params.preset ?? null };
+  // Khoảng trống (máy ngủ / mất kết nối) trong 48 giờ: Claude phải biết tin trong khoảng đó có thể thiếu.
+  const gapList = (Array.isArray(gaps) ? gaps : []).map((g) => ({ from: g.from, to: g.to, fromText: formatVn(g.from), toText: formatVn(g.to), minutes: Math.max(1, Math.round((g.to - g.from) / 60e3)) }));
+  const result = { ok: true, dir: L.dataDir, root, conversations: md.conversations, messages: md.messages, waiting: md.waiting, excelPath, updatedAt: Date.now(), preset: params.preset ?? null, gaps: gapList };
   fs.writeFileSync(path.join(L.dataDir, '.trang-thai.json'), JSON.stringify(result, null, 2));
+  if (gapList.length) {
+    const note = ['', '## ⚠️ Khoảng trống có thể thiếu tin', '', 'Máy tính đã ngủ hoặc mất kết nối trong các khoảng sau (giờ Việt Nam). Tin đến trong lúc đó chỉ có trong gói nếu Zalo gửi bù khi nối lại. Khi tổng hợp: KHÔNG kết luận "không ai trả lời" cho khoảng này, ghi rõ khả năng thiếu tin và đề nghị người dùng kiểm tra trên điện thoại nếu quan trọng.', '', ...gapList.map((g) => `- ${g.fromText} → ${g.toText} (${g.minutes} phút)`), ''];
+    try { fs.appendFileSync(path.join(L.dataDir, 'README-DU-LIEU.md'), note.join('\n')); } catch { /* bỏ qua */ }
+  }
   db.recordExport({ format: params.includeExcel ? 'markdown+excel' : 'markdown', dir: L.dataDir, conversations: md.conversations, messages: md.messages, params });
   log?.info(`Cập nhật du-lieu/ cho Claude: ${md.conversations} hội thoại, ${md.messages} tin.`);
   return result;

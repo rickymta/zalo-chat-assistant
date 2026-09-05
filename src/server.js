@@ -10,7 +10,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import Fastify from 'fastify';
 import { updateWorkspaceData, clearWorkspaceData, workspaceInfo } from './workspace.js';
-import { listReportDates, loadReport, dayKeyVn } from './reports.js';
+import { listReportDates, loadReport, dayKeyVn, claudeEntryFor } from './reports.js';
 
 const defaultPlatform = {
   name: 'node',
@@ -51,7 +51,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -73,6 +73,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('security', (d) => broadcast('security', d));
   events.on('workspace', (d) => broadcast('workspace', d));
   events.on('suggestions', (d) => broadcast('suggestions', d));
+  events.on('power', (d) => broadcast('power', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -113,6 +114,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       platform: { name: platform.name, autoStart: platform.getAutoStart(), version: platform.appVersion },
       workspace: unlocked ? workspaceInfo(paths.workspaceDir) : { root: paths.workspaceDir, hasData: false },
       automation: automation?.status() ?? null,
+      power: power?.status() ?? null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -192,7 +194,9 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const rows = db.getRecentMessages(accountId, threadId, { limit, before: req.query?.before ? Number(req.query.before) : null });
     const reactions = db.reactionsForMessages(accountId, threadId, rows.map((m) => m.zalo_msg_id).filter(Boolean), accountId);
     const messages = rows.map((m) => ({ ...m, attachments: m.attachments_json ? safeJson(m.attachments_json) : [], reactions: reactions[m.zalo_msg_id] ?? [], raw_json: undefined }));
-    return { conversation: conv, messages, hasMore: rows.length >= limit };
+    // Lần tải đầu (không phân trang) kèm tóm tắt của Claude cho hội thoại này — cột trợ lý dùng.
+    const claude = req.query?.before ? undefined : (() => { try { return claudeEntryFor(paths.workspaceDir, threadId); } catch { return null; } })();
+    return { conversation: conv, messages, hasMore: rows.length >= limit, claude };
   });
 
   /** Đánh dấu đã đọc (cục bộ, như Zalo) — KHÔNG gửi trạng thái "đã xem" lên Zalo. */
@@ -217,7 +221,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const body = req.body ?? {};
     const s = settings.load();
     const params = presetParams(body.preset ?? s.defaultPreset ?? 'waiting', body, s);
-    const r = await updateWorkspaceData({ db, params, root: paths.workspaceDir, log, settings: s });
+    const r = await updateWorkspaceData({ db, params, root: paths.workspaceDir, log, settings: s, gaps: power?.recentGaps?.(48) ?? [] });
     return r.ok ? r : reply.code(400).send(r);
   }));
   app.post('/api/workspace/clear', async () => clearWorkspaceData(paths.workspaceDir));
@@ -227,7 +231,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const body = req.body ?? {};
     const s = settings.load();
     const params = presetParams(body.preset ?? (body.onlyWaiting ? 'waiting' : 'custom'), body, s);
-    const r = await updateWorkspaceData({ db, params, root: paths.workspaceDir, log, settings: s });
+    const r = await updateWorkspaceData({ db, params, root: paths.workspaceDir, log, settings: s, gaps: power?.recentGaps?.(48) ?? [] });
     return r.ok ? r : reply.code(400).send(r);
   }));
 
@@ -250,12 +254,34 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     return reply.code(501).send({ ok: false, error: 'Máy này chưa hỗ trợ sao chép từ ứng dụng.' });
   });
 
+  // ── Tin nhắn mẫu (cột trợ lý): người dùng tự soạn/sửa, lưu data/templates.json; [tên] được thay bằng tên người đối thoại.
+  const TPL_FILE = path.join(paths.dataDir, 'templates.json');
+  const DEFAULT_TEMPLATES = [
+    { id: 'tpl-chao', title: 'Chào và nhận yêu cầu', text: 'Chào [tên], em là tư vấn viên MedDental. Em đã nhận được tin của mình, em kiểm tra và phản hồi ngay ạ.' },
+    { id: 'tpl-cho', title: 'Xin phép trả lời sau', text: 'Dạ [tên], em đang kiểm tra thông tin với bác sĩ, em sẽ báo lại mình trong [thời gian] nhé. Cảm ơn mình đã chờ ạ.' },
+    { id: 'tpl-xin-info', title: 'Xin thêm ảnh / số điện thoại', text: 'Để em tư vấn chính xác hơn, mình cho em xin thêm ảnh răng (chụp rõ, đủ sáng) và số điện thoại liên hệ được không ạ?' },
+    { id: 'tpl-xac-nhan-lich', title: 'Xác nhận lịch hẹn', text: 'Em xác nhận lịch hẹn của [tên]: [ngày] lúc [giờ] tại MedDental [cơ sở]. Mình đến sớm 5–10 phút để làm thủ tục nhé. Có thay đổi mình nhắn em ạ.' },
+    { id: 'tpl-nhac-lich', title: 'Nhắc lịch trước ngày khám', text: 'Em nhắc [tên] mai [giờ] mình có lịch tại MedDental [cơ sở] ạ. Mình vẫn đến được đúng giờ chứ ạ? Nếu bận em đổi giúp mình khung khác nhé.' },
+    { id: 'tpl-dia-chi', title: 'Gửi địa chỉ cơ sở', text: 'Cơ sở gần mình nhất là MedDental [cơ sở], địa chỉ: [địa chỉ]. Giờ làm việc 7h–17h hằng ngày ạ. Em gửi vị trí để mình tiện đi nhé.' },
+    { id: 'tpl-theo-doi', title: 'Hỏi lại nhẹ (theo dõi)', text: 'Dạ [tên], hôm trước mình có hỏi về [chủ đề], mình còn quan tâm không ạ? Nếu tiện em giữ cho mình một khung giờ khám tư vấn nhé.' },
+    { id: 'tpl-cam-on', title: 'Cảm ơn sau khám', text: 'Cảm ơn [tên] đã tin tưởng MedDental ạ. Có gì khó chịu sau khám mình nhắn em ngay nhé, em luôn ở đây để hỗ trợ ạ.' },
+  ];
+  const loadTemplates = () => { try { const j = JSON.parse(fs.readFileSync(TPL_FILE, 'utf8')); if (Array.isArray(j.items)) return j.items; } catch { /* chưa có */ } return DEFAULT_TEMPLATES; };
+  app.get('/api/templates', async () => ({ items: loadTemplates(), isDefault: !fs.existsSync(TPL_FILE) }));
+  app.post('/api/templates', async (req, reply) => {
+    const items = Array.isArray(req.body?.items) ? req.body.items : null;
+    if (!items || items.length > 100) return reply.code(400).send({ ok: false, error: 'Danh sách mẫu không hợp lệ.' });
+    const clean = items.map((t, i) => ({ id: String(t?.id || ('tpl-' + Date.now() + '-' + i)), title: String(t?.title ?? '').trim().slice(0, 80), text: String(t?.text ?? '').trim().slice(0, 2000) })).filter((t) => t.title && t.text);
+    fs.writeFileSync(TPL_FILE, JSON.stringify({ items: clean }, null, 2));
+    return { ok: true, items: clean };
+  });
+
   // ── Thiết lập / nhật ký ─────────────────────────────────────────────────────
   app.get('/api/settings', async () => settings.load());
   app.post('/api/settings', async (req) => {
     const body = req.body ?? {};
     const patch = {};
-    for (const k of ['includeGroups', 'syncOldOnConnect', 'includeExcel']) if (typeof body[k] === 'boolean') patch[k] = body[k];
+    for (const k of ['includeGroups', 'syncOldOnConnect', 'includeExcel', 'keepAwake']) if (typeof body[k] === 'boolean') patch[k] = body[k];
     if (Number.isFinite(Number(body.waitingHours))) patch.waitingHours = Math.max(0, Number(body.waitingHours));
     if (Number.isFinite(Number(body.groupHistoryCount))) patch.groupHistoryCount = Math.min(Math.max(Number(body.groupHistoryCount), 20), 2000);
     if (typeof body.defaultPreset === 'string' && ['waiting', 'today', 'week', 'groups', 'all'].includes(body.defaultPreset)) patch.defaultPreset = body.defaultPreset;
@@ -263,6 +289,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     if (Number.isFinite(Number(body.quietMinutes))) patch.quietMinutes = Math.min(Math.max(Math.round(Number(body.quietMinutes)), 0), 120);
     const saved = settings.save(patch);
     automation?.schedule();
+    power?.applyKeepAwake();
     if (typeof body.autoStart === 'boolean') platform.setAutoStart(body.autoStart);
     return { ...saved, autoStart: platform.getAutoStart() };
   });
