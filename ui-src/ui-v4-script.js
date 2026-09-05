@@ -270,7 +270,7 @@
   /** Khối trích dẫn: quote_text dạng "Tên: nội dung" → tên đậm + nội dung. */
   function quoteHtml(q) { const i = q.indexOf(': '); const who = i > 0 && i < 60 ? q.slice(0, i) : ''; const text = who ? q.slice(i + 2) : q; return '<div class="quote">' + (who ? '<b>' + esc(who) + '</b>' : '') + '<span>' + esc(text) + '</span></div>'; }
   const ICO = {
-    reply: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
+    reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6.5 6A3.5 3.5 0 0 0 3 9.5V13a4 4 0 0 0 4 4h1v2.5a.5.5 0 0 0 .85.35L12.6 17H13a1 1 0 0 0 0-2H7a2 2 0 0 1-2-2V9.5A1.5 1.5 0 0 1 6.5 8H10a1 1 0 0 0 0-2H6.5zm10 0A3.5 3.5 0 0 0 13 9.5V13a4 4 0 0 0 4 4h.5v2.5a.5.5 0 0 0 .85.35L21 17h.5a1 1 0 0 0 0-2H17a2 2 0 0 1-2-2V9.5A1.5 1.5 0 0 1 16.5 8H20a1 1 0 0 0 0-2h-3.5z"/></svg>',
     forward: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>',
     more: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     like: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
@@ -285,7 +285,8 @@
     // Pill cảm xúc + nút thả nhanh bám góc dưới-phải của bong bóng/thẻ ảnh (như Zalo); nút chỉ hiện khi rê chuột.
     const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + '<b>' + total + '</b>' + '</span>' : '';
     const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
-    const reacts = (pill ? '<div class="reacts">' + pill + '</div>' : '') + quick;
+    // Cụm cảm xúc như Zalo: [pill][👍] chung một cụm ở góc dưới-phải, chồng lên mép dưới của bong bóng/ảnh.
+    const reacts = (pill || quick) ? '<div class="reacts">' + pill + quick + '</div>' : '';
     const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
     // Trong nhóm: avatar + tên chỉ ở tin ĐẦU CỤM (cùng người gửi, cách dưới 5 phút); tin tiếp theo thụt lề bằng chỗ avatar.
     const grpIn = !!c.is_group && !m.is_outbound;
@@ -297,7 +298,7 @@
       '<div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
       (m.quote_text ? quoteHtml(m.quote_text) : '') + body +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      '<div class="time">' + fmtClock(m.event_time) + '</div>' + reacts + '</div></div>' + acts + '</div>';
+      (mediaOnly ? '' : '<div class="time">' + fmtClock(m.event_time) + '</div>') + reacts + acts + '</div>' + (mediaOnly ? '<div class="time-below">' + fmtClock(m.event_time) + '</div>' : '') + '</div></div>';
   }
   // Hành động trên tin: thả cảm xúc (nút nhanh + bảng 6 cảm xúc), trả lời, chuyển tiếp, thêm (sao chép, xem ảnh); bấm pill của mình để bỏ cảm xúc.
   const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));

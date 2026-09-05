@@ -394,12 +394,14 @@
   .msg.out .mcol { align-items: flex-end; }
 
   /* Thanh 3 nút vuông (Trả lời · Chuyển tiếp · Thêm) ở góc dưới cạnh tin, hiện khi rê chuột — như Zalo. */
-  .msg-acts { display: none; gap: 4px; align-self: flex-end; margin: 0 0 -6px 30px; }
-  .msg.out .msg-acts { margin: 0 30px -6px 0; }
-  .msg.has-reacts .msg-acts { margin-bottom: 0; }
+  /* Thanh 3 nút gắn vào bong bóng: ngay bên phải (tin nhận) / bên trái (tin gửi), đáy cao hơn mép dưới 4px — như Zalo. */
+  .msg-acts { display: none; position: absolute; bottom: 4px; left: 100%; margin-left: 8px; gap: 6px; z-index: 2; }
+  .msg.out .msg-acts { left: auto; right: 100%; margin-left: 0; margin-right: 8px; }
+  .msg .time-below { align-self: flex-start; font-size: 11px; color: #6b7280; background: rgba(15, 23, 42, .06); border-radius: 6px; padding: 2px 6px; margin-top: 8px; }
+  .msg.out .time-below { align-self: flex-end; }
   .msg:hover .msg-acts { display: inline-flex; }
   .msg.out .msg-acts { order: -1; }
-  .msg-acts button { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid #dfe4ec; background: #fff; color: #4b5563; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .msg-acts button { width: 28px; height: 28px; padding: 0; border-radius: 6px; border: 1px solid #dfe4ec; background: #fff; color: #3b4453; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .msg-acts button:hover { background: #f1f5fb; color: var(--primary); border-color: #c7dcff; }
   .msg .mcol .meta { font-size: 12px; color: #6b7280; font-weight: 500; margin: 2px 0 4px 2px; }
   .more-pop { position: fixed; z-index: 60; display: flex; flex-direction: column; min-width: 200px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.14); }
@@ -434,10 +436,11 @@
   .msg .bubble { max-width: 100%; position: relative; padding: 8px 12px 6px; border-radius: 10px; background: #fff; border: 0; box-shadow: 0 1px 1px rgba(0,0,0,.06); white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
   .msg.out .bubble { background: #e5efff; }
   /* Tin ảnh/sticker: thẻ trắng ôm ảnh, giờ ở góc dưới-trái trong thẻ (như Zalo). */
-  .msg .bubble.media { background: #fff; padding: 4px; }
-  .msg .bubble.media .atts { margin: 0; }
+  /* Tin ảnh/sticker: ảnh trần bo 8px, cụm cảm xúc chồng mép dưới ảnh, giờ là nhãn nhỏ dưới ảnh bên trái (như Zalo). */
+  .msg .bubble.media { background: transparent; padding: 0; box-shadow: none; }
+  .msg .bubble.media .atts { margin: 0; display: block; line-height: 0; }
   .msg .bubble.media .att-img, .msg .bubble.media .sticker { border-radius: 8px; max-width: 360px; max-height: 360px; }
-  .msg .bubble.media .time { padding: 3px 6px 1px; margin: 0; }
+  .msg .bubble.media .att-open { display: block; }
   .msg .bubble .meta { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 2px; white-space: normal; }
   .msg .bubble .time { font-size: 11px; color: var(--faint); text-align: right; margin-top: 3px; }
   .msg .bubble .quote { border-left: 3px solid #c7d2de; padding-left: 8px; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
@@ -451,12 +454,10 @@
   .att-chip.file { color: var(--primary); }
   /* Cảm xúc kiểu Zalo: pill nhỏ + nút thả nhanh bám góc dưới-phải của BONG BÓNG/ẢNH (chồng lên mép ~9px); nút chỉ hiện khi rê chuột. */
   .msg .bubble { position: relative; }
-  .msg.has-reacts { padding-bottom: 6px; }
-  .msg.has-reacts .bubble { margin-bottom: 6px; }
-  .reacts { position: absolute; right: 8px; bottom: -10px; z-index: 1; display: flex; align-items: center; }
-  /* Nút 👍 thả nhanh: ngay ngoài mép phải (tin nhận) / mép trái (tin gửi), ngang hàng pill cảm xúc — như Zalo. */
-  .react-quick { display: none; position: absolute; bottom: -10px; right: -30px; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid #dfe4ec; background: #fff; color: #6b7280; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.14); z-index: 1; }
-  .msg.out .react-quick { right: auto; left: -30px; }
+  .msg.has-reacts { padding-bottom: 8px; }
+  .reacts { position: absolute; right: 8px; bottom: -13px; z-index: 2; display: flex; align-items: center; gap: 4px; }
+  /* Nút 👍 thả nhanh nằm trong cụm cảm xúc, sau pill; chỉ hiện khi rê chuột (Zalo). */
+  .react-quick { display: none; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid #dfe4ec; background: #fff; color: #6b7280; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.14); }
   .msg:hover .react-quick { display: grid; }
   .react-quick:hover { color: var(--primary); border-color: #c7dcff; background: #eef4ff; }
   .react { display: inline-flex; align-items: center; gap: 2px; height: 20px; padding: 0 6px 0 5px; background: #fff; border: 1px solid #e3e8ef; border-radius: 999px; font-size: 12px; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,.14); cursor: default; }
@@ -584,6 +585,7 @@
   .zapp .chat-head .avatar { width: 40px; height: 40px; font-size: 14px; }
   .msgs { padding: 10px 14px 12px; }
   .zapp .chatcol .bubble { font-size: 14px; padding: 8px 12px 6px; border-radius: 12px; max-width: 100%; min-width: 56px; }
+  .zapp .chatcol .bubble.media { padding: 0; min-width: 0; border-radius: 8px; }
   .zapp .chatcol .bubble .meta { font-size: 11.5px; } .zapp .chatcol .bubble .time { font-size: 11px; } .zapp .chatcol .bubble .quote { font-size: 13px; }
   .day-sep { font-size: 12px; }
   .composer { padding: 8px 10px; }
@@ -1150,7 +1152,7 @@
   /** Khối trích dẫn: quote_text dạng "Tên: nội dung" → tên đậm + nội dung. */
   function quoteHtml(q) { const i = q.indexOf(': '); const who = i > 0 && i < 60 ? q.slice(0, i) : ''; const text = who ? q.slice(i + 2) : q; return '<div class="quote">' + (who ? '<b>' + esc(who) + '</b>' : '') + '<span>' + esc(text) + '</span></div>'; }
   const ICO = {
-    reply: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
+    reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6.5 6A3.5 3.5 0 0 0 3 9.5V13a4 4 0 0 0 4 4h1v2.5a.5.5 0 0 0 .85.35L12.6 17H13a1 1 0 0 0 0-2H7a2 2 0 0 1-2-2V9.5A1.5 1.5 0 0 1 6.5 8H10a1 1 0 0 0 0-2H6.5zm10 0A3.5 3.5 0 0 0 13 9.5V13a4 4 0 0 0 4 4h.5v2.5a.5.5 0 0 0 .85.35L21 17h.5a1 1 0 0 0 0-2H17a2 2 0 0 1-2-2V9.5A1.5 1.5 0 0 1 16.5 8H20a1 1 0 0 0 0-2h-3.5z"/></svg>',
     forward: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>',
     more: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     like: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
@@ -1165,7 +1167,8 @@
     // Pill cảm xúc + nút thả nhanh bám góc dưới-phải của bong bóng/thẻ ảnh (như Zalo); nút chỉ hiện khi rê chuột.
     const pill = rs.length ? '<span class="react' + (mine ? ' mine' : '') + '" title="' + esc(rs.map((r) => emo(r.icon) + ' ' + r.count).join(' · ')) + (mine ? ' — bấm để bỏ cảm xúc của Bạn' : '') + '">' + rs.slice(0, 3).map((r) => '<em>' + esc(emo(r.icon)) + '</em>').join('') + '<b>' + total + '</b>' + '</span>' : '';
     const quick = canAct ? '<button type="button" class="react-quick" data-act="react" title="Thả cảm xúc">' + ICO.like + '</button>' : '';
-    const reacts = (pill ? '<div class="reacts">' + pill + '</div>' : '') + quick;
+    // Cụm cảm xúc như Zalo: [pill][👍] chung một cụm ở góc dưới-phải, chồng lên mép dưới của bong bóng/ảnh.
+    const reacts = (pill || quick) ? '<div class="reacts">' + pill + quick + '</div>' : '';
     const acts = canAct ? '<div class="msg-acts"><button type="button" data-act="reply" title="Trả lời">' + ICO.reply + '</button><button type="button" data-act="forward" title="Chuyển tiếp">' + ICO.forward + '</button><button type="button" data-act="more" title="Thêm">' + ICO.more + '</button></div>' : '';
     // Trong nhóm: avatar + tên chỉ ở tin ĐẦU CỤM (cùng người gửi, cách dưới 5 phút); tin tiếp theo thụt lề bằng chỗ avatar.
     const grpIn = !!c.is_group && !m.is_outbound;
@@ -1177,7 +1180,7 @@
       '<div class="bubble' + (mediaOnly ? ' media' : '') + (m.recalled ? ' recalled' : '') + '">' +
       (m.quote_text ? quoteHtml(m.quote_text) : '') + body +
       (atts.length ? '<div class="atts">' + atts.map(attHtml).join('') + '</div>' : '') +
-      '<div class="time">' + fmtClock(m.event_time) + '</div>' + reacts + '</div></div>' + acts + '</div>';
+      (mediaOnly ? '' : '<div class="time">' + fmtClock(m.event_time) + '</div>') + reacts + acts + '</div>' + (mediaOnly ? '<div class="time-below">' + fmtClock(m.event_time) + '</div>' : '') + '</div></div>';
   }
   // Hành động trên tin: thả cảm xúc (nút nhanh + bảng 6 cảm xúc), trả lời, chuyển tiếp, thêm (sao chép, xem ảnh); bấm pill của mình để bỏ cảm xúc.
   const msgById = (el) => chat.items.find((x) => String(x.id) === String(el?.dataset.id));
