@@ -8,9 +8,10 @@
 set -euo pipefail
 VER=${1:?Cần phiên bản, ví dụ 0.0.2}
 API=${2:-https://admin.volcanion.vn}; API=${API%/}
-# Lỡ đưa tên miền chính thì tự chuyển sang admin.<domain> (giữ nguyên nếu là localhost/IP).
-if [[ "$API" =~ ^https?://(www\.)?([a-z0-9.-]+\.[a-z]{2,})$ ]] && [[ ! "$API" =~ ://admin\. ]]; then
-  API="${API%%://*}://admin.${BASH_REMATCH[2]}"; echo "→ Dùng tên miền quản trị: $API"
+# Lỡ đưa tên miền chính thì tự chuyển sang admin.<domain> (giữ nguyên nếu là localhost/IP hoặc đã là admin.).
+HOST=${API#*://}; HOST=${HOST%%/*}; HOST=${HOST#www.}
+if [[ "$HOST" != admin.* && "$HOST" != localhost* && "$HOST" != 127.* && "$HOST" == *.* && ! "$HOST" =~ ^[0-9.:]+$ ]]; then
+  API="${API%%://*}://admin.$HOST"; echo "→ Dùng tên miền quản trị: $API"
 fi
 NOTES=${3:-}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
