@@ -31,7 +31,9 @@ async function locate(req) {
 function setHeaders(res, release, size) {
   res.setHeader('Content-Type', 'application/octet-stream');
   res.setHeader('Content-Length', String(size));
-  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(release.fileName)}"`);
+  // filename= chỉ nhận ASCII (trình duyệt hiển thị nguyên %20 nếu mã hoá URL vào đây); tên đầy đủ có Unicode đi qua filename*=.
+  const ascii = release.fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  res.setHeader('Content-Disposition', `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(release.fileName)}`);
   if (release.sha256) res.setHeader('X-Checksum-Sha256', release.sha256);
 }
 

@@ -222,11 +222,19 @@ function InstallNotes({ platform }) {
           <h3>🪟 Windows (thử nghiệm)</h3>
           <ol className="prose" style={{ paddingLeft: 22, marginTop: 10 }}>
             <li>
+              <b>Trình duyệt báo chặn tệp tải về?</b> Bản cài chưa ký số nên Edge/Chrome coi là tệp lạ, không phải virus.
+              <br />
+              Edge: mở danh sách tải (<b>Ctrl+J</b>), bấm <b>⋯</b> cạnh tệp → <b>Giữ lại</b> (Keep) →{' '}
+              <b>Hiển thị thêm</b> (Show more) → <b>Vẫn giữ lại</b> (Keep anyway).
+              <br />
+              Chrome: bấm <b>⋮</b> hoặc mũi tên cạnh tệp → <b>Giữ lại</b> → <b>Vẫn tải xuống</b>.
+            </li>
+            <li>
               Chạy file <code>.exe</code> vừa tải. Trình cài cho chọn thư mục và tạo lối tắt.
             </li>
             <li>
-              Bản chưa ký số nên SmartScreen sẽ hiện cảnh báo màu xanh: bấm <b>More info</b> →{' '}
-              <b>Run anyway</b>.
+              SmartScreen hiện cảnh báo màu xanh "Windows đã bảo vệ máy tính của bạn": bấm{' '}
+              <b>Thông tin thêm</b> (More info) → <b>Vẫn chạy</b> (Run anyway).
             </li>
             <li>
               Thư mục dữ liệu của ứng dụng: <code>%APPDATA%\Zalo Chat Assistant\data</code>. Thư mục
