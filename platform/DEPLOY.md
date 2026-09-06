@@ -124,7 +124,7 @@ Sau import, tài khoản admin có sẵn là các email trong `ADMIN_EMAILS` đ�
 `test@meddental.vn` cũng đi theo — đổi mật khẩu hoặc xoá ở admin → Người dùng trước khi mở cho người khác dùng.
 
 **Không chuyển dữ liệu mà chỉ cần đẩy bản cài?** Đăng ký trên **trang chính** `https://volcanion.vn/dang-ky` bằng email có trong
-`ADMIN_EMAILS` (tự thành admin; khu quản trị không có đăng ký), rồi từ máy dev: `bash platform/deploy/publish-release.sh 0.0.2 https://volcanion.vn` — script hỏi email/mật khẩu
+`ADMIN_EMAILS` (tự thành admin; khu quản trị không có đăng ký), rồi từ máy dev: `bash platform/deploy/publish-release.sh 0.0.2 https://admin.volcanion.vn` (API quản trị chỉ mở ở tên miền admin) — script hỏi email/mật khẩu
 admin của bạn (nhập kín), tải ba tệp trong `dist/` lên và Xuất bản. Dùng script này cho mọi bản sau.
 
 ## 7. Kiểm tra sau triển khai
