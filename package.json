@@ -38,7 +38,10 @@
       "electron/**/*",
       "cowork/**/*",
       "package.json",
-      "!**/*.map"
+      "!**/*.map",
+      "!node_modules/better-sqlite3/build/Release/{test_extension.node,sqlite3.a,.forge-meta}",
+      "!node_modules/better-sqlite3/build/Release/{obj,obj.target,.deps}/**",
+      "!node_modules/better-sqlite3/{deps,src}/**"
     ],
     "directories": {
       "output": "dist",
