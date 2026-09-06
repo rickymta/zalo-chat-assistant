@@ -1,7 +1,9 @@
 #!/bin/bash
 # Đẩy một bản phát hành (3 tệp cài trong dist/) lên máy chủ nền tảng qua API quản trị và Xuất bản.
-# Dùng:  bash platform/deploy/publish-release.sh 0.0.2 https://admin.volcanion.vn [ghi-chu.md]
+# Dùng:  bash platform/deploy/publish-release.sh <phiên-bản> [https://admin.volcanion.vn] [ghi-chu.md] [all|win32|darwin|darwin-arm64|darwin-x64]
+#   ví dụ chỉ đẩy bản Windows:  bash platform/deploy/publish-release.sh 0.0.3 https://admin.volcanion.vn ~/Desktop/ghi-chu-0.0.3.md win32
 # ⚠️ Phải gọi vào TÊN MIỀN QUẢN TRỊ (admin.<domain>): cổng vào chặn /api/admin/* ở tên miền chính (trả 404 trống).
+# Cùng phiên bản + nền tảng đã có trên máy chủ ⇒ bản cũ bị XOÁ rồi thay bằng tệp mới (không tạo bản trùng).
 # Đăng nhập bằng tài khoản admin của BẠN: đặt ZCA_ADMIN_EMAIL / ZCA_ADMIN_PASSWORD trong môi trường, hoặc script sẽ hỏi
 # (mật khẩu nhập kín, không lưu đâu cả). Tệp tìm trong dist/ theo tên electron-builder tạo ra:
 #   Zalo Chat Assistant-<v>-arm64.dmg · Zalo Chat Assistant-<v>-x64.dmg · Zalo Chat Assistant-Setup-<v>-x64.exe
@@ -14,12 +16,16 @@ if [[ "$HOST" != admin.* && "$HOST" != localhost* && "$HOST" != 127.* && "$HOST"
   API="${API%%://*}://admin.$HOST"; echo "→ Dùng tên miền quản trị: $API"
 fi
 NOTES=${3:-}
+ONLY=${4:-all}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 DIST="$ROOT/dist"
 ARM="$DIST/Zalo Chat Assistant-$VER-arm64.dmg"
 X64="$DIST/Zalo Chat Assistant-$VER-x64.dmg"
 WIN="$DIST/Zalo Chat Assistant-Setup-$VER-x64.exe"
-for f in "$ARM" "$X64" "$WIN"; do [ -f "$f" ] || { echo "Thiếu tệp: $f"; exit 1; }; done
+want() { case "$ONLY" in all) return 0;; win32) [[ "$1" == win32 ]];; darwin) [[ "$1" == darwin ]];; darwin-arm64) [[ "$1/$2" == darwin/arm64 ]];; darwin-x64) [[ "$1/$2" == darwin/x64 ]];; *) echo "Bộ lọc không hợp lệ: $ONLY"; exit 1;; esac; }
+want darwin arm64 && { [ -f "$ARM" ] || { echo "Thiếu tệp: $ARM"; exit 1; }; }
+want darwin x64   && { [ -f "$X64" ] || { echo "Thiếu tệp: $X64"; exit 1; }; }
+want win32 x64    && { [ -f "$WIN" ] || { echo "Thiếu tệp: $WIN"; exit 1; }; }
 [ -n "$NOTES" ] && [ ! -f "$NOTES" ] && { echo "Không thấy tệp ghi chú: $NOTES"; exit 1; }
 EMAIL=${ZCA_ADMIN_EMAIL:-}; PASS=${ZCA_ADMIN_PASSWORD:-}
 [ -n "$EMAIL" ] || read -r -p "Email admin trên $API: " EMAIL
@@ -33,7 +39,17 @@ call -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
 unset PASS
 TOK=$(echo "$BODY" | json accessToken)
 [[ "$TOK" == LỖI* || "$TOK" == \(* || -z "$TOK" ]] && { echo "Đăng nhập thất bại (HTTP $HTTP): $TOK"; exit 1; }
+# Xoá bản cùng phiên bản + nền tảng đã có (thay tệp), để không sinh bản trùng trên trang Cập nhật.
+replace_old() { # $1 platform, $2 arch
+  call -H "Authorization: Bearer $TOK" "$API/api/admin/releases"
+  for id in $(echo "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const r=JSON.parse(s);(r.items||r).filter(x=>x.version===process.argv[1]&&x.platform===process.argv[2]&&x.arch===process.argv[3]).forEach(x=>console.log(x.id))}catch{}})' "$VER" "$1" "$2"); do
+    echo "  ↺ $1/$2: đã có bản $VER trên máy chủ — xoá để thay tệp mới"
+    curl -s -o /dev/null -X DELETE "$API/api/admin/releases/$id" -H "Authorization: Bearer $TOK"
+  done
+}
 up() { # $1 platform, $2 arch, $3 file
+  want "$1" "$2" || return 0
+  replace_old "$1" "$2"
   call -X POST "$API/api/admin/releases" -H "Authorization: Bearer $TOK" \
     -F "version=$VER" -F channel=stable -F "platform=$1" -F "arch=$2" -F published=true \
     ${NOTES:+-F "notes=<$NOTES"} -F "file=@$3"
@@ -43,4 +59,4 @@ up() { # $1 platform, $2 arch, $3 file
 }
 echo "Đẩy bản $VER lên $API …"
 up darwin arm64 "$ARM"; up darwin x64 "$X64"; up win32 x64 "$WIN"
-echo "Mới nhất theo máy chủ: $(curl -s "$API/api/releases/latest?platform=darwin&arch=arm64" | json release.version)  (rỗng = chưa có bản nào được xuất bản)"
+for p in "darwin&arch=arm64" "darwin&arch=x64" "win32&arch=x64"; do echo "Mới nhất theo máy chủ ($p): $(curl -s "$API/api/releases/latest?platform=$p" | json release.version)"; done
