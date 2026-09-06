@@ -130,7 +130,8 @@ admin của bạn (nhập kín), tải ba tệp trong `dist/` lên và Xuất b�
 ## 7. Kiểm tra sau triển khai
 
 ```bash
-curl -s https://volcanion.vn/health
+curl -s https://volcanion.vn/api/site | head -c 200                # nginx trong web chỉ proxy /api, /downloads, /uploads (không có /health)
+docker compose exec api wget -qO- http://127.0.0.1:4789/health   # health của api xem từ trong máy chủ
 curl -s "https://volcanion.vn/api/releases/latest?platform=darwin&arch=arm64" | head -c 300
 curl -sI https://volcanion.vn/admin | head -1              # 404 — khu quản trị không phục vụ ở tên miền chính
 curl -sI https://admin.volcanion.vn/ | head -1              # 200 — app quản trị (tiêu đề "Quản trị · Zalo Chat Assistant")
