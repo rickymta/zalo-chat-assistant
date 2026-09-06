@@ -155,12 +155,13 @@ tài khoản thật và đổi chuỗi mã hoá đồng bộ giữa các máy.
 **phiên bản phần mềm** (tải file, đếm lượt tải, kiểm tra cập nhật theo semver), **bài viết CMS**, quản trị người dùng, thống kê.
 `platform/web` (React + Vite → nginx, cổng **4790**): trang chủ, **/tai-ve** (tự nhận diện macOS chip Apple / Intel / Windows),
 **/cap-nhat** (lịch sử phiên bản), bài viết, hướng dẫn, đăng nhập/đăng ký/quên mật khẩu, tài khoản (phiên đăng nhập, đổi chuỗi mã
-hoá), khu **/admin** (bài viết, phiên bản, người dùng, nội dung trang chủ — chỉ tài khoản `role: admin`; email trong `ADMIN_EMAILS`
-được nâng quyền khi đăng nhập). Hợp đồng API: `platform/API-CONTRACT.md`.
+hoá). `platform/admin` (**ứng dụng riêng**, cổng **4792**, phục vụ ở `admin.<domain>`): bài viết, phiên bản, người dùng, nội dung
+trang chủ — chỉ tài khoản `role: admin`, **chỉ có đăng nhập và quên mật khẩu, không đăng ký** (email trong `ADMIN_EMAILS` được nâng
+quyền khi đăng nhập/đăng ký ở trang chính). Hợp đồng API: `platform/API-CONTRACT.md`.
 
 ```bash
 cd platform && cp .env.example .env   # điền JWT_SECRET, ADMIN_EMAILS, PUBLIC_URL (địa chỉ web người dùng gõ được)
-docker compose up -d --build           # mongo + api 127.0.0.1:4789 + web 127.0.0.1:4790 (BIND_IP=0.0.0.0 nếu cần mở ra LAN)
+docker compose up -d                   # mongo + api :4789 + web :4790 + admin :4792 (loopback; BIND_IP=0.0.0.0 nếu cần mở ra LAN) + edge
 # Máy chủ thật volcanion.vn / admin.volcanion.vn: .env theo .env.production.example (DOMAIN/ADMIN_DOMAIN cho service edge
 # = Caddy 80/443 + Let's Encrypt tự động, luôn chạy cùng bộ) rồi CÙNG MỘT LỆNH docker compose up -d. Chuyển dữ liệu Mongo + bộ cài
 # từ máy này: platform/DEPLOY.md. Ứng dụng desktop mặc định trỏ https://volcanion.vn từ bản 0.0.2.

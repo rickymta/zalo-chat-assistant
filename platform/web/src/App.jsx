@@ -17,12 +17,6 @@ import Account from './pages/Account.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Forbidden from './pages/Forbidden.jsx';
 
-import AdminLayout from './admin/AdminLayout.jsx';
-import AdminDashboard from './admin/Dashboard.jsx';
-import AdminPosts from './admin/PostsAdmin.jsx';
-import AdminReleases from './admin/ReleasesAdmin.jsx';
-import AdminUsers from './admin/UsersAdmin.jsx';
-import AdminSite from './admin/SiteAdmin.jsx';
 
 export default function App() {
   const location = useLocation();
@@ -58,21 +52,6 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      <Route
-        path="/admin"
-        element={
-          <RequireAdmin>
-            <AdminLayout />
-          </RequireAdmin>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="bai-viet" element={<AdminPosts />} />
-        <Route path="phien-ban" element={<AdminReleases />} />
-        <Route path="nguoi-dung" element={<AdminUsers />} />
-        <Route path="trang-chu" element={<AdminSite />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Route>
     </Routes>
   );
 }
@@ -88,15 +67,3 @@ function RequireAuth({ children }) {
   return children;
 }
 
-/** Khu quản trị: chưa đăng nhập → về trang đăng nhập; không phải admin → 403. */
-function RequireAdmin({ children }) {
-  const { user, loading, isAdmin } = useAuth();
-  const location = useLocation();
-  if (loading) return <Loading text="Đang kiểm tra quyền truy cập…" />;
-  if (!user) {
-    const next = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/dang-nhap?next=${next}`} replace />;
-  }
-  if (!isAdmin) return <Forbidden standalone />;
-  return children;
-}

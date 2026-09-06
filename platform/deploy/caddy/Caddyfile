@@ -37,10 +37,13 @@ www.{$DOMAIN} {
 	}
 }
 
-# Quản trị: cùng ứng dụng web, mở thẳng khu /admin; nhận tệp cài tới 600 MB.
+# Quản trị: ỨNG DỤNG RIÊNG (container admin); nhận tệp cài tới 600 MB.
 {$ADMIN_DOMAIN} {
 	encode gzip
-	redir / /admin 302
+	# App quản trị không có trang đăng ký; chặn thêm API đăng ký ở tên miền này cho chắc, /dang-ky đưa về đăng nhập.
+	redir /dang-ky /dang-nhap 302
+	@register path /api/auth/register
+	respond @register 404
 
 	request_body {
 		max_size 600MB
@@ -53,7 +56,7 @@ www.{$DOMAIN} {
 		-Server
 	}
 
-	reverse_proxy web:80 {
+	reverse_proxy admin:80 {
 		flush_interval -1
 	}
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { adminSiteUrl } from '../lib/site-url.js';
 import { useAuth } from '../auth.jsx';
 import { useSite } from '../site.jsx';
 
@@ -63,9 +64,9 @@ function Header() {
 
           <div className="header-actions">
             {isAdmin && (
-              <Link to="/admin" className="btn sm">
+              <a href={adminSiteUrl()} className="btn sm">
                 Quản trị
-              </Link>
+              </a>
             )}
             {user ? (
               <>
@@ -107,7 +108,7 @@ function Header() {
           {user ? (
             <>
               <NavLink to="/tai-khoan">Tài khoản</NavLink>
-              {isAdmin && <NavLink to="/admin">Quản trị</NavLink>}
+              {isAdmin && <a href={adminSiteUrl()}>Quản trị</a>}
               <button type="button" className="ghost" style={{ justifyContent: 'flex-start' }} onClick={doLogout}>
                 Đăng xuất
               </button>

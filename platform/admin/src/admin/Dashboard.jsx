@@ -75,16 +75,16 @@ export default function Dashboard() {
           <div className="card">
             <h2>Lối tắt</h2>
             <div className="row" style={{ marginTop: 12 }}>
-              <Link to="/admin/phien-ban" className="btn primary">
+              <Link to="/phien-ban" className="btn primary">
                 📦 Đăng bản phát hành mới
               </Link>
-              <Link to="/admin/bai-viet" className="btn">
+              <Link to="/bai-viet" className="btn">
                 📝 Viết bài mới
               </Link>
-              <Link to="/admin/trang-chu" className="btn">
+              <Link to="/trang-chu" className="btn">
                 🏠 Sửa nội dung trang chủ
               </Link>
-              <Link to="/admin/nguoi-dung" className="btn">
+              <Link to="/nguoi-dung" className="btn">
                 👥 Quản lý người dùng
               </Link>
             </div>

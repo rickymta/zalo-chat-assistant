@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Website + admin CMS của nền tảng Zalo Chat Assistant (React 19 + Vite, JavaScript thuần)",
+  "description": "Trang chính của nền tảng Zalo Chat Assistant (React 19 + Vite, JavaScript thuần) — khu quản trị là app riêng ở platform/admin",
   "engines": {
     "node": ">=20"
   },

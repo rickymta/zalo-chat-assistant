@@ -34,7 +34,8 @@ export function createApp() {
       // Không có Origin = gọi từ ứng dụng desktop / curl / server-side ⇒ cho qua.
       if (!origin) return cb(null, true);
       if (config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) return cb(null, true);
-      cb(new Error(`Nguồn ${origin} không nằm trong CORS_ORIGINS.`));
+      // 403 thay vì 500: đây là lỗi cấu hình (thiếu origin trong CORS_ORIGINS), không phải lỗi máy chủ.
+      cb(Object.assign(new Error(`Nguồn ${origin} không nằm trong CORS_ORIGINS.`), { status: 403 }));
     },
     credentials: true,
   }));

@@ -2,8 +2,9 @@
 
 Mục tiêu: `https://volcanion.vn` là trang chính (tải ứng dụng, lịch sử phiên bản, bài viết, đăng nhập/đăng ký, **API cho ứng
 dụng desktop**), `https://admin.volcanion.vn` là khu quản trị (bài viết, phiên bản, người dùng, nội dung trang chủ).
-**Một lệnh `docker compose up -d` chạy cả máy chủ**: `mongo` + `api` + `web` + `edge` (Caddy nhận 80/443, tự xin và gia hạn
-chứng chỉ Let's Encrypt, điều hướng theo tên miền). Máy chủ chỉ mở 80/443; api/web gắn loopback. Cơ sở dữ liệu là **MongoDB**
+**Một lệnh `docker compose up -d` chạy cả máy chủ**: `mongo` + `api` + `web` (trang chính) + `admin` (khu quản trị — **ứng dụng
+riêng** trong `platform/admin`, chỉ đăng nhập + quên mật khẩu, không có đăng ký) + `edge` (Caddy nhận 80/443, tự xin và gia hạn
+chứng chỉ Let's Encrypt, `DOMAIN` → web, `ADMIN_DOMAIN` → admin). Máy chủ chỉ mở 80/443; api/web/admin gắn loopback. Cơ sở dữ liệu là **MongoDB**
 (container `mongo`, hoặc Mongo sẵn có qua `MONGO_URL`). Máy chủ xác thực cũ (`server/`, SQLite) **không triển khai**.
 Không cần cài nginx/certbot trên máy chủ (nginx vẫn chạy *bên trong* ảnh web để phục vụ SPA và proxy `/api`).
 
@@ -14,7 +15,7 @@ Không cần cài nginx/certbot trên máy chủ (nginx vẫn chạy *bên trong
 | Trang web, tải ứng dụng, lịch sử phiên bản | `https://volcanion.vn/`, `/tai-ve`, `/cap-nhat` | Người dùng |
 | API tài khoản, chuỗi mã hoá, kiểm tra cập nhật | `https://volcanion.vn/api/auth/…`, `/api/keys`, `/api/releases/check` | Ứng dụng desktop |
 | Tệp cài `.dmg`/`.exe` | `https://volcanion.vn/downloads/<id>/<tên tệp>` | Trình duyệt, do ứng dụng mở khi có bản mới |
-| Khu quản trị | `https://admin.volcanion.vn/` → `/admin` | Tài khoản `role: admin` |
+| Khu quản trị (app riêng) | `https://admin.volcanion.vn/` | Tài khoản `role: admin`; không đăng ký được ở đây |
 
 Ứng dụng desktop chỉ cần **một** địa chỉ máy chủ (mặc định `https://volcanion.vn` từ bản 0.0.2; đổi được ở màn đăng nhập →
 *Nâng cao*). Cập nhật dùng cùng máy chủ đó, trừ khi người dùng đặt riêng `updateServerUrl` trong Cài đặt. Tách `api.` hay
@@ -65,7 +66,7 @@ và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 ```bash
 cd ~/zca-platform
 docker compose up -d                    # lần đầu: dựng ảnh api + web tại chỗ (vài phút) rồi lên mongo → api → web → edge
-docker compose ps                        # 4 container: zca-mongo, zca-api, zca-web (healthy), zca-edge — thiếu zca-edge là chưa có cổng vào
+docker compose ps                        # 5 container: zca-mongo, zca-api, zca-web, zca-admin (healthy), zca-edge — thiếu zca-edge là chưa có cổng vào
 docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên
 ```
 
@@ -83,8 +84,8 @@ Service `edge` (Caddy, cấu hình `deploy/caddy/Caddyfile`) xin chứng chỉ L
 | Tên miền | Xử lý |
 |---|---|
 | `www.volcanion.vn` | 301 → `https://volcanion.vn/...` |
-| `volcanion.vn` | → web; `/admin*` và `/api/admin/*` trả **404**; tệp tải lên tối đa 10 MB; HSTS |
-| `admin.volcanion.vn` | `/` → 302 `/admin`; → web; tệp tải lên tối đa 600 MB (bộ cài); `X-Robots-Tag: noindex` |
+| `volcanion.vn` | → container `web`; `/admin*` và `/api/admin/*` trả **404**; tệp tải lên tối đa 10 MB; HSTS |
+| `admin.volcanion.vn` | → container `admin` (app riêng); `/dang-ky` → `/dang-nhap`, `/api/auth/register` **404**; tệp tải lên tối đa 600 MB; `noindex` |
 | `http://…` | 308 → https |
 
 Điều kiện để xin được chứng chỉ: DNS của cả 3 tên đã trỏ về máy **trước** khi `up`, cổng 80/443 tới được từ Internet. Chưa
@@ -92,7 +93,7 @@ trỏ DNS mà đã `up` thì Caddy chỉ báo lỗi và thử lại theo lịch 
 Thử trên máy dev: `.env` để `DOMAIN=localhost`, `ADMIN_DOMAIN=admin.localhost` ⇒ Caddy dùng chứng chỉ nội bộ tự ký, không gọi
 Let's Encrypt (`curl -k --resolve admin.localhost:443:127.0.0.1 https://admin.localhost/`).
 
-**Máy chủ đã có nginx riêng?** Chạy `docker compose up -d mongo api web` (không kéo `edge`) và dùng hai file trong `deploy/nginx/`
+**Máy chủ đã có nginx riêng?** Chạy `docker compose up -d mongo api web admin` (không kéo `edge`) và dùng hai file trong `deploy/nginx/`
 (`volcanion.vn.conf` HTTP + ACME webroot, `volcanion.vn-ssl.conf` hai khối 443) với certbot của máy chủ — nội dung điều hướng
 tương đương bảng trên; nginx trỏ về `127.0.0.1:4790`.
 
@@ -122,8 +123,8 @@ cd ~/zca-platform && bash deploy/import-data.sh ~/platform-YYYYMMDD-HHMM.tar.gz
 Sau import, tài khoản admin có sẵn là các email trong `ADMIN_EMAILS` đã đăng ký ở máy cũ (mật khẩu giữ nguyên). Tài khoản thử
 `test@meddental.vn` cũng đi theo — đổi mật khẩu hoặc xoá ở admin → Người dùng trước khi mở cho người khác dùng.
 
-**Không chuyển dữ liệu mà chỉ cần đẩy bản cài?** Đăng ký trên `https://volcanion.vn/dang-ky` bằng email có trong `ADMIN_EMAILS`
-(tự thành admin), rồi từ máy dev: `bash platform/deploy/publish-release.sh 0.0.2 https://volcanion.vn` — script hỏi email/mật khẩu
+**Không chuyển dữ liệu mà chỉ cần đẩy bản cài?** Đăng ký trên **trang chính** `https://volcanion.vn/dang-ky` bằng email có trong
+`ADMIN_EMAILS` (tự thành admin; khu quản trị không có đăng ký), rồi từ máy dev: `bash platform/deploy/publish-release.sh 0.0.2 https://volcanion.vn` — script hỏi email/mật khẩu
 admin của bạn (nhập kín), tải ba tệp trong `dist/` lên và Xuất bản. Dùng script này cho mọi bản sau.
 
 ## 7. Kiểm tra sau triển khai
@@ -132,9 +133,10 @@ admin của bạn (nhập kín), tải ba tệp trong `dist/` lên và Xuất b�
 curl -s https://volcanion.vn/health
 curl -s "https://volcanion.vn/api/releases/latest?platform=darwin&arch=arm64" | head -c 300
 curl -sI https://volcanion.vn/admin | head -1              # 404 — khu quản trị không phục vụ ở tên miền chính
-curl -sI https://admin.volcanion.vn/ | head -3              # 302 → /admin
+curl -sI https://admin.volcanion.vn/ | head -1              # 200 — app quản trị (tiêu đề "Quản trị · Zalo Chat Assistant")
+curl -sI https://admin.volcanion.vn/dang-ky | head -1       # 302 → /dang-nhap (không đăng ký ở khu quản trị)
 curl -sI http://volcanion.vn/ | head -1                     # 308 → https
-ss -ltnp | grep -E '4789|4790'                              # phải là 127.0.0.1:… (không lộ ra ngoài)
+ss -ltnp | grep -E '4789|4790|4792'                         # phải là 127.0.0.1:… (không lộ ra ngoài)
 ```
 
 Mở `https://volcanion.vn/tai-ve` trên máy Mac và máy Windows để xem trang tự nhận diện nền tảng; đăng nhập
@@ -156,6 +158,7 @@ Mở `https://volcanion.vn/tai-ve` trên máy Mac và máy Windows để xem tra
 # Cập nhật mã (sau rsync lại thư mục platform/): vẫn một lệnh — tự dựng lại ảnh có mã đổi
 docker compose up -d
 # Dừng / chạy lại cả bộ (giữ dữ liệu): docker compose down   |   docker compose up -d
+# Đổi deploy/caddy/Caddyfile: docker compose up -d --force-recreate edge   (Caddy chỉ đọc cấu hình lúc khởi động)
 # Sao lưu định kỳ (cron hằng ngày): mongodump + /data
 docker exec zca-mongo mongodump --quiet --db zca --gzip --archive=/tmp/zca.dump && docker cp zca-mongo:/tmp/zca.dump ~/backup/zca-$(date +%F).dump
 docker run --rm --volumes-from zca-api -v ~/backup:/out alpine:3 tar czf /out/data-$(date +%F).tgz -C /data .
