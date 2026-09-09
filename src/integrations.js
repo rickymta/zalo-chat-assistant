@@ -54,6 +54,11 @@ export class IntegrationStore {
   }
 
   set(kind, patch = {}) {
+    this.data[kind] = this.buildNext(kind, patch); this.save();
+    return this.view(kind);
+  }
+  /** Dựng bản cấu hình mới từ bản đã lưu + thay đổi (xác thực đầu vào, mã hoá bí mật) — KHÔNG ghi đĩa. */
+  buildNext(kind, patch = {}) {
     if (!KINDS.includes(kind)) throw Object.assign(new Error('Loại cấu hình không hợp lệ.'), { status: 400 });
     const cur = { ...DEFAULTS[kind], ...(this.data[kind] ?? {}) };
     const next = { ...cur };
@@ -89,13 +94,18 @@ export class IntegrationStore {
         next.botToken = this.enc(patch.botToken.trim());
       }
     }
-    this.data[kind] = next; this.save();
-    return this.view(kind);
+    return next;
   }
+  /** Giải mã bí mật của một bản cấu hình (đã lưu hoặc ứng viên). */
+  decrypted(kind, raw) { const d = { ...DEFAULTS[kind], ...raw }; for (const f of SECRET_FIELDS[kind] ?? []) d[f] = this.dec(d[f]); return d; }
 
-  /** Kiểm tra kết nối bằng chính khoá đã lưu. Không đổi trạng thái gì ở phía dịch vụ (trừ gửi tin thử bot khi được yêu cầu). */
-  async test(kind, { sendTest = false } = {}) {
-    const d = this.secrets(kind);
+  /**
+   * Kiểm tra kết nối. Có `patch` (giá trị đang gõ trên biểu mẫu) thì kiểm bằng ứng viên = bản đã lưu + patch (ô bí mật để trống
+   * = dùng bí mật đã lưu); kết nối ĐƯỢC mới ghi đĩa ("kiểm tra trước, lưu sau"), hỏng thì bản đã lưu giữ nguyên.
+   * Không có `patch` thì kiểm bằng bản đã lưu. Không đổi trạng thái gì ở phía dịch vụ (trừ gửi tin thử bot khi được yêu cầu). */
+  async test(kind, { sendTest = false, patch = null } = {}) {
+    const next = patch ? this.buildNext(kind, patch) : (this.data[kind] ?? {});
+    const d = this.decrypted(kind, next);
     const t0 = Date.now();
     let result;
     try {
@@ -103,7 +113,8 @@ export class IntegrationStore {
       else if (kind === 'lark') result = await testLark(d);
       else if (kind === 'digest') result = await testBot(d, sendTest);
       else throw new Error('Loại cấu hình không hợp lệ.');
-      result = { ok: true, ...result };
+      result = { ok: true, ...result, saved: !!patch };
+      if (patch) { this.data[kind] = next; this.save(); }
     } catch (err) {
       result = { ok: false, error: friendlyError(err) };
     }

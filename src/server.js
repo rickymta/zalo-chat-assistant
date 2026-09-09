@@ -377,7 +377,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/integrations', withUi(async () => { needInt(); return integrations.viewAll(); }));
   app.get('/api/integrations/:kind', withUi(async (req) => { needInt(); return integrations.view(req.params.kind); }));
   app.post('/api/integrations/:kind', withUi(async (req) => { needInt(); const v = integrations.set(req.params.kind, req.body ?? {}); broadcast('integrations', integrations.viewAll()); return v; }));
-  app.post('/api/integrations/:kind/test', withUi(async (req) => { needInt(); const v = await integrations.test(req.params.kind, { sendTest: !!req.body?.sendTest }); broadcast('integrations', integrations.viewAll()); return v; }));
+  // Thân request = giá trị đang gõ trên biểu mẫu (+ sendTest): kiểm bằng giá trị đó, OK mới lưu. Thân rỗng = kiểm bản đã lưu.
+  app.post('/api/integrations/:kind/test', withUi(async (req) => { needInt(); const { sendTest, ...patch } = req.body ?? {}; const v = await integrations.test(req.params.kind, { sendTest: !!sendTest, patch: Object.keys(patch).length ? patch : null }); broadcast('integrations', integrations.viewAll()); return v; }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {

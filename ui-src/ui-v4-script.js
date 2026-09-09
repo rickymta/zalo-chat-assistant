@@ -848,7 +848,7 @@
       + '<div>Quy trình theo dõi</div><div>' + (l.approvalCodes?.length ? l.approvalCodes.length + ' mã' : 'tất cả') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(l.lastTest) + '</div>';
     $('#digestKv').innerHTML = '<div>Trạng thái</div><div>' + (g.configured ? (g.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có bot token / chat ID') + '</div>'
-      + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' + (g.botTokenHint ? ' · <code>' + esc(g.botTokenHint) + '</code>' : '') : 'chưa có — dán token rồi bấm <b>Lưu cấu hình</b> trước khi kiểm tra') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
+      + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' + (g.botTokenHint ? ' · <code>' + esc(g.botTokenHint) + '</code>' : '') : 'chưa có — dán token và chat ID rồi bấm <b>Kiểm tra bot</b> (kết nối được sẽ tự lưu)') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
       + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(g.voice || '') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>';
     if (!INT_FILLED.email) fillIntegration('email', e);
@@ -863,16 +863,15 @@
       catch (err) { msg.textContent = '❌ ' + err.message; }
     });
   }
-  /** Kiểm tra = LƯU những gì đang có trên biểu mẫu rồi mới kiểm, để người dùng không phải nhớ bấm Lưu trước (ô bí mật để trống thì giữ bí mật đã lưu). */
+  /** Kiểm tra TRƯỚC, lưu SAU: gửi đúng giá trị đang gõ trên biểu mẫu đi kiểm; kết nối được thì máy chủ lưu luôn, hỏng thì giữ nguyên ô đang gõ để sửa tiếp. */
   async function intTest(kind, btn, extra) {
-    const msg = $(INT_MSG[kind]); msg.textContent = 'Đang lưu và kiểm tra…';
+    const msg = $(INT_MSG[kind]); msg.textContent = 'Đang kiểm tra với giá trị trên biểu mẫu…';
     await busy(btn, 'Đang kiểm tra…', async () => {
       try {
-        const saved = await api('/api/integrations/' + kind, { method: 'POST', body: readIntegration(kind) });
-        state.integrations = { ...(state.integrations || {}), [kind]: saved }; INT_FILLED[kind] = false; renderIntegrations();
-        const v = await api('/api/integrations/' + kind + '/test', { method: 'POST', body: extra || {} });
-        state.integrations = { ...(state.integrations || {}), [kind]: v }; renderIntegrations(); renderRail();
-        msg.textContent = v.lastTest?.ok ? '✅ Đã lưu, kết nối được.' + (v.lastTest.sent ? ' Đã gửi tin thử vào chat.' : '') : '❌ ' + (v.lastTest?.error || 'lỗi');
+        const v = await api('/api/integrations/' + kind + '/test', { method: 'POST', body: { ...readIntegration(kind), ...(extra || {}) } });
+        state.integrations = { ...(state.integrations || {}), [kind]: v };
+        if (v.lastTest?.ok) { INT_FILLED[kind] = false; renderIntegrations(); renderRail(); msg.textContent = '✅ Kết nối được — đã lưu cấu hình.' + (v.lastTest.sent ? ' Đã gửi tin thử vào chat.' : ''); }
+        else { renderIntegrations(); msg.textContent = '❌ ' + (v.lastTest?.error || 'lỗi') + ' Chưa lưu — sửa rồi kiểm tra lại.'; }
       } catch (err) { msg.textContent = '❌ ' + err.message; }
     });
   }
