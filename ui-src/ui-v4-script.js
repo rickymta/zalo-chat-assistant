@@ -790,7 +790,15 @@
     const t = state.telegram || {}; const watched = new Set((t.watched || []).map((w) => w.id));
     const TYPE = { group: '👥 nhóm', channel: '📢 kênh', user: '👤 riêng' };
     $('#tgDialogs').innerHTML = (tgDialogs || []).length ? tgDialogs.map((d) => '<label><input type="checkbox" data-id="' + esc(d.id) + '" data-title="' + esc(d.title) + '"' + (watched.has(d.id) || d.watched ? ' checked' : '') + '><span>' + esc(d.title) + '</span><span class="meta">' + (TYPE[d.type] || d.type) + (d.members ? ' · ' + num(d.members) : '') + (d.unread ? ' · ' + d.unread + ' chưa đọc' : '') + '</span></label>').join('') : '<div class="empty small">Bấm "Tải danh sách nhóm".</div>';
+    tgUpdateCount(); if ($('#tgFilter').value) $('#tgFilter').oninput();
   }
+  /** Chọn tất cả / bỏ chọn chỉ tác động lên các dòng đang hiện (sau khi lọc theo tên); đếm số đã chọn dưới danh sách. */
+  const tgVisibleBoxes = () => [...$('#tgDialogs').querySelectorAll('label:not([hidden]) input[type=checkbox]')];
+  const tgUpdateCount = () => { const all = $('#tgDialogs').querySelectorAll('input[type=checkbox]'); const on = $('#tgDialogs').querySelectorAll('input[type=checkbox]:checked'); $('#tgCount').textContent = all.length ? 'Đã chọn ' + on.length + '/' + all.length : ''; };
+  $('#btnTgAll').onclick = () => { tgVisibleBoxes().forEach((b) => { b.checked = true; }); tgUpdateCount(); };
+  $('#btnTgNone').onclick = () => { tgVisibleBoxes().forEach((b) => { b.checked = false; }); tgUpdateCount(); };
+  $('#tgDialogs').addEventListener('change', tgUpdateCount);
+  $('#tgFilter').oninput = () => { const q = $('#tgFilter').value.trim().toLowerCase(); $('#tgDialogs').querySelectorAll('label').forEach((l) => { l.hidden = !!q && !(l.querySelector('input')?.dataset.title || '').toLowerCase().includes(q); }); };
   const tgCall = async (path, body, okMsg) => { try { state.telegram = await api(path, { method: 'POST', body }); renderTelegramSettings(); if (okMsg) toast(okMsg); } catch (err) { toast(err.message); } };
   $('#btnTgConfig').onclick = () => tgCall('/api/telegram/config', { apiId: $('#tgApiId').value.trim(), apiHash: $('#tgApiHash').value.trim() }, 'Đã lưu khoá API Telegram.');
   $('#btnTgLogin').onclick = () => tgCall('/api/telegram/login', { phone: $('#tgPhone').value.trim() });
@@ -855,11 +863,17 @@
       catch (err) { msg.textContent = '❌ ' + err.message; }
     });
   }
+  /** Kiểm tra = LƯU những gì đang có trên biểu mẫu rồi mới kiểm, để người dùng không phải nhớ bấm Lưu trước (ô bí mật để trống thì giữ bí mật đã lưu). */
   async function intTest(kind, btn, extra) {
-    const msg = $(INT_MSG[kind]); msg.textContent = 'Đang kiểm tra bằng khoá ĐÃ LƯU… (chưa lưu thì bấm Lưu trước)';
+    const msg = $(INT_MSG[kind]); msg.textContent = 'Đang lưu và kiểm tra…';
     await busy(btn, 'Đang kiểm tra…', async () => {
-      try { const v = await api('/api/integrations/' + kind + '/test', { method: 'POST', body: extra || {} }); state.integrations = { ...(state.integrations || {}), [kind]: v }; renderIntegrations(); msg.textContent = v.lastTest?.ok ? '✅ Kết nối được.' + (v.lastTest.sent ? ' Đã gửi tin thử vào chat.' : '') : '❌ ' + (v.lastTest?.error || 'lỗi'); }
-      catch (err) { msg.textContent = '❌ ' + err.message; }
+      try {
+        const saved = await api('/api/integrations/' + kind, { method: 'POST', body: readIntegration(kind) });
+        state.integrations = { ...(state.integrations || {}), [kind]: saved }; INT_FILLED[kind] = false; renderIntegrations();
+        const v = await api('/api/integrations/' + kind + '/test', { method: 'POST', body: extra || {} });
+        state.integrations = { ...(state.integrations || {}), [kind]: v }; renderIntegrations(); renderRail();
+        msg.textContent = v.lastTest?.ok ? '✅ Đã lưu, kết nối được.' + (v.lastTest.sent ? ' Đã gửi tin thử vào chat.' : '') : '❌ ' + (v.lastTest?.error || 'lỗi');
+      } catch (err) { msg.textContent = '❌ ' + err.message; }
     });
   }
   $('#btnEmailSave').onclick = (e) => intSave('email', e.currentTarget);

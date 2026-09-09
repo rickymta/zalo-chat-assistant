@@ -155,7 +155,7 @@ async function testBot(d, sendTest) {
   const base = `https://api.telegram.org/bot${d.botToken}`;
   const me = await fetch(`${base}/getMe`, { signal: AbortSignal.timeout(15000) }).then((r) => r.json()).catch((e) => { throw new Error(`Không gọi được Telegram: ${e?.message ?? e}`); });
   if (!me.ok) {
-    if (me.error_code === 401) throw new Error(`Telegram không nhận token này (401 Unauthorized). Token đang lưu: ${tokenHint(d.botToken)} — mở BotFather → /mybots → API Token, so từng ký tự đầu/cuối và độ dài (thường 35 ký tự sau dấu hai chấm); thiếu hay dư một ký tự khi sao chép, hoặc đã bấm /revoke để cấp token mới, đều gây 401. Dán lại token rồi bấm Lưu cấu hình trước khi kiểm tra.`);
+    if (me.error_code === 401) throw new Error(`Telegram không nhận token này (401). Đang lưu: ${tokenHint(d.botToken)} — so với BotFather (/mybots → API Token, thường 35 ký tự sau dấu hai chấm): sao chép thiếu/dư một ký tự hay đã /revoke đều gây 401. Dán lại token rồi bấm Kiểm tra bot.`);
     throw new Error(`Telegram từ chối token (${me.error_code}): ${me.description}`);
   }
   const out = { bot: me.result?.username ? `@${me.result.username}` : me.result?.first_name, sent: false };
