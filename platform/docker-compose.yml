@@ -117,9 +117,13 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      # envsubst thay ${DOMAIN}/${ADMIN_DOMAIN} trong deploy/nginx-edge/templates/*.template lúc khởi động.
+      # envsubst thay ${DOMAIN}/${ADMIN_DOMAIN}/${MAIL_DOMAIN} trong deploy/nginx-edge/templates/*.template lúc khởi động.
       DOMAIN: ${DOMAIN:-localhost}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.${DOMAIN:-localhost}}
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-mail.${DOMAIN:-localhost}}
+    # Cho nginx trong container gọi được dịch vụ chạy TRỰC TIẾP trên máy chủ (vd 8090) qua host.docker.internal.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./deploy/nginx-edge/templates:/etc/nginx/templates:ro
       - certbot-www:/var/www/certbot

@@ -1,0 +1,23 @@
+# ── Tên miền phụ để TEST email: mail.volcanion.vn -> dịch vụ ở 8090.
+# LƯU Ý: nginx chạy TRONG container, nên KHÔNG dùng 127.0.0.1 (đó là chính container). Chọn một trong hai:
+#   • Dịch vụ 8090 chạy TRỰC TIẾP trên máy chủ  -> dùng host.docker.internal (đã mở qua extra_hosts của service edge).
+#   • Dịch vụ 8090 là một CONTAINER cùng compose -> đổi thành tên service, ví dụ proxy_pass http://mail:8090;
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${MAIL_DOMAIN};
+
+    # Cho certbot kiểm chứng nếu sau này muốn bật HTTPS cho tên miền này.
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+
+    client_max_body_size 50m;
+
+    location / {
+        proxy_pass         http://host.docker.internal:8090;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
