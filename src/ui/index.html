@@ -299,7 +299,7 @@
   .zapp .main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
   /* Thanh điều hướng trái */
   .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
-  .zapp.mac .rail { padding-top: 44px; }
+  .zapp.mac .rail { width: 82px; padding-top: 52px; }   /* macOS: chừa chỗ cho 3 đèn giao thông nằm GỌN trong rail (không tràn sang header) */
   .rail-logo { width: 34px; height: 34px; margin-bottom: 10px; }
   .applogo { width: 100%; height: 100%; display: block; }
   .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
@@ -322,7 +322,7 @@
   .convcol .chip.src { background: #eef3fb; }
   .convcol .chip.src.active { background: var(--primary); color: #fff; }
   .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; min-height: 58px; -webkit-app-region: drag; }
-  .zapp.mac .topbar { padding-left: 14px; }   /* đèn giao thông nằm trên rail (rail có padding-top) */
+  .zapp.mac .topbar { padding-left: 16px; }   /* đèn giao thông đã nằm gọn trong rail rộng 82px */
   .topbar button, .topbar select, .topbar input, .topbar .pill { -webkit-app-region: no-drag; }
   .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .brand-mini .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; }
@@ -353,6 +353,10 @@
   .int-form .acts .muted { max-width: 100%; }
   .kv .ok { color: #15803d; } .kv .bad { color: #b91c1c; }
   .int-form details.adv summary { cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+  .rp-datenav { display: flex; align-items: center; gap: 6px; -webkit-app-region: no-drag; }
+  .rp-datenav select { height: 34px; }
+  #viewReport .settings-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+  #viewReport #rpBody { overflow: visible; padding: 0; background: transparent; }
   .digest-preview { white-space: pre-wrap; font: 13px/1.45 -apple-system, system-ui, sans-serif; background: #f6f8fc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
@@ -758,7 +762,7 @@
     <div class="rail-logo" title="Work Assistant"><svg class="applogo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="lgRail" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a66ff"/><stop offset="1" stop-color="#22b8ff"/></linearGradient></defs><rect x="3" y="3" width="94" height="94" rx="24" fill="url(#lgRail)"/><path fill="#fff" d="M27 26 h34 a11 11 0 0 1 11 11 v20 a11 11 0 0 1 -11 11 H43 l-11 10 a2.3 2.3 0 0 1 -3.9 -1.7 v-8.6 h-1 a11 11 0 0 1 -11 -11 V37 a11 11 0 0 1 11 -11 z"/><g fill="#0a66ff"><circle cx="33" cy="47" r="3.4"/><circle cx="44" cy="47" r="3.4"/><circle cx="55" cy="47" r="3.4"/></g><path fill="#fff" stroke="#2f6fed" stroke-width="2.4" stroke-linejoin="round" d="M70 26 c1.9 8 4.4 10.5 12.4 12.4 c-8 1.9 -10.5 4.4 -12.4 12.4 c-1.9 -8 -4.4 -10.5 -12.4 -12.4 c8 -1.9 10.5 -4.4 12.4 -12.4 z"/></svg></div>
     <button class="rail-btn active" data-view="chat" title="Hội thoại">💬<span>Hội thoại</span></button>
     <button class="rail-btn" data-view="connections" title="Kết nối &amp; khoá cấu hình">🔌<span>Kết nối</span></button>
-    <button class="rail-btn" id="btnReportRail" title="Báo cáo ngày">📊<span>Báo cáo</span></button>
+    <button class="rail-btn" id="btnReportRail" data-view="report" title="Báo cáo ngày">📊<span>Báo cáo</span></button>
     <button class="rail-btn" data-view="settings" id="btnSettings" title="Cài đặt">⚙️<span>Cài đặt</span></button>
     <div class="rail-foot"><span class="rail-dot" id="railAiDot" title="Bộ máy AI"></span><span id="railVer"></span></div>
   </nav>
@@ -970,6 +974,17 @@
         <p class="muted small" style="margin-top:12px">Các tuỳ chọn ở mục "Gói dữ liệu" và "Tuỳ chọn" chỉ có hiệu lực sau khi bấm Lưu tuỳ chọn.</p>
       </div>
     </section>
+
+    <!-- ═══ MÀN BÁO CÁO NGÀY (màn riêng, thay hộp thoại) ═══ -->
+    <section class="page" id="viewReport" hidden>
+      <div class="page-inner">
+        <div class="page-head"><div><h1>📊 Báo cáo ngày</h1><p class="muted" id="rpSource"></p></div>
+          <div class="rp-datenav"><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button></div>
+        </div>
+        <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở</span></div>
+        <div class="settings-body page-cards" id="rpBody"><div class="empty">Đang tải…</div></div>
+      </div>
+    </section>
   </div><!-- /.main -->
 </div>
 
@@ -989,12 +1004,6 @@
   <div class="img-bar"><span class="small" id="imgName"></span><span class="small faint" id="imgCount"></span><span class="grow"></span><button type="button" class="sm" id="imgZoom">Kích cỡ thật</button><button type="button" class="sm" id="imgCopyUrl">Sao chép liên kết</button><button type="button" class="sm" id="imgOpen">Mở bằng trình duyệt</button></div>
 </div></dialog>
 
-<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
-<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
-  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
-  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
-</div></dialog>
 
 <!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
 
@@ -1646,7 +1655,7 @@
       ((cl.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b><ul>' + cl.openQuestions.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
       (lv === 'full' && (cl.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '');
     box.innerHTML = head + body;
-    $('#btnSideReport').onclick = openReport;
+    $('#btnSideReport').onclick = () => showView('report');
   }
   $('#sideClaude').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   // Ẩn/hiện cột trợ lý — nhớ lựa chọn; màn hẹp (< 1000px) mặc định ẩn.
@@ -1934,14 +1943,15 @@
     } catch (err) { msg.textContent = '❌ ' + err.message; }
   }); };
   // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
-  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
+  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt', report: 'Báo cáo ngày' };
   function showView(name) {
     state.view = name;
-    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings';
+    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings'; $('#viewReport').hidden = name !== 'report';
     $$('.chat-only').forEach((el) => { el.hidden = name !== 'chat'; });
     $$('.rail-btn[data-view]').forEach((btn) => btn.classList.toggle('active', btn.dataset.view === name));
     $('#viewTitle').textContent = VIEW_TITLE[name] || '';
-    if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
+    if (name === 'report') { void loadReportView(); }
+    else if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
     else if (vlist.scroll) applyCols();
   }
   function renderRail() {
@@ -1954,7 +1964,6 @@
       + (state.integrations ? ['email', 'lark', 'digest'].map((k) => { const d = state.integrations[k] || {}; const label = { email: 'Email', lark: 'Lark', digest: 'Bot bản tin' }[k]; return '<span class="pill ' + (d.configured && d.enabled ? 'ok' : '') + '">' + label + ' ' + (d.configured ? (d.enabled ? 'đang bật' : 'đã cấu hình') : 'chưa cấu hình') + '</span>'; }).join('') : '');
   }
   $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
-  $('#btnReportRail').onclick = openReport;
   function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -2002,11 +2011,11 @@
   function segHtml(id) { return '<div class="seg sm" id="' + id + '">' + ['full', 'medium', 'brief'].map((l) => '<button type="button" data-level="' + l + '" class="' + (report.level === l ? 'active' : '') + '" title="' + esc(LEVEL_LABEL[l]) + '">' + LEVEL_SHORT[l] + '</button>').join('') + '</div>'; }
   function renderLevelSeg() { $$('#rpLevel button').forEach((b) => { b.classList.toggle('active', b.dataset.level === report.level); b.title = LEVEL_LABEL[b.dataset.level]; }); }
   /** Một mức dùng chung cho hộp Báo cáo và cột trợ lý; nhớ theo máy. */
-  function setLevel(l) { if (!['full', 'medium', 'brief'].includes(l)) return; report.level = l; try { localStorage.setItem('zca.reportLevel', l); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data && $('#dlgReport').open) renderReportBody(report.data); if (chat.key) renderSideClaude(); }
+  function setLevel(l) { if (!['full', 'medium', 'brief'].includes(l)) return; report.level = l; try { localStorage.setItem('zca.reportLevel', l); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data && !$('#viewReport').hidden) renderReportBody(report.data); if (chat.key) renderSideClaude(); }
   $('#rpLevel').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   const fmtDate = (d) => d.split('-').reverse().join('/');
-  async function openReport() {
-    $('#dlgReport').showModal(); $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
+  async function loadReportView() {
+    $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
     try { const d = await api('/api/report/dates'); report.dates = d.dates; report.today = d.today; if (!report.date) report.date = d.dates.includes(d.today) ? d.today : (d.dates[0] || d.today); renderDateSelect(); await loadReport(); } catch (err) { $('#rpBody').innerHTML = '<div class="empty">' + esc(err.message) + '</div>'; }
   }
   function renderDateSelect() {
@@ -2055,7 +2064,7 @@
   $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
   const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
   $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);
-  $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; $('#dlgReport').close(); openConversation(key); });
+  $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; showView('chat'); openConversation(key); });
   $('#rpCopy').onclick = async () => {
     const r = report.data; if (!r) return;
     const lv = report.level; const o = r.overview;

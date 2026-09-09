@@ -617,7 +617,7 @@
       ((cl.openQuestions || []).length ? '<div class="rp-list ask"><b>Chưa trả lời:</b><ul>' + cl.openQuestions.map((k) => '<li>' + esc(k) + '</li>').join('') + '</ul></div>' : '') +
       (lv === 'full' && (cl.topics || []).length ? '<div class="rp-tags">' + cl.topics.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>' : '');
     box.innerHTML = head + body;
-    $('#btnSideReport').onclick = openReport;
+    $('#btnSideReport').onclick = () => showView('report');
   }
   $('#sideClaude').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   // Ẩn/hiện cột trợ lý — nhớ lựa chọn; màn hẹp (< 1000px) mặc định ẩn.
@@ -905,14 +905,15 @@
     } catch (err) { msg.textContent = '❌ ' + err.message; }
   }); };
   // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
-  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
+  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt', report: 'Báo cáo ngày' };
   function showView(name) {
     state.view = name;
-    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings';
+    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings'; $('#viewReport').hidden = name !== 'report';
     $$('.chat-only').forEach((el) => { el.hidden = name !== 'chat'; });
     $$('.rail-btn[data-view]').forEach((btn) => btn.classList.toggle('active', btn.dataset.view === name));
     $('#viewTitle').textContent = VIEW_TITLE[name] || '';
-    if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
+    if (name === 'report') { void loadReportView(); }
+    else if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
     else if (vlist.scroll) applyCols();
   }
   function renderRail() {
@@ -925,7 +926,6 @@
       + (state.integrations ? ['email', 'lark', 'digest'].map((k) => { const d = state.integrations[k] || {}; const label = { email: 'Email', lark: 'Lark', digest: 'Bot bản tin' }[k]; return '<span class="pill ' + (d.configured && d.enabled ? 'ok' : '') + '">' + label + ' ' + (d.configured ? (d.enabled ? 'đang bật' : 'đã cấu hình') : 'chưa cấu hình') + '</span>'; }).join('') : '');
   }
   $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
-  $('#btnReportRail').onclick = openReport;
   function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -973,11 +973,11 @@
   function segHtml(id) { return '<div class="seg sm" id="' + id + '">' + ['full', 'medium', 'brief'].map((l) => '<button type="button" data-level="' + l + '" class="' + (report.level === l ? 'active' : '') + '" title="' + esc(LEVEL_LABEL[l]) + '">' + LEVEL_SHORT[l] + '</button>').join('') + '</div>'; }
   function renderLevelSeg() { $$('#rpLevel button').forEach((b) => { b.classList.toggle('active', b.dataset.level === report.level); b.title = LEVEL_LABEL[b.dataset.level]; }); }
   /** Một mức dùng chung cho hộp Báo cáo và cột trợ lý; nhớ theo máy. */
-  function setLevel(l) { if (!['full', 'medium', 'brief'].includes(l)) return; report.level = l; try { localStorage.setItem('zca.reportLevel', l); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data && $('#dlgReport').open) renderReportBody(report.data); if (chat.key) renderSideClaude(); }
+  function setLevel(l) { if (!['full', 'medium', 'brief'].includes(l)) return; report.level = l; try { localStorage.setItem('zca.reportLevel', l); } catch { /* bỏ qua */ } renderLevelSeg(); if (report.data && !$('#viewReport').hidden) renderReportBody(report.data); if (chat.key) renderSideClaude(); }
   $('#rpLevel').addEventListener('click', (e) => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level); });
   const fmtDate = (d) => d.split('-').reverse().join('/');
-  async function openReport() {
-    $('#dlgReport').showModal(); $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
+  async function loadReportView() {
+    $('#rpBody').innerHTML = '<div class="empty">Đang tải…</div>';
     try { const d = await api('/api/report/dates'); report.dates = d.dates; report.today = d.today; if (!report.date) report.date = d.dates.includes(d.today) ? d.today : (d.dates[0] || d.today); renderDateSelect(); await loadReport(); } catch (err) { $('#rpBody').innerHTML = '<div class="empty">' + esc(err.message) + '</div>'; }
   }
   function renderDateSelect() {
@@ -1026,7 +1026,7 @@
   $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
   const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
   $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);
-  $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; $('#dlgReport').close(); openConversation(key); });
+  $('#rpBody').addEventListener('click', (e) => { const el = e.target.closest('[data-openconv]'); if (!el) return; e.preventDefault(); const key = el.dataset.openconv; if (!key || key.startsWith('|')) return; showView('chat'); openConversation(key); });
   $('#rpCopy').onclick = async () => {
     const r = report.data; if (!r) return;
     const lv = report.level; const o = r.overview;

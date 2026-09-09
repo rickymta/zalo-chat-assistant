@@ -15,7 +15,7 @@ const css = `
   .zapp .main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
   /* Thanh điều hướng trái */
   .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
-  .zapp.mac .rail { padding-top: 44px; }
+  .zapp.mac .rail { width: 82px; padding-top: 52px; }   /* macOS: chừa chỗ cho 3 đèn giao thông nằm GỌN trong rail (không tràn sang header) */
   .rail-logo { width: 34px; height: 34px; margin-bottom: 10px; }
   .applogo { width: 100%; height: 100%; display: block; }
   .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
@@ -38,7 +38,7 @@ const css = `
   .convcol .chip.src { background: #eef3fb; }
   .convcol .chip.src.active { background: var(--primary); color: #fff; }
   .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; min-height: 58px; -webkit-app-region: drag; }
-  .zapp.mac .topbar { padding-left: 14px; }   /* đèn giao thông nằm trên rail (rail có padding-top) */
+  .zapp.mac .topbar { padding-left: 16px; }   /* đèn giao thông đã nằm gọn trong rail rộng 82px */
   .topbar button, .topbar select, .topbar input, .topbar .pill { -webkit-app-region: no-drag; }
   .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .brand-mini .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; }
@@ -69,6 +69,10 @@ const css = `
   .int-form .acts .muted { max-width: 100%; }
   .kv .ok { color: #15803d; } .kv .bad { color: #b91c1c; }
   .int-form details.adv summary { cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+  .rp-datenav { display: flex; align-items: center; gap: 6px; -webkit-app-region: no-drag; }
+  .rp-datenav select { height: 34px; }
+  #viewReport .settings-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+  #viewReport #rpBody { overflow: visible; padding: 0; background: transparent; }
   .digest-preview { white-space: pre-wrap; font: 13px/1.45 -apple-system, system-ui, sans-serif; background: #f6f8fc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
