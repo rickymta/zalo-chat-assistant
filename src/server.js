@@ -52,7 +52,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -77,6 +77,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('power', (d) => broadcast('power', d));
   events.on('update', (d) => broadcast('update', d));
   events.on('ai', (d) => broadcast('ai', d));
+  events.on('telegram', (d) => broadcast('telegram', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -107,7 +108,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   // ── Trạng thái tổng ──────────────────────────────────────────────────────────
   app.get('/api/state', async () => {
     const unlocked = security.unlocked;
-    const accounts = unlocked ? db.listAccounts().map((a) => ({
+    // Tài khoản Telegram (tg:) không phải Zalo — không đưa vào dải Zalo trên thanh trên (có mục riêng ở Cài đặt).
+    const accounts = unlocked ? db.listAccounts().filter((a) => !String(a.id).startsWith('tg:')).map((a) => ({
       id: a.id, displayName: a.display_name, avatarUrl: a.avatar_url, phone: a.phone,
       status: manager.isLive(a.id) ? (a.status === 'reconnecting' ? 'reconnecting' : 'connected') : a.status,
       lastError: a.last_error, hasSession: !!manager.readSession(a.id),
@@ -127,6 +129,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       power: power?.status() ?? null,
       update: updater?.status() ?? null,
       ai: ai ? { ...ai.engine.status(), pipeline: ai.pipeline.status() } : null,
+      telegram: telegram ? telegram.status() : null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -227,7 +230,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/conversations/:accountId/:threadId/read', async (req) => { const changed = db.markRead(req.params.accountId, req.params.threadId); if (changed) broadcast('status', { read: true }); return { ok: true }; });
 
   // ── Gửi tin & gợi ý của Claude ───────────────────────────────────────────────
-  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null })));
+  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => { if (String(req.params.accountId).startsWith('tg:')) throw Object.assign(new Error('Hội thoại Telegram hiện chỉ đọc — chưa gửi tin từ ứng dụng.'), { status: 400 }); return manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null }); }));
   // Thả cảm xúc như Zalo: 6 cảm xúc chuẩn; icon rỗng = bỏ cảm xúc của mình.
   const REACTION_ICONS = ['/-heart', '/-strong', ':>', ':o', ':-((', ':-h'];
   // Sticker Zalo, ảnh/GIF/tệp từ máy, GIF Tenor
@@ -353,6 +356,19 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/ai/model/cancel', withUi(async () => { needAi(); ai.engine.cancelDownload(); return aiStatus(); }));
   app.post('/api/ai/run', withUi(async (req) => { needAi(); void ai.pipeline.run({ reason: 'người dùng bấm', force: !!req.body?.force }); return aiStatus(); }));
   app.post('/api/ai/unload', withUi(async () => { needAi(); await ai.engine.unload('người dùng bấm'); return aiStatus(); }));
+
+  // ── Telegram tài khoản cá nhân (chỉ đọc) ─────────────────────────────────────
+  const needTg = () => { if (!telegram) throw Object.assign(new Error('Telegram chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/telegram/status', withUi(async () => { needTg(); return telegram.status(); }));
+  app.post('/api/telegram/config', withUi(async (req) => { needTg(); return telegram.configure({ apiId: req.body?.apiId, apiHash: req.body?.apiHash }); }));
+  app.post('/api/telegram/login', withUi(async (req) => { needTg(); return telegram.startLogin(req.body?.phone); }));
+  app.post('/api/telegram/login/code', withUi(async (req) => { needTg(); return telegram.submitCode(req.body?.code); }));
+  app.post('/api/telegram/login/password', withUi(async (req) => { needTg(); return telegram.submitPassword(req.body?.password); }));
+  app.post('/api/telegram/login/cancel', withUi(async () => { needTg(); return telegram.cancelLogin(); }));
+  app.post('/api/telegram/logout', withUi(async () => { needTg(); return telegram.logout(); }));
+  app.get('/api/telegram/dialogs', withUi(async () => { needTg(); return { items: await telegram.listDialogs() }; }));
+  app.post('/api/telegram/watch', withUi(async (req) => { needTg(); return telegram.setWatched({ chatIds: Array.isArray(req.body?.chatIds) ? req.body.chatIds : [], titles: req.body?.titles ?? {}, historyDays: req.body?.historyDays }); }));
+  app.post('/api/telegram/sync', withUi(async () => { needTg(); void telegram.syncHistory(); return telegram.status(); }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {

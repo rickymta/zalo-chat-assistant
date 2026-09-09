@@ -30,6 +30,10 @@ const css = `
   #reencryptBar { flex: none; padding: 8px 16px 0; }
   /* Thanh báo có bản cập nhật — nền xanh nhạt cho bản thường, dùng .topbar-warn (nền cảnh báo) cho bản bắt buộc. */
   #updateBar { flex: none; padding: 8px 16px 0; }
+  .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
+  .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
+  .tg-dialogs label:last-child { border-bottom: 0; }
+  .tg-dialogs .meta { margin-left: auto; color: #6b7280; font-size: 12px; white-space: nowrap; }
   .upd-prog { display: inline-block; width: 160px; height: 6px; background: #d5e0f2; border-radius: 4px; vertical-align: middle; margin: 0 8px; overflow: hidden; }
   .upd-prog i { display: block; height: 100%; background: #2f6fed; border-radius: 4px; transition: width .3s; }
   .topbar-info { background: var(--primary-soft); border: 1px solid #c7dcff; border-radius: 12px; padding: 10px 14px; font-size: 14px; }

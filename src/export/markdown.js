@@ -86,7 +86,8 @@ export async function exportMarkdown({
     lines.push('');
     lines.push(`- Loại: ${c.is_group ? 'Nhóm' : '1-1'} · Mã thread: \`${c.thread_id}\` · Mã tài khoản: \`${c.account_id}\``);
     lines.push(`- SĐT khách: ${c.phone || 'không có'}`);
-    lines.push(`- Tài khoản Zalo của mình: ${account?.display_name || c.account_id}${account?.phone ? ` (${account.phone})` : ''}`);
+    if (String(c.account_id).startsWith('tg:')) lines.push(`- Nguồn: TELEGRAM (tài khoản cá nhân, chỉ đọc) · Tài khoản của mình: ${account?.display_name || c.account_id}`);
+    else lines.push(`- Tài khoản Zalo của mình: ${account?.display_name || c.account_id}${account?.phone ? ` (${account.phone})` : ''}`);
     lines.push(`- Khoảng thời gian trong gói: ${formatVn(stats?.first_at)} → ${formatVn(stats?.last_at)}`);
     const other = c.is_group ? 'thành viên' : 'người kia';
     lines.push(`- Số tin trong gói: ${stats?.total ?? 0} (${other} ${stats?.inbound ?? 0} / mình ${stats?.outbound ?? 0}) · Tổng đã lưu: ${c.message_count}`);

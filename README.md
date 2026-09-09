@@ -122,6 +122,20 @@ nguyên. Dữ liệu không rời máy.
   hội thoại dài nhiều người — xem thử vài ngày rồi quyết định có đổi model/nâng RAM không.
 - Chạy bằng Node cũng dùng được (`npm start`), cần Node ≥ 20; bản đóng gói đã kèm thư viện Metal (`asarUnpack`).
 
+### Telegram: đọc các nhóm bằng tài khoản cá nhân (từ 0.1.0, chỉ đọc)
+
+*Cài đặt → Telegram*: nhập **API ID** và **API Hash** (tạo miễn phí tại my.telegram.org → API development tools), số điện thoại →
+**Đăng nhập Telegram** → nhập mã Telegram gửi tới điện thoại (và mật khẩu hai lớp nếu tài khoản có). Đăng nhập xong bấm **Tải danh
+sách nhóm**, tích các nhóm/kênh cần theo dõi, chọn số ngày lịch sử (mặc định 7) rồi **Theo dõi các nhóm đã chọn**.
+
+- Tin của các nhóm đó được lưu **cùng bảng, cùng mã hoá** với Zalo (tài khoản `tg:<id>`, hội thoại `tg:<id nhóm>`), nên hiện ngay
+  trong cột hội thoại (huy hiệu ✈️), vào gói `du-lieu/` (dòng "Nguồn: TELEGRAM"), được AI cục bộ tổng hợp và lên báo cáo ngày như
+  hội thoại Zalo. Ứng dụng **không gửi tin, không đánh dấu đã đọc** trên Telegram; ô soạn tin ở hội thoại Telegram bị khoá.
+- Phiên Telegram + khoá API lưu ở `data/telegram.json` (quyền 600, chuỗi phiên mã hoá bằng chuỗi mã hoá của tài khoản). Đăng xuất
+  Telegram xoá phiên nhưng giữ tin đã lưu. Lịch sử lấy tối đa 400 tin/nhóm cho lần đầu, sau đó chỉ lấy tin mới hơn tin cuối đã lưu;
+  Telegram giới hạn tần suất (FloodWait) thì ứng dụng tự chờ.
+- Không thấy nhóm trong danh sách: nhóm phải có ít nhất một tin và tài khoản phải đang là thành viên; kênh chỉ đọc cũng liệt kê được.
+
 ### Dùng thử trên máy khác không có Docker
 
 Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá

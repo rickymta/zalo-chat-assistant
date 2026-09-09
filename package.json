@@ -1,6 +1,6 @@
 {
   "name": "zalo-chat-assistant",
-  "version": "0.0.3",
+  "version": "0.1.0-beta.1",
   "private": true,
   "description": "Đăng nhập Zalo cá nhân bằng QR, lưu tin nhắn vào SQLite, xuất gói Markdown/Excel để Claude Cowork tổng hợp và đề xuất phản hồi",
   "type": "module",
@@ -26,6 +26,7 @@
     "fastify": "^5.2.0",
     "node-llama-cpp": "^3.20.0",
     "qrcode": "^1.5.4",
+    "telegram": "^2.26.22",
     "zca-js": "^2.1.2"
   },
   "build": {

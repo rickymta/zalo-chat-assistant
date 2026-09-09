@@ -94,3 +94,9 @@ họ. Mọi bí mật (phiên Telegram, mật khẩu IMAP, app_secret Lark, bot 
   | **Qwen3 4B Instruct 2507 Q4** | 121 s | 3/3 hợp lý, có bằng chứng | không | tự nhiên, đúng giọng |
 
   ⇒ **Mặc định Qwen3 4B Instruct 2507** (D1 cập nhật); Gemma 4 E2B giữ làm lựa chọn nhanh. Người dùng chốt "chọn model tốt nhất".
+  F1 hoàn tất, thử trọn vòng trên app đã cài (0.1.0-beta.1): mở khoá → cập nhật gói → model nạp 14 s → 2 hội thoại 100 s → báo cáo
+  ngày ghi "Tổng hợp bởi AI cục bộ (Qwen3…)", gợi ý hiện trong cột trợ lý.
+- 09/09/2026 (F2, đã viết mã, chờ người dùng đăng nhập thật): `src/telegram/manager.js` (gramjs; đăng nhập SĐT → mã → 2FA qua
+  callback chờ giao diện; danh sách nhóm; kéo lịch sử N ngày, tối đa 400 tin/nhóm, tiếp theo theo lastMsgId; nghe NewMessage; ghi
+  chung bảng `messages/conversations` với `tg:` ⇒ mọi luồng cũ dùng nguyên), route `/api/telegram/*`, chặn `/send` cho `tg:`, thẻ Cài
+  đặt Telegram, huy hiệu ✈️ ở cột hội thoại, dòng "Nguồn: TELEGRAM" trong gói. Thử với khoá API giả: máy trạng thái báo lỗi đúng và huỷ được.

@@ -117,6 +117,23 @@
       <div id="accountRows"></div>
     </div>
 
+    <div class="card" id="tgCard">
+      <h2>Telegram (tài khoản cá nhân, chỉ đọc)</h2>
+      <p class="desc">Ứng dụng đọc các nhóm Telegram bạn chọn để tổng hợp cùng Zalo; không gửi tin, không đánh dấu đã đọc. Cần <b>API ID</b> và <b>API Hash</b> miễn phí: đăng nhập <a href="https://my.telegram.org" target="_blank" rel="noopener">my.telegram.org</a> → API development tools → tạo ứng dụng (tên gì cũng được).</p>
+      <div class="kv" id="tgKv"></div>
+      <div class="form" id="tgConfigForm" style="margin-top:10px; max-width:520px">
+        <div class="row"><label class="fld grow"><span>API ID</span><input type="text" id="tgApiId" placeholder="1234567" inputmode="numeric"></label><label class="fld grow"><span>API Hash</span><input type="password" id="tgApiHash" placeholder="32 ký tự hex" autocomplete="off"></label><button class="sm" id="btnTgConfig" style="align-self:flex-end">Lưu khoá API</button></div>
+      </div>
+      <div class="row" id="tgLoginRow" style="margin-top:10px"><label class="fld"><span>Số điện thoại Telegram</span><input type="tel" id="tgPhone" placeholder="+84912345678" style="width:200px"></label><button class="primary" id="btnTgLogin" style="align-self:flex-end">Đăng nhập Telegram</button><button class="sm danger" id="btnTgLogout" style="align-self:flex-end" hidden>Đăng xuất Telegram</button></div>
+      <div class="row" id="tgCodeRow" hidden style="margin-top:8px"><label class="fld"><span>Mã xác nhận <span class="muted small" id="tgCodeHint"></span></span><input type="text" id="tgCode" placeholder="12345" inputmode="numeric" style="width:160px"></label><button class="primary" id="btnTgCode" style="align-self:flex-end">Gửi mã</button><button class="sm" id="btnTgCancel" style="align-self:flex-end">Huỷ</button></div>
+      <div class="row" id="tgPasswordRow" hidden style="margin-top:8px"><label class="fld"><span>Mật khẩu hai lớp <span class="muted small" id="tgPasswordHint"></span></span><input type="password" id="tgPassword" autocomplete="off" style="width:220px"></label><button class="primary" id="btnTgPassword" style="align-self:flex-end">Xác nhận</button><button class="sm" id="btnTgCancel2" style="align-self:flex-end">Huỷ</button></div>
+      <div id="tgWatchBox" hidden style="margin-top:12px">
+        <div class="row" style="margin-bottom:6px"><b class="grow">Nhóm theo dõi</b><span class="muted small">Lịch sử lấy về</span><input type="number" id="tgHistoryDays" min="1" max="90" style="width:70px"><span class="muted small">ngày</span><button class="sm" id="btnTgDialogs">Tải danh sách nhóm</button><button class="sm" id="btnTgSync">Đồng bộ lại</button></div>
+        <div id="tgDialogs" class="tg-dialogs"></div>
+        <div class="row" style="margin-top:8px"><button class="primary" id="btnTgWatch">Theo dõi các nhóm đã chọn</button><span class="small muted" id="tgMsg"></span></div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Bộ máy tổng hợp AI</h2>
       <p class="desc"><b>AI cục bộ</b>: model chạy ngay trong ứng dụng, không cần Claude, dữ liệu không rời máy; lần đầu cần tải model (~2 GB), máy 8 GB dùng model 3B. <b>Claude Cowork</b>: dùng lịch Cowork như trước (khi chọn AI cục bộ hãy tạm dừng lịch Cowork để hai bên không ghi đè nhau).</p>

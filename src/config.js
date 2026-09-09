@@ -18,6 +18,8 @@ export const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
 /** Ảnh/GIF/tệp người dùng gửi đi từ máy — bản sao để hiển thị lại trong ứng dụng (phục vụ qua /files/sent/). */
 /** Model GGUF cho bộ máy AI cục bộ (tải về lần đầu ~2 GB). */
 export const MODELS_DIR = path.join(DATA_DIR, 'models');
+/** Phiên + API ID/Hash Telegram (tài khoản cá nhân), quyền 600, chuỗi phiên mã hoá bằng chuỗi của tài khoản. */
+export const TELEGRAM_FILE = path.join(DATA_DIR, 'telegram.json');
 export const SENT_DIR = path.join(DATA_DIR, 'sent');
 export const EXPORTS_DIR = process.env.ZCA_EXPORTS_DIR
   ? path.resolve(process.env.ZCA_EXPORTS_DIR)

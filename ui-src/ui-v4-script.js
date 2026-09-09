@@ -61,7 +61,7 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
@@ -259,7 +259,7 @@
     const who = c.last_message_outbound ? 'Bạn' : (c.is_group ? (c.last_message_sender || '') : '');
     const unread = Number(c.unread_count || 0);
     return '<div class="conv ' + (state.selected === key ? 'active' : '') + (unread ? ' unread' : '') + '" data-key="' + esc(key) + '" style="top:' + (i * ROW_H) + 'px">' + avatarHtml(c.avatar_url, c.name) +
-      '<div class="body"><div class="top"><span class="nm">' + (c.is_group ? '👥 ' : '') + esc(c.name || (c.is_group ? 'Nhóm ' : '') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div>' +
+      '<div class="body"><div class="top"><span class="nm">' + (String(c.account_id || '').startsWith('tg:') ? '✈️ ' : '') + (c.is_group ? '👥 ' : '') + esc(c.name || (c.is_group ? 'Nhóm ' : '') + c.thread_id) + '</span><span class="tm">' + fmtRel(c.last_message_at) + '</span></div>' +
       '<div class="bottom"><span class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</span>' +
       (unread ? '<span class="badge-unread">' + (unread > 99 ? '99+' : unread) + '</span>' : '') + (s ? '<span class="sugdot ' + (s.reply ? (s.kind === 'theo-doi' ? 'follow' : '') : 'none') + '" title="' + (s.reply ? 'Có gợi ý từ Claude' : 'Claude: không cần nhắn') + '">💡</span>' : '') + '</div></div></div>';
   }
@@ -557,9 +557,11 @@
   function renderComposer() {
     const acc = state.accounts.find((a) => a.id === chat.accountId);
     const comp = $('#composer'); comp.hidden = false;
-    const canSend = acc?.status === 'connected';
+    const isTg = String(chat.accountId || '').startsWith('tg:');
+    const canSend = !isTg && acc?.status === 'connected';
     $('#btnSend').disabled = !canSend; $('#composeText').disabled = !canSend;
-    $('#composeText').placeholder = canSend ? 'Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
+    $('#composeText').placeholder = isTg ? 'Hội thoại Telegram — chỉ đọc (ứng dụng không gửi tin Telegram)' : canSend ? 'Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)' : 'Zalo chưa kết nối — kết nối ở thanh trên để gửi tin';
+    $$('.compose-tools .tool').forEach((t) => { t.style.display = isTg ? 'none' : ''; });
   }
   $('#chatExportBtn').onclick = () => { if (!chat.key) return; updateWorkspace({ preset: 'one', accountIds: [chat.accountId], threadIds: [chat.threadId] }, $('#chatExportBtn')); };
 
@@ -700,7 +702,7 @@
     $('#setGifKey').value = s.gifApiKey || '';
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
-    renderUpdateSettings(); renderAiSettings();
+    renderUpdateSettings(); renderAiSettings(); renderTelegramSettings();
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
@@ -783,6 +785,43 @@
     catch (err) { toast(err.message); }
   };
   $('#btnAiUnload').onclick = async () => { try { state.ai = await api('/api/ai/unload', { method: 'POST' }); renderAiSettings(); } catch (err) { toast(err.message); } };
+  // ── Telegram (tài khoản cá nhân) ─────────────────────────────────────────────
+  let tgDialogs = null; let tgPoll = null;
+  const TG_STATUS = { disconnected: '⚪ Chưa kết nối', connecting: '⏳ Đang kết nối…', awaiting_code: '📲 Chờ mã xác nhận', awaiting_password: '🔐 Chờ mật khẩu hai lớp', connected: '🟢 Đang kết nối', error: '⚠️ Lỗi' };
+  function renderTelegramSettings() {
+    const t = state.telegram; if (!t) { $('#tgCard').hidden = true; return; } $('#tgCard').hidden = false;
+    const connected = t.status === 'connected';
+    $('#tgKv').innerHTML = '<div>Khoá API</div><div>' + (t.configured ? '✅ đã lưu' : '⚠️ chưa có') + '</div>'
+      + '<div>Trạng thái</div><div>' + (TG_STATUS[t.status] || esc(t.status)) + (t.error ? ' <span class="muted small">· ' + esc(t.error) + '</span>' : '') + '</div>'
+      + (t.displayName ? '<div>Tài khoản</div><div><b>' + esc(t.displayName) + '</b>' + (t.username ? ' @' + esc(t.username) : '') + (t.phone ? ' · ' + esc(t.phone) : '') + '</div>' : '')
+      + '<div>Nhóm theo dõi</div><div>' + (t.watched?.length ? t.watched.map((w) => esc(w.title)).join(', ') : 'chưa chọn') + (t.syncing && t.syncProgress ? ' <span class="muted small">· đang đồng bộ ' + t.syncProgress.done + '/' + t.syncProgress.total + ' (' + t.syncProgress.inserted + ' tin mới)</span>' : (t.lastSyncAt ? ' <span class="muted small">· đồng bộ lúc ' + fmtTime(t.lastSyncAt) + '</span>' : '')) + '</div>';
+    $('#tgConfigForm').hidden = connected;
+    $('#tgLoginRow').hidden = ['connecting', 'awaiting_code', 'awaiting_password'].includes(t.status);
+    $('#btnTgLogin').hidden = connected; $('#btnTgLogout').hidden = !connected; $('#tgPhone').parentElement.hidden = connected;
+    if (!$('#tgPhone').value && t.phone) $('#tgPhone').value = t.phone;
+    $('#tgCodeRow').hidden = t.status !== 'awaiting_code'; $('#tgCodeHint').textContent = t.codeHint ? '— ' + t.codeHint : '';
+    $('#tgPasswordRow').hidden = t.status !== 'awaiting_password'; $('#tgPasswordHint').textContent = t.passwordHint ? '(gợi ý: ' + t.passwordHint + ')' : '';
+    $('#tgWatchBox').hidden = !connected;
+    if (connected && !$('#tgHistoryDays').value) $('#tgHistoryDays').value = t.historyDays || 7;
+    if (connected && tgDialogs && !$('#tgDialogs').children.length) renderTgDialogs();
+    clearTimeout(tgPoll);
+    if (['connecting', 'awaiting_code', 'awaiting_password'].includes(t.status) || t.syncing) tgPoll = setTimeout(async () => { try { state.telegram = await api('/api/telegram/status'); renderTelegramSettings(); } catch { /* bỏ qua */ } }, 1500);
+  }
+  function renderTgDialogs() {
+    const t = state.telegram || {}; const watched = new Set((t.watched || []).map((w) => w.id));
+    const TYPE = { group: '👥 nhóm', channel: '📢 kênh', user: '👤 riêng' };
+    $('#tgDialogs').innerHTML = (tgDialogs || []).length ? tgDialogs.map((d) => '<label><input type="checkbox" data-id="' + esc(d.id) + '" data-title="' + esc(d.title) + '"' + (watched.has(d.id) || d.watched ? ' checked' : '') + '><span>' + esc(d.title) + '</span><span class="meta">' + (TYPE[d.type] || d.type) + (d.members ? ' · ' + num(d.members) : '') + (d.unread ? ' · ' + d.unread + ' chưa đọc' : '') + '</span></label>').join('') : '<div class="empty small">Bấm "Tải danh sách nhóm".</div>';
+  }
+  const tgCall = async (path, body, okMsg) => { try { state.telegram = await api(path, { method: 'POST', body }); renderTelegramSettings(); if (okMsg) toast(okMsg); } catch (err) { toast(err.message); } };
+  $('#btnTgConfig').onclick = () => tgCall('/api/telegram/config', { apiId: $('#tgApiId').value.trim(), apiHash: $('#tgApiHash').value.trim() }, 'Đã lưu khoá API Telegram.');
+  $('#btnTgLogin').onclick = () => tgCall('/api/telegram/login', { phone: $('#tgPhone').value.trim() });
+  $('#btnTgCode').onclick = () => tgCall('/api/telegram/login/code', { code: $('#tgCode').value.trim() });
+  $('#btnTgPassword').onclick = () => { const pw = $('#tgPassword').value; $('#tgPassword').value = ''; void tgCall('/api/telegram/login/password', { password: pw }); };
+  $('#btnTgCancel').onclick = $('#btnTgCancel2').onclick = () => tgCall('/api/telegram/login/cancel', {});
+  $('#btnTgLogout').onclick = () => { if (confirm('Đăng xuất Telegram khỏi ứng dụng?\nTin đã lưu vẫn được giữ; đăng nhập lại sẽ đồng bộ tiếp.')) void tgCall('/api/telegram/logout', {}, 'Đã đăng xuất Telegram.'); };
+  $('#btnTgDialogs').onclick = async () => { $('#tgMsg').textContent = 'Đang tải…'; try { tgDialogs = (await api('/api/telegram/dialogs')).items; renderTgDialogs(); $('#tgMsg').textContent = tgDialogs.length + ' hội thoại.'; } catch (err) { $('#tgMsg').textContent = '❌ ' + err.message; } };
+  $('#btnTgWatch').onclick = () => { const boxes = [...$('#tgDialogs').querySelectorAll('input:checked')]; const titles = {}; boxes.forEach((b) => { titles[b.dataset.id] = b.dataset.title; }); void tgCall('/api/telegram/watch', { chatIds: boxes.map((b) => b.dataset.id), titles, historyDays: Number($('#tgHistoryDays').value) || 7 }, 'Đã lưu ' + boxes.length + ' nhóm theo dõi — đang kéo lịch sử.'); };
+  $('#btnTgSync').onclick = () => tgCall('/api/telegram/sync', {}, 'Đang đồng bộ lại lịch sử.');
   function openSettings() { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); $('#dlgSettings').showModal(); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -941,7 +980,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, TELEGRAM_FILE, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -27,6 +27,7 @@ import { SuggestionStore } from './suggestions.js';
 import { createUpdater } from './updates.js';
 import { LocalEngine } from './ai/engine.js';
 import { createLocalPipeline } from './ai/pipeline.js';
+import { TelegramManager } from './telegram/manager.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -34,6 +35,8 @@ export async function startApp({ platform, port = PORT } = {}) {
   const db = openDb(DB_PATH);
   const settings = { load: loadSettings, save: saveSettings };
   const manager = new ZaloManager({ db, log, sessionsDir: SESSIONS_DIR, sentDir: SENT_DIR, getSettings: loadSettings });
+  /** Telegram tài khoản cá nhân — chỉ đọc, ghi chung bảng hội thoại với tiền tố tg:. */
+  const telegram = new TelegramManager({ db, log, file: TELEGRAM_FILE, getCipher: () => cipher });
   const auth = new AuthClient({ authFile: AUTH_FILE, log, defaultServerUrl: DEFAULT_SERVER_URL });
   const cipher = new Cipher();
   cipher.onWarn = (m) => log.warn(`Mã hoá: ${m}`);
@@ -75,6 +78,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       log.info(`Đã mở khoá dữ liệu (khoá phiên bản ${auth.keyVersion}) cho ${auth.user.email}.`);
       events.emit('auth', auth.publicState());
       void manager.restoreAll();
+      void telegram.restore();
       void this.reencryptIfNeeded();
       automation.schedule();
       suggestions.start();
@@ -88,6 +92,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       suggestions.stop();
       void aiEngine.unload('khoá dữ liệu');
       manager.stopAll();
+      void telegram.stop();
       db.setCipher(null);
       cipher.clear();
       events.emit('auth', auth.publicState());
@@ -189,6 +194,8 @@ export async function startApp({ platform, port = PORT } = {}) {
 
   /** Gợi ý phản hồi do Claude ghi vào ket-qua/ — theo dõi thư mục, gắn vào hội thoại (cần db đã mở khoá để đọc tên). */
   manager.on('message', () => automation.onActivity());
+  telegram.on('message', (m) => { events.emit('message', m); automation.onActivity(); });
+  telegram.on('change', (st) => events.emit('telegram', st));
 
   const suggestions = new SuggestionStore({ root: WORKSPACE_DIR, db, log });
   suggestions.on('changed', (s) => events.emit('suggestions', s));
@@ -253,7 +260,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline } });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
@@ -275,6 +282,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     automation.stop();
     suggestions.stop();
     void aiEngine.unload('thoát');
+    void telegram.stop();
     power.stop();
     updater.stop();
     manager.stopAll();
