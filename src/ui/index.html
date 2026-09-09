@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chat Assistant</title>
+<title>Work Assistant</title>
 <style>
   :root {
     --bg: #f5f7fb; --panel: #ffffff; --line: #e4e9f0; --text: #172033; --muted: #4b5563; --faint: #8a94a6;
@@ -211,7 +211,8 @@
   .login-shell { display: grid; grid-template-columns: 1.05fr 1fr; width: 1040px; max-width: 100%; min-height: 620px; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 30px 80px rgba(16,24,40,.14); overflow: hidden; }
   .login-hero { background: linear-gradient(160deg, #0a5cff 0%, #0b7dff 55%, #19b3ff 100%); color: #fff; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 22px; }
   .hero-brand { display: flex; align-items: center; gap: 12px; }
-  .hero-brand .logo { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .hero-brand .logo { width: 46px; height: 46px; }
+  .hero-brand .logo .applogo { width: 100%; height: 100%; display: block; }
   .hero-brand b { display: block; font-size: 17px; line-height: 1.2; } .hero-brand span { font-size: 13px; opacity: .85; }
   .login-hero h1 { font-size: 30px; line-height: 1.2; margin-top: 6px; letter-spacing: -.3px; }
   .hero-sub { font-size: 16px; opacity: .92; line-height: 1.55; }
@@ -299,7 +300,8 @@
   /* Thanh điều hướng trái */
   .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
   .zapp.mac .rail { padding-top: 44px; }
-  .rail-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; margin-bottom: 10px; }
+  .rail-logo { width: 34px; height: 34px; margin-bottom: 10px; }
+  .applogo { width: 100%; height: 100%; display: block; }
   .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
   .zapp .rail .rail-btn span { font-size: 10.5px; font-weight: 600; letter-spacing: .1px; }
   .zapp .rail .rail-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
@@ -679,9 +681,9 @@
 <div class="login-wrap" id="loginView" hidden>
   <div class="login-shell">
     <aside class="login-hero">
-      <div class="hero-brand"><div class="logo">Z</div><div><b>Chat Assistant</b><span>MedDental</span></div></div>
-      <h1>Lưu tin nhắn Zalo, để Claude gợi ý câu trả lời</h1>
-      <p class="hero-sub">Mọi tin nhắn được lưu và mã hoá ngay trên máy của bạn. Máy chủ chỉ giữ tài khoản, không bao giờ nhận tin.</p>
+      <div class="hero-brand"><div class="logo"><svg class="applogo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="lgHero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a66ff"/><stop offset="1" stop-color="#22b8ff"/></linearGradient></defs><rect x="3" y="3" width="94" height="94" rx="24" fill="url(#lgHero)"/><path fill="#fff" d="M27 26 h34 a11 11 0 0 1 11 11 v20 a11 11 0 0 1 -11 11 H43 l-11 10 a2.3 2.3 0 0 1 -3.9 -1.7 v-8.6 h-1 a11 11 0 0 1 -11 -11 V37 a11 11 0 0 1 11 -11 z"/><g fill="#0a66ff"><circle cx="33" cy="47" r="3.4"/><circle cx="44" cy="47" r="3.4"/><circle cx="55" cy="47" r="3.4"/></g><path fill="#fff" stroke="#2f6fed" stroke-width="2.4" stroke-linejoin="round" d="M70 26 c1.9 8 4.4 10.5 12.4 12.4 c-8 1.9 -10.5 4.4 -12.4 12.4 c-1.9 -8 -4.4 -10.5 -12.4 -12.4 c8 -1.9 10.5 -4.4 12.4 -12.4 z"/></svg></div><div><b>Work Assistant</b><span>Trợ lý công việc đa nguồn</span></div></div>
+      <h1>Tổng hợp công việc từ Zalo, Telegram, Email và Lark</h1>
+      <p class="hero-sub">Mọi dữ liệu được lưu và mã hoá ngay trên máy của bạn; AI cục bộ tóm tắt và gửi bản tin giọng nói. Máy chủ chỉ giữ tài khoản, không bao giờ nhận nội dung.</p>
       <ol class="hero-steps">
         <li><span class="n">1</span><div><b>Đăng nhập tài khoản</b><span>Một lần duy nhất — các lần sau ứng dụng tự mở khoá.</span></div></li>
         <li><span class="n">2</span><div><b>Kết nối Zalo bằng mã QR</b><span>Giống đăng nhập Zalo Web, không cần mật khẩu Zalo.</span></div></li>
@@ -753,7 +755,7 @@
 <!-- ═══════════ ỨNG DỤNG (bố cục kiểu Zalo) ═══════════ -->
 <div class="zapp" id="appView" hidden>
   <nav class="rail" id="rail">
-    <div class="rail-logo" title="Chat Assistant">C</div>
+    <div class="rail-logo" title="Work Assistant"><svg class="applogo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="lgRail" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a66ff"/><stop offset="1" stop-color="#22b8ff"/></linearGradient></defs><rect x="3" y="3" width="94" height="94" rx="24" fill="url(#lgRail)"/><path fill="#fff" d="M27 26 h34 a11 11 0 0 1 11 11 v20 a11 11 0 0 1 -11 11 H43 l-11 10 a2.3 2.3 0 0 1 -3.9 -1.7 v-8.6 h-1 a11 11 0 0 1 -11 -11 V37 a11 11 0 0 1 11 -11 z"/><g fill="#0a66ff"><circle cx="33" cy="47" r="3.4"/><circle cx="44" cy="47" r="3.4"/><circle cx="55" cy="47" r="3.4"/></g><path fill="#fff" stroke="#2f6fed" stroke-width="2.4" stroke-linejoin="round" d="M70 26 c1.9 8 4.4 10.5 12.4 12.4 c-8 1.9 -10.5 4.4 -12.4 12.4 c-1.9 -8 -4.4 -10.5 -12.4 -12.4 c8 -1.9 10.5 -4.4 12.4 -12.4 z"/></svg></div>
     <button class="rail-btn active" data-view="chat" title="Hội thoại">💬<span>Hội thoại</span></button>
     <button class="rail-btn" data-view="connections" title="Kết nối &amp; khoá cấu hình">🔌<span>Kết nối</span></button>
     <button class="rail-btn" id="btnReportRail" title="Báo cáo ngày">📊<span>Báo cáo</span></button>

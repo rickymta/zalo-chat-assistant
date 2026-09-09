@@ -1,8 +1,8 @@
 {
   "name": "zalo-chat-assistant",
-  "version": "0.1.0-beta.9",
+  "version": "0.1.0-beta.10",
   "private": true,
-  "description": "Chat Assistant — lưu tin nhắn Zalo và Telegram (mã hoá) trên máy, tổng hợp bằng AI cục bộ, gợi ý trả lời, bản tin giọng nói.",
+  "description": "Work Assistant — tổng hợp công việc từ Zalo, Telegram, Email và Lark Approval (mã hoá trên máy), AI cục bộ tóm tắt và gợi ý, bản tin giọng nói theo kênh.",
   "type": "module",
   "main": "electron/main.js",
   "author": "MedDental",
@@ -33,8 +33,8 @@
     "zca-js": "^2.1.2"
   },
   "build": {
-    "appId": "vn.meddental.chat-assistant",
-    "productName": "Chat Assistant",
+    "appId": "vn.meddental.work-assistant",
+    "productName": "Work Assistant",
     "copyright": "MedDental",
     "asar": true,
     "npmRebuild": false,
@@ -99,7 +99,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "Chat Assistant",
+      "shortcutName": "Work Assistant",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "asarUnpack": [

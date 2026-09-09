@@ -6,7 +6,7 @@
  *   <workspace>/du-lieu/           dữ liệu hội thoại đã GIẢI MÃ — ghi đè mỗi lần "Cập nhật dữ liệu cho Claude"
  *   <workspace>/ket-qua/           kết quả do Claude ghi
  *
- * Bản .app: workspace = ~/Documents/Chat Assistant. Chạy bằng Node: workspace = <root>/cowork (chính thư mục nguồn —
+ * Bản .app: workspace = ~/Documents/Work Assistant. Chạy bằng Node: workspace = <root>/cowork (chính thư mục nguồn —
  * khi nguồn và đích trùng nhau thì bỏ qua bước chép).
  */
 import fs from 'node:fs';

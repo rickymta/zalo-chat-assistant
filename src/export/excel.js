@@ -27,7 +27,7 @@ function styleHeader(ws) {
 export async function exportExcel({ db, selection, from, to, outDir, accountsById, waitingHours = 2 }) {
   const filePath = path.join(outDir, `zalo-hoi-thoai-${stampVn()}.xlsx`);
   const wb = new ExcelJS.stream.xlsx.WorkbookWriter({ filename: filePath, useStyles: true, useSharedStrings: false });
-  wb.creator = 'Chat Assistant';
+  wb.creator = 'Work Assistant';
   wb.created = new Date();
 
   const used = new Set();

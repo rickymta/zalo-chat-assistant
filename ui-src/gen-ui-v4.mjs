@@ -16,7 +16,8 @@ const css = `
   /* Thanh điều hướng trái */
   .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
   .zapp.mac .rail { padding-top: 44px; }
-  .rail-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; margin-bottom: 10px; }
+  .rail-logo { width: 34px; height: 34px; margin-bottom: 10px; }
+  .applogo { width: 100%; height: 100%; display: block; }
   .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
   .zapp .rail .rail-btn span { font-size: 10.5px; font-weight: 600; letter-spacing: .1px; }
   .zapp .rail .rail-btn:hover { background: rgba(255,255,255,.08); color: #fff; }

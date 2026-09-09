@@ -176,7 +176,7 @@ async function testBot(d, sendTest) {
   const out = { bot: me.result?.username ? `@${me.result.username}` : me.result?.first_name, sent: false };
   if (sendTest) {
     if (!d.chatId) throw new Error('Chưa có chat ID để gửi tin thử.');
-    const r = await fetch(`${base}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: d.chatId, text: '✅ Chat Assistant đã kết nối bot bản tin. Bản tin giọng nói sẽ được gửi vào đây theo lịch.' }), signal: AbortSignal.timeout(15000) }).then((x) => x.json());
+    const r = await fetch(`${base}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: d.chatId, text: '✅ Work Assistant đã kết nối bot bản tin. Bản tin giọng nói sẽ được gửi vào đây theo lịch.' }), signal: AbortSignal.timeout(15000) }).then((x) => x.json());
     if (!r.ok) throw new Error(`Gửi tin thử thất bại (${r.error_code}): ${r.description} — kiểm tra chat ID và đã bấm Start với bot chưa.`);
     out.sent = true;
   }

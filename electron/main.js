@@ -2,8 +2,8 @@
  * Điểm vào Electron — biến lõi (src/app.js) thành ứng dụng macOS: cửa sổ riêng, không cần cài Node,
  * chạy nền khi đóng cửa sổ (biểu tượng vẫn ở Dock), tự mở khi bật máy (tuỳ chọn).
  *
- * Dữ liệu: ~/Library/Application Support/Chat Assistant/data   (CSDL, phiên đăng nhập, log; tự di trú từ tên cũ)
- * Gói xuất: ~/Documents/Chat Assistant/                        (người dùng dễ tìm trong Finder)
+ * Dữ liệu: ~/Library/Application Support/Work Assistant/data   (CSDL, phiên đăng nhập, log; tự di trú từ tên cũ)
+ * Gói xuất: ~/Documents/Work Assistant/                        (người dùng dễ tìm trong Finder)
  */
 import { clipboard, app, BrowserWindow, Menu, shell, dialog, powerSaveBlocker, powerMonitor } from 'electron';
 import path from 'node:path';
@@ -14,8 +14,8 @@ import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
-const PRODUCT = 'Chat Assistant';
-const LEGACY_PRODUCT = 'Zalo Chat Assistant';   // tên cũ tới 0.1.0-beta.3 — thư mục dữ liệu/thư mục làm việc được di trú tự động
+const PRODUCT = 'Work Assistant';
+const LEGACY_PRODUCTS = ['Chat Assistant', 'Zalo Chat Assistant'];   // các tên cũ (Chat Assistant tới 0.1.0-beta.9, Zalo Chat Assistant tới beta.3) — di trú tự động
 app.setName(PRODUCT);
 
 /** Đổi tên ứng dụng không được làm mất dữ liệu: lần đầu chạy tên mới, đổi tên thư mục cũ sang thư mục mới (cùng ổ đĩa ⇒ tức thời). */
@@ -28,12 +28,15 @@ function migrateLegacyDir(oldDir, newDir) {
 }
 // Chỉ di trú thư mục con `data` (CSDL, auth, model, phiên): Electron đã tạo sẵn userData mới (cache Chromium) trước khi mã này chạy,
 // nên không thể đổi tên cả thư mục; phần cache của tên cũ để lại, vô hại.
-const migratedData = migrateLegacyDir(path.join(app.getPath('appData'), LEGACY_PRODUCT, 'data'), path.join(app.getPath('userData'), 'data'));
-const migratedWs = migrateLegacyDir(path.join(app.getPath('documents'), LEGACY_PRODUCT), path.join(app.getPath('documents'), PRODUCT));
+let migratedData = false, migratedWs = false;
+for (const legacy of LEGACY_PRODUCTS) {
+  if (!migratedData) migratedData = migrateLegacyDir(path.join(app.getPath('appData'), legacy, 'data'), path.join(app.getPath('userData'), 'data'));
+  if (!migratedWs) migratedWs = migrateLegacyDir(path.join(app.getPath('documents'), legacy), path.join(app.getPath('documents'), PRODUCT));
+}
 
 // Đặt thư mục dữ liệu TRƯỚC khi nạp lõi — src/config.js đọc biến môi trường ngay lúc import.
 // Cho phép ghi đè bằng biến môi trường (hỗ trợ kỹ thuật / chạy thử với dữ liệu mẫu):
-//   ZCA_DATA_DIR=/duong/dan "/Applications/Chat Assistant.app/Contents/MacOS/Chat Assistant"
+//   ZCA_DATA_DIR=/duong/dan "/Applications/Work Assistant.app/Contents/MacOS/Work Assistant"
 const dataDir = process.env.ZCA_DATA_DIR || path.join(app.getPath('userData'), 'data');
 const workspaceDir = process.env.ZCA_WORKSPACE_DIR || path.join(app.getPath('documents'), PRODUCT);
 const exportsDir = process.env.ZCA_EXPORTS_DIR || path.join(workspaceDir, 'du-lieu');
@@ -172,7 +175,7 @@ function buildMenu() {
     {
       label: PRODUCT,
       submenu: [
-        { label: `Về ${PRODUCT}`, click: () => dialog.showMessageBox({ message: PRODUCT, detail: `Phiên bản ${app.getVersion()}\nLưu tin nhắn Zalo/Telegram (mã hoá), tổng hợp bằng AI cục bộ, gửi bản tin.\n\nDữ liệu: ${dataDir}\nThư mục Claude: ${workspaceDir}` }) },
+        { label: `Về ${PRODUCT}`, click: () => dialog.showMessageBox({ message: PRODUCT, detail: `Phiên bản ${app.getVersion()}\nTổng hợp công việc từ Zalo, Telegram, Email và Lark (mã hoá trên máy), AI cục bộ tóm tắt và gửi bản tin giọng nói.\n\nDữ liệu: ${dataDir}\nThư mục Claude: ${workspaceDir}` }) },
         { type: 'separator' },
         { label: 'Mở thư mục làm việc (gói dữ liệu & kết quả)', click: () => { fs.mkdirSync(workspaceDir, { recursive: true }); shell.openPath(workspaceDir); } },
         { label: 'Mở thư mục dữ liệu', click: () => shell.openPath(dataDir) },
@@ -212,7 +215,7 @@ app.whenReady().then(async () => {
     fs.mkdirSync(dataDir, { recursive: true });
     fs.mkdirSync(workspaceDir, { recursive: true });
     core = await startCore();
-    if (migratedData || migratedWs) console.log(`[di trú] Đã chuyển thư mục từ tên cũ "${LEGACY_PRODUCT}" sang "${PRODUCT}" (dữ liệu: ${migratedData}, thư mục làm việc: ${migratedWs}).`);
+    if (migratedData || migratedWs) console.log(`[di trú] Đã chuyển thư mục từ tên cũ sang "${PRODUCT}" (dữ liệu: ${migratedData}, thư mục làm việc: ${migratedWs}).`);
     // Máy ngủ/thức: báo lõi để ghi khoảng trống, nối lại Zalo và xin tin bỏ lỡ. Khoá màn hình không ảnh hưởng.
     powerMonitor.on('suspend', () => core?.power?.onSuspend('sleep'));
     powerMonitor.on('resume', () => core?.power?.onResume('sleep'));

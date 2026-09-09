@@ -168,7 +168,7 @@ export async function exportMarkdown({
   const readme = [];
   readme.push(workspaceMode ? '# Dữ liệu tin nhắn Zalo (du-lieu/) — đọc file này trước' : '# Gói dữ liệu tin nhắn Zalo — đọc file này trước');
   readme.push('');
-  readme.push(`- Tạo lúc: **${formatVn(now)}** bởi Chat Assistant`);
+  readme.push(`- Tạo lúc: **${formatVn(now)}** bởi Work Assistant`);
   readme.push(`- Phạm vi: ${from ? formatVn(from) : 'từ đầu'} → ${to ? formatVn(to) : 'đến nay'}`);
   readme.push(`- Quy mô: **${selection.length} hội thoại**, **${totalMessages} tin nhắn**, **${waitingCount} hội thoại chưa trả lời** (1-1, người kia nhắn cuối)`);
   readme.push(`- Tài khoản Zalo: ${[...new Set(selection.map((c) => accountsById[c.account_id]?.display_name || c.account_id))].join(', ') || '(không có)'}`);
@@ -196,7 +196,7 @@ export async function exportMarkdown({
   readme.push('## Cách dùng với Claude Cowork');
   readme.push('');
   if (workspaceMode) {
-    readme.push('1. Claude Cowork đã/sẽ được trỏ vào thư mục CHA của thư mục này (`Chat Assistant`, nơi có `CLAUDE.md` và `huong-dan/`).');
+    readme.push('1. Claude Cowork đã/sẽ được trỏ vào thư mục CHA của thư mục này (`Work Assistant`, nơi có `CLAUDE.md` và `huong-dan/`).');
     readme.push('2. Nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại."* Dữ liệu ở `du-lieu/`, kết quả ghi vào `ket-qua/`.');
   } else {
     readme.push('1. Mở Claude Cowork, chọn thư mục này làm thư mục làm việc.');
