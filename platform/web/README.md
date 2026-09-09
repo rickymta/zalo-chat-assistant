@@ -1,11 +1,14 @@
 # platform/web — Website + Admin CMS
 
-Giao diện web của nền tảng **Zalo Chat Assistant**: trang giới thiệu/tải về cho tư vấn viên và khu quản
-trị nội dung cho admin.
+Giao diện web của nền tảng **Work Assistant** (tên cũ: Chat Assistant / Zalo Chat Assistant): trang giới
+thiệu/tải về cho người dùng và khu quản trị nội dung cho admin.
 
 - **React 19 + Vite 6 + react-router-dom 7**, **JavaScript thuần** (không TypeScript).
-- **CSS thuần** (`src/styles.css`), biến màu lấy đúng từ giao diện ứng dụng (`src/ui/index.html` ở gốc
-  repo): `--primary: #0a66ff`, nền `#f5f7fb`, thẻ bo `16px`, nút cao `44px`, pill bo tròn.
+- **CSS thuần** (`src/styles.css`) — hệ thống thiết kế dùng chung với `platform/admin` (hai app giữ bản
+  sao giống hệt): token màu trong `:root` (gradient thương hiệu `#0a66ff → #22b8ff`), giao diện sáng/tối
+  theo hệ điều hành + nút chuyển ở header (`data-theme` trên `<html>`, nhớ trong `localStorage['wa-theme']`),
+  bo góc `--radius*`, bóng `--shadow*`, nút cao `44px`, pill bo tròn. Logo và biểu tượng nguồn (Zalo /
+  Telegram / Email / Lark) là SVG nội tuyến ở `src/components/Brand.jsx`.
   **Không dùng MUI/Tailwind.**
 - Phụ thuộc ngoài duy nhất trong mã nguồn: `marked` (xem trước Markdown ở khu quản trị).
 - Mọi chữ trên giao diện và mọi thông báo lỗi đều **tiếng Việt có dấu**.

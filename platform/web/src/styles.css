@@ -1320,12 +1320,12 @@ a.tag:hover {
   font-size: 12px;
 }
 .hero-badge.tl {
-  top: -16px;
-  left: -22px;
+  top: -30px;
+  left: -28px;
 }
 .hero-badge.br {
-  bottom: -18px;
-  right: -8px;
+  bottom: -30px;
+  right: -20px;
 }
 @media (prefers-reduced-motion: reduce) {
   .app-window,

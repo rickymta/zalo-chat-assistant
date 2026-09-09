@@ -2,28 +2,36 @@ import { useState } from 'react';
 import { ApiError, del, post } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useFetch } from '../lib/useFetch.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { useConfirm } from '../components/Modal.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { CopyButton, ErrorBox, Loading, PasswordInput } from '../components/ui.jsx';
 import { formatDate, formatDateTime, timeAgo } from '../lib/format.js';
 
 export default function Account() {
+  usePageTitle('Tài khoản của tôi');
   const { user, isAdmin } = useAuth();
 
   return (
     <div className="wrap">
       <div className="stack">
-        <div>
-          <h1>Tài khoản của tôi</h1>
-          <p className="muted" style={{ marginTop: 8 }}>
-            Thông tin đăng nhập, các phiên đang mở và chuỗi mã hoá dữ liệu.
-          </p>
+        <div className="page-head">
+          <div>
+            <h1>Tài khoản của tôi</h1>
+            <p>Thông tin đăng nhập, các phiên đang mở và chuỗi mã hoá dữ liệu.</p>
+          </div>
         </div>
 
-        <ProfileCard user={user} isAdmin={isAdmin} />
-        <ChangePasswordCard />
-        <SessionsCard />
-        <KeysCard />
+        <div className="account-grid">
+          <ProfileCard user={user} isAdmin={isAdmin} />
+          <ChangePasswordCard />
+          <div className="span">
+            <SessionsCard />
+          </div>
+          <div className="span">
+            <KeysCard />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -33,7 +41,10 @@ function ProfileCard({ user, isAdmin }) {
   if (!user) return null;
   return (
     <div className="card">
-      <h2>Hồ sơ</h2>
+      <div className="card-head">
+        <span className="ico">👤</span>
+        <h2>Hồ sơ</h2>
+      </div>
       <p className="desc">Thông tin này dùng chung cho website và ứng dụng trên máy.</p>
       <div className="kv">
         <div>Email</div>
@@ -93,9 +104,12 @@ function ChangePasswordCard() {
 
   return (
     <div className="card">
-      <h2>Đổi mật khẩu</h2>
+      <div className="card-head">
+        <span className="ico">🔑</span>
+        <h2>Đổi mật khẩu</h2>
+      </div>
       <p className="desc">Mật khẩu mới áp dụng cho cả website và ứng dụng trên máy.</p>
-      <form className="form" onSubmit={submit} style={{ maxWidth: 460 }}>
+      <form className="form" onSubmit={submit}>
         <ErrorBox error={error} />
         <div className="fld">
           <label htmlFor="cur">Mật khẩu hiện tại</label>
@@ -153,7 +167,10 @@ function SessionsCard() {
 
   return (
     <div className="card">
-      <h2>Phiên đăng nhập</h2>
+      <div className="card-head">
+        <span className="ico">💻</span>
+        <h2>Phiên đăng nhập</h2>
+      </div>
       <p className="desc">
         Các thiết bị đang đăng nhập tài khoản này (website và ứng dụng trên máy). Thấy thiết bị lạ thì
         đăng xuất ngay và đổi mật khẩu.
@@ -208,10 +225,9 @@ function KeysCard() {
   const rotate = async () => {
     const ok = await confirm({
       title: 'Đổi chuỗi mã hoá?',
-      message:
-        'Máy chủ sẽ cấp một chuỗi mã hoá phiên bản mới cho tài khoản của bạn.',
+      message: 'Máy chủ sẽ cấp một chuỗi mã hoá phiên bản mới cho tài khoản của bạn.',
       detail:
-        'Ứng dụng trên máy sẽ MÃ HOÁ LẠI toàn bộ tin nhắn đã lưu theo chuỗi mới (chạy nền theo lô, có thể mất vài phút với dữ liệu lớn). Trong lúc đó hãy để ứng dụng chạy, đừng tắt máy. Các máy khác cùng tài khoản tự nhận chuỗi mới khi mở lại. Chuỗi cũ vẫn được giữ để đọc dữ liệu chưa kịp mã hoá lại.',
+        'Ứng dụng trên máy sẽ MÃ HOÁ LẠI toàn bộ dữ liệu đã lưu theo chuỗi mới (chạy nền theo lô, có thể mất vài phút với dữ liệu lớn). Trong lúc đó hãy để ứng dụng chạy, đừng tắt máy. Các máy khác cùng tài khoản tự nhận chuỗi mới khi mở lại. Chuỗi cũ vẫn được giữ để đọc dữ liệu chưa kịp mã hoá lại.',
       confirmText: 'Đổi chuỗi mã hoá',
       danger: true,
     });
@@ -233,10 +249,14 @@ function KeysCard() {
 
   return (
     <div className="card">
-      <h2>Chuỗi mã hoá dữ liệu</h2>
+      <div className="card-head">
+        <span className="ico">🔐</span>
+        <h2>Chuỗi mã hoá dữ liệu</h2>
+      </div>
       <p className="desc">
-        Tin nhắn trên máy bạn được mã hoá bằng khoá dẫn xuất từ chuỗi này. Máy chủ giữ chuỗi để các máy
-        cùng tài khoản đọc được dữ liệu — <b>nội dung tin nhắn không bao giờ rời khỏi máy bạn</b>.
+        Dữ liệu trên máy bạn (tin nhắn, thư, phiếu duyệt) được mã hoá bằng khoá dẫn xuất từ chuỗi này.
+        Máy chủ giữ chuỗi để các máy cùng tài khoản đọc được dữ liệu —{' '}
+        <b>nội dung không bao giờ rời khỏi máy bạn</b>.
       </p>
 
       <ErrorBox error={error} onRetry={reload} />
@@ -271,11 +291,9 @@ function KeysCard() {
           </div>
 
           {versions.length > 0 && (
-            <details style={{ marginTop: 16 }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--primary)' }}>
-                Xem các phiên bản chuỗi ({versions.length})
-              </summary>
-              <div style={{ marginTop: 10 }}>
+            <details className="disclosure" style={{ marginTop: 16 }}>
+              <summary>Xem các phiên bản chuỗi ({versions.length})</summary>
+              <div>
                 {versions.map((v) => (
                   <div className="session-row" key={v.version}>
                     <div className="who">
