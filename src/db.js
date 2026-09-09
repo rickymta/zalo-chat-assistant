@@ -424,6 +424,21 @@ export function openDb(dbPath) {
       return { ...conv, ...msg };
     },
 
+    /**
+     * Hội thoại 1-1 mà TIN CUỐI là của đối phương (đang chờ mình trả lời), trong khoảng gần đây.
+     * Dùng cho "nhắc việc chưa phản hồi" — đọc trực tiếp bảng conversations, KHÔNG chạy AI.
+     */
+    unansweredConversations({ sinceMs = null, limit = 1000 } = {}) {
+      const lim = Math.min(Number(limit) || 1000, 5000);
+      return db.prepare(`
+        SELECT c.*, a.display_name AS account_name
+        FROM conversations c LEFT JOIN accounts a ON a.id = c.account_id
+        WHERE c.is_group = 0 AND c.last_message_outbound = 0
+          AND (@since IS NULL OR c.last_message_at >= @since)
+        ORDER BY c.last_message_at DESC
+        LIMIT @limit`).all({ since: sinceMs, limit: lim }).map(decConversation);
+    },
+
     // ── Danh bạ ───────────────────────────────────────────────────────────────
     upsertContacts(accountId, contacts) {
       const now = Date.now();

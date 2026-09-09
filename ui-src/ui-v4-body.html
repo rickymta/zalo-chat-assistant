@@ -123,6 +123,25 @@
       </div>
     </div>
 
+    <div class="card" id="reminderCard">
+      <h2>Nhắc việc chưa phản hồi</h2>
+      <p class="desc">Ứng dụng tự tổng hợp các hội thoại 1-1 mà <b>bạn chưa trả lời</b> trên các kênh đang kết nối (quét ngầm định kỳ, không chạy AI), rồi gửi <b>thông báo trên máy</b> ở các mốc giờ đã đặt (mặc định đầu giờ sáng và đầu giờ chiều). Bấm vào thông báo để mở màn Báo cáo.</p>
+      <div class="kv" id="reminderKv"></div>
+      <div class="form int-form" style="margin-top:10px">
+        <div class="row">
+          <label class="fld"><span>Quét mỗi (phút)</span><input type="number" id="rmInterval" min="1" max="240" step="1" value="15" style="width:120px"></label>
+          <label class="fld"><span>Mức độ thông báo</span><select id="rmLevel"><option value="full">Đầy đủ (theo kênh + tên)</option><option value="brief">Rút gọn (số lượng theo kênh)</option><option value="count">Chỉ số lượng</option></select></label>
+          <label class="fld grow"><span>Mốc giờ gửi (HH:MM, cách nhau bằng dấu phẩy)</span><input type="text" id="rmTimes" placeholder="08:30, 13:30"></label>
+        </div>
+        <div class="row">
+          <label class="fld"><span>Chỉ tính tin trong (ngày gần đây)</span><input type="number" id="rmWindow" min="1" max="60" step="1" value="7" style="width:150px"></label>
+          <label class="chk"><input type="checkbox" id="rmConnectedOnly" checked> Chỉ kênh đang kết nối</label>
+          <label class="chk"><input type="checkbox" id="rmEnabled" checked> Bật nhắc việc</label>
+        </div>
+        <div class="row acts"><button id="btnReminderSave">Lưu cấu hình</button><button class="primary" id="btnReminderTest">🔔 Gửi thử ngay</button><button id="btnReminderScan">Quét lại</button><span class="small muted" id="reminderMsg"></span></div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Bộ máy tổng hợp AI</h2>
       <p class="desc"><b>AI cục bộ</b>: model chạy ngay trong ứng dụng, không cần Claude, dữ liệu không rời máy; lần đầu cần tải model (~2 GB), máy 8 GB dùng model 3B. <b>Claude Cowork</b>: dùng lịch Cowork như trước (khi chọn AI cục bộ hãy tạm dừng lịch Cowork để hai bên không ghi đè nhau).</p>

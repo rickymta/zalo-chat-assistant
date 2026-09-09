@@ -52,7 +52,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram, integrations, mail, lark, digest }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram, integrations, mail, lark, digest, reminder }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -78,7 +78,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('update', (d) => broadcast('update', d));
   events.on('ai', (d) => broadcast('ai', d));
   events.on('telegram', (d) => broadcast('telegram', d));
-  for (const ev of ['mail', 'lark', 'digest']) events.on(ev, (d) => broadcast(ev, d));
+  for (const ev of ['mail', 'lark', 'digest', 'reminder']) events.on(ev, (d) => broadcast(ev, d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -135,6 +135,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       mail: mail && unlocked ? mail.status() : null,
       lark: lark && unlocked ? lark.status() : null,
       digest: digest && unlocked ? digest.status() : null,
+      reminder: reminder && unlocked ? reminder.status() : null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -393,6 +394,10 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/digest/status', withUi(async () => { needDigest(); return digest.status(); }));
   app.post('/api/digest/preview', withUi(async (req) => { needDigest(); return digest.sendNow('xem trước', { preview: true, skipRefresh: !req.body?.refresh }); }));
   app.post('/api/digest/send', withUi(async (req) => { needDigest(); void digest.sendNow('người dùng bấm', { skipRefresh: !!req.body?.skipRefresh }); return digest.status(); }));
+  const needReminder = () => { if (!reminder) throw Object.assign(new Error('Nhắc việc chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/reminder/status', withUi(async () => { needReminder(); return reminder.status(); }));
+  app.post('/api/reminder/scan', withUi(async () => { needReminder(); reminder.scan(); return reminder.status(); }));
+  app.post('/api/reminder/test', withUi(async () => { needReminder(); return reminder.test(); }));
   app.post('/api/integrations/:kind/test', withUi(async (req) => { needInt(); const { sendTest, ...patch } = req.body ?? {}; const v = await integrations.test(req.params.kind, { sendTest: !!sendTest, patch: Object.keys(patch).length ? patch : null }); broadcast('integrations', integrations.viewAll()); return v; }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.

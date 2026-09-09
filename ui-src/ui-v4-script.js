@@ -61,7 +61,7 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram, integrations: s.integrations, mail: s.mail, lark: s.lark, digest: s.digest });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram, integrations: s.integrations, mail: s.mail, lark: s.lark, digest: s.digest, reminder: s.reminder });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
@@ -816,8 +816,9 @@
     email: { host: '#emHost', port: '#emPort', secure: '#emSecure', user: '#emUser', folder: '#emFolder', days: '#emDays', enabled: '#emEnabled' },
     lark: { domain: '#lkDomain', appId: '#lkAppId', approvalCodes: '#lkCodes', days: '#lkDays', userId: '#lkUserId', enabled: '#lkEnabled' },
     digest: { chatId: '#dgChatId', voice: '#dgVoice', times: '#dgTimes', sendText: '#dgSendText', enabled: '#dgEnabled' },
+    reminder: { intervalMinutes: '#rmInterval', level: '#rmLevel', times: '#rmTimes', windowDays: '#rmWindow', connectedOnly: '#rmConnectedOnly', enabled: '#rmEnabled' },
   };
-  const INT_SECRET = { email: ['#emPassword'], lark: ['#lkAppSecret'], digest: ['#dgToken'] };
+  const INT_SECRET = { email: ['#emPassword'], lark: ['#lkAppSecret'], digest: ['#dgToken'], reminder: [] };
   const fmtTest = (t) => !t ? '<span class="muted">chưa kiểm tra</span>' : (t.ok ? '<span class="ok">✅ OK</span>' : '<span class="bad">❌ ' + esc(t.error || 'lỗi') + '</span>') + ' <span class="muted small">· ' + fmtTime(t.at) + ' · ' + t.ms + ' ms</span>';
   function fillIntegration(kind, d) {
     for (const [k, sel] of Object.entries(INT_FIELDS[kind])) {
@@ -837,7 +838,7 @@
   }
   function renderIntegrations() {
     const all = state.integrations; const show = !!all;
-    ['#emailCard', '#larkCard', '#digestCard'].forEach((sel) => { $(sel).hidden = !show; });
+    ['#emailCard', '#larkCard', '#digestCard', '#reminderCard'].forEach((sel) => { $(sel).hidden = !show; });
     if (!show) { Object.keys(INT_FILLED).forEach((k) => delete INT_FILLED[k]); return; }
     const e = all.email, l = all.lark, g = all.digest;
     const ms = state.mail || {}, ls = state.lark || {}, ds = state.digest || {};
@@ -856,15 +857,26 @@
       + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(VOICE_LABEL[g.voice] || g.voice || '') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>'
       + '<div>Bản tin</div><div>' + (ds.sending ? '⏳ đang ' + ({ refresh: 'cập nhật dữ liệu và chạy AI', compose: 'dựng nội dung', tts: 'đọc thành giọng nói', send: 'gửi vào Telegram' }[ds.phase] || 'chạy') + '…' : (ds.history?.[0] ? (ds.history[0].ok ? '✅ gửi lúc ' + fmtTime(ds.history[0].at) : '<span class="bad">❌ ' + esc(ds.history[0].error || 'lỗi') + ' · ' + fmtTime(ds.history[0].at) + '</span>') : 'chưa gửi lần nào')) + (ds.nextAt ? ' <span class="muted small">· kế tiếp ' + fmtTime(ds.nextAt) + '</span>' : (g.enabled ? '' : ' <span class="muted small">· đang tắt</span>')) + '</div>';
+    const r = all.reminder || {}; const rst = state.reminder || {};
+    const LEVEL_LABEL = { full: 'Đầy đủ', brief: 'Rút gọn', count: 'Chỉ số lượng' };
+    const conn = rst.connected || {};
+    const connText = ['zalo', 'telegram', 'email', 'lark'].filter((k) => conn[k]).map((k) => ({ zalo: 'Zalo', telegram: 'Telegram', email: 'Email', lark: 'Lark' }[k])).join(', ') || 'chưa kênh nào';
+    const snap = rst.snapshot;
+    $('#reminderKv').innerHTML = '<div>Trạng thái</div><div>' + (r.enabled ? '✅ đang bật' : '⏸️ đang tắt') + ' · thông báo trên máy</div>'
+      + '<div>Quét mỗi</div><div>' + (r.intervalMinutes ?? 15) + ' phút · mức độ ' + esc(LEVEL_LABEL[r.level] || r.level || 'Đầy đủ') + '</div>'
+      + '<div>Mốc giờ gửi</div><div>' + (r.times?.length ? r.times.join(', ') : 'chưa đặt') + (rst.nextAt ? ' <span class="muted small">· kế tiếp ' + fmtTime(rst.nextAt) + '</span>' : '') + '</div>'
+      + '<div>Kênh đang kết nối</div><div>' + esc(connText) + (r.connectedOnly === false ? ' <span class="muted small">· (đang tính cả kênh chưa kết nối)</span>' : '') + '</div>'
+      + '<div>Chưa phản hồi</div><div>' + (snap ? ('<b>' + num(snap.total) + '</b> hội thoại' + (snap.channels?.length ? ' — ' + snap.channels.map((c) => esc(c.label) + ' ' + c.count).join(', ') : '') + ' <span class="muted small">· quét ' + fmtTime(snap.at) + '</span>') : 'chưa quét') + (rst.lastError ? ' <span class="bad small">· ' + esc(rst.lastError) + '</span>' : '') + '</div>';
     clearTimeout(intPoll);
     if (ms.syncing || ls.syncing || ds.sending) intPoll = setTimeout(() => { refreshState().catch(() => {}); }, 2000);
     if (!INT_FILLED.email) fillIntegration('email', e);
     if (!INT_FILLED.lark) fillIntegration('lark', l);
     if (!INT_FILLED.digest) fillIntegration('digest', g);
+    if (!INT_FILLED.reminder) fillIntegration('reminder', r);
   }
   let intPoll = null;
   const VOICE_LABEL = { 'google:vi-bac': 'Nữ miền Bắc (Google)', 'vi-VN-HoaiMyNeural': 'Nữ miền Nam — Hoài My', 'vi-VN-NamMinhNeural': 'Nam — Nam Minh' };
-  const INT_MSG = { email: '#emailMsg', lark: '#larkMsg', digest: '#digestMsg' };
+  const INT_MSG = { email: '#emailMsg', lark: '#larkMsg', digest: '#digestMsg', reminder: '#reminderMsg' };
   async function intSave(kind, btn) {
     const msg = $(INT_MSG[kind]); msg.textContent = '';
     await busy(btn, 'Đang lưu…', async () => {
@@ -895,6 +907,9 @@
   $('#btnEmailSync').onclick = (e) => srcAction(e.currentTarget, '/api/mail/sync', '#emailMsg', 'Đang lấy thư — theo dõi ở dòng "Đồng bộ thư".');
   $('#btnLarkSync').onclick = (e) => srcAction(e.currentTarget, '/api/lark/sync', '#larkMsg', 'Đang lấy phiếu — theo dõi ở dòng "Đồng bộ phiếu".');
   $('#btnDigestNow').onclick = (e) => { if (!confirm('Gửi bản tin giọng nói ngay bây giờ?\nỨng dụng sẽ cập nhật dữ liệu, chạy AI cục bộ (có thể vài phút), đọc bản tin và gửi vào chat ID đã lưu.')) return; void srcAction(e.currentTarget, '/api/digest/send', '#digestMsg', 'Đang làm bản tin — theo dõi ở dòng "Bản tin".'); };
+  $('#btnReminderSave').onclick = (e) => intSave('reminder', e.currentTarget);
+  $('#btnReminderTest').onclick = (e) => srcAction(e.currentTarget, '/api/reminder/test', '#reminderMsg', 'Đã gửi thông báo thử trên máy.');
+  $('#btnReminderScan').onclick = (e) => srcAction(e.currentTarget, '/api/reminder/scan', '#reminderMsg', 'Đã quét lại các hội thoại chưa phản hồi.');
   $('#btnDigestPreview').onclick = async (e) => { const msg = $('#digestMsg'); msg.textContent = ''; await busy(e.currentTarget, 'Đang dựng…', async () => {
     try {
       const r = await api('/api/digest/preview', { method: 'POST', body: {} });
@@ -916,6 +931,8 @@
     else if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
     else if (vlist.scroll) applyCols();
   }
+  // Cho tiến trình chính (Electron) mở đúng màn khi người dùng bấm vào thông báo nhắc việc.
+  window.__openView = (name) => { try { showView(name || 'report'); } catch { /* bỏ qua */ } };
   function renderRail() {
     const a = state.ai || {}; const p = a.pipeline || {};
     const dot = $('#railAiDot'); dot.className = 'rail-dot ' + (p.running ? 'busy' : a.loaded ? 'on' : '');
@@ -1081,7 +1098,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram', 'integrations', 'mail', 'lark', 'digest'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram', 'integrations', 'mail', 'lark', 'digest', 'reminder'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

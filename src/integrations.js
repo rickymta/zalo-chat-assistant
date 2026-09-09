@@ -12,6 +12,9 @@ const DEFAULTS = {
   email: { enabled: false, host: '', port: 993, secure: true, user: '', password: '', folder: 'INBOX', days: 7 },
   lark: { enabled: false, domain: 'larksuite', appId: '', appSecret: '', approvalCodes: [], days: 7, userId: '' },
   digest: { enabled: false, botToken: '', chatId: '', voice: 'google:vi-bac', times: ['07:30', '17:30'], sendText: true },
+  // Nhắc việc chưa phản hồi: quét ngầm mỗi `intervalMinutes` phút, gửi THÔNG BÁO TRÊN MÁY ở các mốc giờ.
+  // `level`: full = đầy đủ (danh sách theo kênh + tên) · brief = rút gọn · count = chỉ số lượng.
+  reminder: { enabled: true, intervalMinutes: 15, times: ['08:30', '13:30'], level: 'full', windowDays: 7, connectedOnly: true },
 };
 export const KINDS = Object.keys(DEFAULTS);
 
@@ -50,6 +53,7 @@ export class IntegrationStore {
     if (kind === 'email') return !!(d.user && d.password);
     if (kind === 'lark') return !!(d.appId && d.appSecret);
     if (kind === 'digest') return !!(d.botToken && d.chatId);
+    if (kind === 'reminder') return true;   // thông báo trên máy, không cần khoá/bot ⇒ luôn sẵn sàng
     return false;
   }
 
@@ -95,6 +99,17 @@ export class IntegrationStore {
         if (!/^\d{6,12}:[A-Za-z0-9_-]{30,}$/.test(patch.botToken.trim())) throw Object.assign(new Error('Bot token không đúng dạng (số:chuỗi, lấy từ @BotFather).'), { status: 400 });
         next.botToken = this.enc(patch.botToken.trim());
       }
+    } else if (kind === 'reminder') {
+      if (patch.enabled !== undefined) next.enabled = !!patch.enabled;
+      if (patch.intervalMinutes !== undefined) next.intervalMinutes = Math.min(Math.max(Math.round(Number(patch.intervalMinutes) || 15), 1), 240);
+      if (patch.times !== undefined) {
+        const t = (Array.isArray(patch.times) ? patch.times : String(patch.times).split(/[\s,;]+/)).map((x) => String(x).trim()).filter(Boolean);
+        for (const x of t) if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(x)) throw Object.assign(new Error(`Mốc giờ "${x}" không hợp lệ (dạng HH:MM).`), { status: 400 });
+        next.times = [...new Set(t)].sort().slice(0, 6);
+      }
+      if (patch.level !== undefined) { const lv = String(patch.level); if (!['full', 'brief', 'count'].includes(lv)) throw Object.assign(new Error('Mức độ phải là full/brief/count.'), { status: 400 }); next.level = lv; }
+      if (patch.windowDays !== undefined) next.windowDays = Math.min(Math.max(Math.round(Number(patch.windowDays) || 7), 1), 60);
+      if (patch.connectedOnly !== undefined) next.connectedOnly = !!patch.connectedOnly;
     }
     return next;
   }

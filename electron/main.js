@@ -5,7 +5,7 @@
  * Dữ liệu: ~/Library/Application Support/Work Assistant/data   (CSDL, phiên đăng nhập, log; tự di trú từ tên cũ)
  * Gói xuất: ~/Documents/Work Assistant/                        (người dùng dễ tìm trong Finder)
  */
-import { clipboard, app, BrowserWindow, Menu, shell, dialog, powerSaveBlocker, powerMonitor } from 'electron';
+import { clipboard, app, BrowserWindow, Menu, shell, dialog, powerSaveBlocker, powerMonitor, Notification } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -195,6 +195,19 @@ function showWindow() {
   if (win) { win.show(); win.focus(); } else if (core) createWindow(core.url);
 }
 
+/** Thông báo hệ điều hành cho "nhắc việc chưa phản hồi"; bấm vào mở cửa sổ + màn Báo cáo. */
+function showReminderNotification(n) {
+  try {
+    if (!n || !Notification.isSupported()) return;
+    const note = new Notification({ title: n.title || 'Nhắc việc', body: n.body || '', silent: false });
+    note.on('click', () => {
+      showWindow();
+      try { win?.webContents.executeJavaScript("window.__openView && window.__openView('report')").catch(() => {}); } catch { /* bỏ qua */ }
+    });
+    note.show();
+  } catch (err) { core?.log?.warn?.(`Không hiện được thông báo nhắc việc: ${err?.message ?? err}`); }
+}
+
 app.on('second-instance', showWindow);
 app.on('activate', showWindow);
 app.on('window-all-closed', () => { /* macOS: giữ ứng dụng chạy nền */ });
@@ -221,6 +234,8 @@ app.whenReady().then(async () => {
     powerMonitor.on('resume', () => core?.power?.onResume('sleep'));
     powerMonitor.on('lock-screen', () => core?.log?.info('Màn hình đã khoá — ứng dụng vẫn chạy và lưu tin.'));
     powerMonitor.on('unlock-screen', () => core?.log?.info('Màn hình đã mở khoá.'));
+    // Nhắc việc chưa phản hồi ⇒ thông báo hệ điều hành. Bấm vào thì mở cửa sổ + màn Báo cáo.
+    core?.events?.on('reminder-notify', (n) => showReminderNotification(n));
     buildMenu();
     createWindow(core.url);
   } catch (err) {

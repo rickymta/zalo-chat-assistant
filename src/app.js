@@ -31,7 +31,8 @@ import { TelegramManager } from './telegram/manager.js';
 import { IntegrationStore } from './integrations.js';
 import { MailManager } from './mail/manager.js';
 import { LarkManager } from './lark/manager.js';
-import { DigestManager } from './digest/manager.js';
+import { DigestManager, sourceOf } from './digest/manager.js';
+import { ReminderManager } from './reminder/manager.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -86,7 +87,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       void telegram.restore();
       void this.reencryptIfNeeded();
       automation.schedule();
-      mail.schedule(); lark.schedule(); digest.schedule();
+      mail.schedule(); lark.schedule(); digest.schedule(); reminder.schedule();
       suggestions.start();
       setTimeout(() => { void automation.run('sau khi mở khoá'); }, 10000);
       return true;
@@ -99,7 +100,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       void aiEngine.unload('khoá dữ liệu');
       manager.stopAll();
       void telegram.stop();
-      mail.stop(); lark.stop(); digest.stop();
+      mail.stop(); lark.stop(); digest.stop(); reminder.stop();
       db.setCipher(null);
       cipher.clear();
       events.emit('auth', auth.publicState());
@@ -217,13 +218,28 @@ export async function startApp({ platform, port = PORT } = {}) {
   const waitPipelineIdle = async () => { const t0 = Date.now(); await new Promise((r) => setTimeout(r, 3000)); while (aiPipeline.status().running && Date.now() - t0 < 25 * 60e3) await new Promise((r) => setTimeout(r, 2000)); };
   const digest = new DigestManager({ db, log, integrations, file: DIGEST_STATE_FILE, dir: DIGEST_DIR, workspaceRoot: WORKSPACE_DIR,
     refresh: async () => { await mail.sync('bản tin').catch(() => {}); await lark.sync('bản tin').catch(() => {}); await automation.run('bản tin'); await waitPipelineIdle(); } });
+
+  // Nhắc việc chưa phản hồi (thông báo trên máy). Chỉ tính các kênh đang kết nối.
+  const REMINDER_STATE_FILE = path.join(DATA_DIR, 'reminder.json');
+  const getConnected = () => {
+    const out = { zalo: false, telegram: false, email: false, lark: false };
+    try { for (const a of db.listAccounts()) if (a.status === 'connected' && out[sourceOf(a.id)] !== undefined) out[sourceOf(a.id)] = true; } catch { /* bỏ qua */ }
+    try { if (telegram.status()?.status === 'connected') out.telegram = true; } catch { /* bỏ qua */ }
+    try { const s = mail.status(); if (s.enabled && s.configured) out.email = true; } catch { /* bỏ qua */ }
+    try { const s = lark.status(); if (s.enabled && s.configured) out.lark = true; } catch { /* bỏ qua */ }
+    return out;
+  };
+  const reminder = new ReminderManager({ db, log, integrations, file: REMINDER_STATE_FILE, getConnected,
+    notify: (n) => events.emit('reminder-notify', n) });
+
   mail.on('message', (m) => { events.emit('message', m); automation.onActivity(); });
   mail.on('change', (st) => events.emit('mail', st));
   lark.on('message', (m) => { events.emit('message', m); automation.onActivity(); });
   lark.on('change', (st) => events.emit('lark', st));
   digest.on('change', (st) => events.emit('digest', st));
+  reminder.on('change', (st) => events.emit('reminder', st));
   // Đổi cấu hình ở màn Kết nối ⇒ đặt lại lịch của nguồn tương ứng ngay (không cần mở lại app).
-  integrations.onChange = (kind) => { if (!db.unlocked) return; if (kind === 'email') mail.schedule(); else if (kind === 'lark') lark.schedule(); else if (kind === 'digest') digest.emitChange(); };
+  integrations.onChange = (kind) => { if (!db.unlocked) return; if (kind === 'email') mail.schedule(); else if (kind === 'lark') lark.schedule(); else if (kind === 'digest') digest.emitChange(); else if (kind === 'reminder') reminder.schedule(); };
   aiEngine.on('change', (s) => events.emit('ai', { ...s, pipeline: aiPipeline.status() }));
 
   /**
@@ -281,7 +297,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram, integrations, mail, lark, digest });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram, integrations, mail, lark, digest, reminder });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
@@ -304,7 +320,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     suggestions.stop();
     void aiEngine.unload('thoát');
     void telegram.stop();
-    mail.stop(); lark.stop(); digest.stop();
+    mail.stop(); lark.stop(); digest.stop(); reminder.stop();
     power.stop();
     updater.stop();
     manager.stopAll();
@@ -312,7 +328,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     try { db.close(); } catch { /* bỏ qua */ }
   }
 
-  return { url, stop, log, db, manager, auth, security, power, updater };
+  return { url, stop, log, db, manager, auth, security, power, updater, events, reminder };
 }
 
 /** Phiên bản khi chạy bằng Node (không có app.getVersion() của Electron). */
