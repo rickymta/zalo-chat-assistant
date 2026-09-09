@@ -1,0 +1,118 @@
+# ── Stack mail dùng thử — domain volcanion.vn, hostname mail.volcanion.vn ───────────────────────────────────────────
+# Gồm: docker-mailserver (SMTP/IMAP + Rspamd + Fail2ban), Roundcube (webmail), mailadmin (giao diện quản trị).
+# Chạy trên server:   cd platform/deploy/mail && docker compose up -d
+#   • `name: mail` giữ đúng tên project của các container đã dựng từ /opt/mail (không dựng trùng).
+#   • Dữ liệu (thư, tài khoản, DKIM) ở /opt/mail/data — NGOÀI thư mục repo, rsync/pull không đụng tới. Sao lưu = chép thư mục đó.
+#   • HTTPS cho webmail do nginx edge của platform đảm nhiệm (deploy/nginx-edge/templates/mail.conf.template);
+#     chứng chỉ nằm trong volume platform_letsencrypt (xin bằng deploy/nginx-edge/issue-mail-cert.sh), mailserver đọc chung.
+#   • Lần dựng đầu: tạo hộp thư đầu tiên TRONG 2 PHÚT sau khi up, nếu không mailserver tự tắt và khởi động lại:
+#       docker exec -it mailserver setup email add admin@volcanion.vn 'MatKhau'
+#   • Quản trị tài khoản/alias: giao diện mailadmin CHỈ nghe 127.0.0.1:8081 trên server (không có đăng nhập riêng,
+#     lại cầm Docker socket) → mở qua đường hầm SSH:  ssh -N -L 8081:127.0.0.1:8081 root@<server>  rồi vào http://localhost:8081
+#   • Chuyển sang domain chính thức: thay toàn bộ "volcanion.vn" trong file này, sinh lại DKIM, làm lại DNS.
+
+name: mail
+
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mail.volcanion.vn
+    restart: unless-stopped
+    stop_grace_period: 1m
+    ports:
+      - "25:25"     # SMTP nhận thư từ server khác
+      - "465:465"   # SMTP gửi thư (SSL) cho người dùng
+      - "587:587"   # SMTP gửi thư (STARTTLS) cho người dùng
+      - "993:993"   # IMAP (SSL)
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      POSTMASTER_ADDRESS: postmaster@volcanion.vn
+      LOG_LEVEL: info
+      ENABLE_UPDATE_CHECK: 0
+
+      # Chỉ IPv4 — VPS không có IPv6 sẽ khỏi chờ timeout khi gửi ra ngoài
+      POSTFIX_INET_PROTOCOLS: ipv4
+      DOVECOT_INET_PROTOCOLS: ipv4
+      POSTFIX_MESSAGE_SIZE_LIMIT: 52428800   # 50 MB
+
+      # Chống spam + ký DKIM bằng Rspamd, tắt các bộ cũ
+      ENABLE_RSPAMD: 1
+      RSPAMD_LEARN: 1
+      RSPAMD_GREYLISTING: 0        # 0 để thư thử nghiệm tới ngay, không bị hoãn
+      RSPAMD_CHECK_AUTHENTICATED: 0
+      ENABLE_OPENDKIM: 0
+      ENABLE_OPENDMARC: 0
+      ENABLE_POLICYD_SPF: 0
+      ENABLE_AMAVIS: 0
+      ENABLE_SPAMASSASSIN: 0
+      ENABLE_CLAMAV: 0             # bật = 1 nếu cần quét virus (tốn thêm ~1.5 GB RAM)
+
+      # Bảo vệ
+      ENABLE_FAIL2BAN: 1
+      SPOOF_PROTECTION: 1
+      PERMIT_DOCKER: none
+
+      # Chứng chỉ Let's Encrypt trong volume platform_letsencrypt
+      # (tự tìm /etc/letsencrypt/live/mail.volcanion.vn/, tự reload khi certbot gia hạn)
+      SSL_TYPE: letsencrypt
+    volumes:
+      - /opt/mail/data/dms/mail-data:/var/mail
+      - /opt/mail/data/dms/mail-state:/var/mail-state
+      - /opt/mail/data/dms/mail-logs:/var/log/mail
+      - /opt/mail/data/dms/config:/tmp/docker-mailserver
+      - letsencrypt:/etc/letsencrypt:ro
+      - /etc/localtime:/etc/localtime:ro
+    cap_add:
+      - NET_ADMIN   # cần cho Fail2ban
+    healthcheck:
+      test: "ss --listening --tcp | grep -P 'LISTEN.+:smtp' || exit 1"
+      timeout: 3s
+      retries: 0
+
+  roundcube:
+    image: roundcube/roundcubemail:latest-apache
+    container_name: roundcube
+    restart: unless-stopped
+    depends_on:
+      - mailserver
+    networks:
+      - default
+      - edge          # cùng mạng với zca-edge để nginx gọi được http://roundcube:80
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      ROUNDCUBEMAIL_DEFAULT_HOST: ssl://mail.volcanion.vn
+      ROUNDCUBEMAIL_DEFAULT_PORT: 993
+      ROUNDCUBEMAIL_SMTP_SERVER: ssl://mail.volcanion.vn
+      ROUNDCUBEMAIL_SMTP_PORT: 465
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload
+      ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 50M
+    volumes:
+      - /opt/mail/data/roundcube/db:/var/roundcube/db
+
+  # Giao diện quản trị tài khoản/alias (dunaj-dev/docker-mailserver-GUI) — gọi `setup` trong mailserver qua Docker socket.
+  # KHÔNG có đăng nhập riêng → chỉ gắn 127.0.0.1, dùng qua đường hầm SSH (xem đầu file). Không bao giờ publish 0.0.0.0.
+  mailadmin:
+    image: dunajdev/docker-mailserver-gui:latest
+    container_name: mailadmin
+    restart: unless-stopped
+    depends_on:
+      - mailserver
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      DOCKER_CONTAINER: mailserver
+      PORT: 3001
+      NODE_ENV: production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  edge:
+    external: true
+    name: platform_default
+
+volumes:
+  letsencrypt:
+    external: true
+    name: platform_letsencrypt
