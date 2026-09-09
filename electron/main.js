@@ -26,7 +26,9 @@ function migrateLegacyDir(oldDir, newDir) {
     return true;
   } catch (err) { console.warn(`[di trú] Không đổi được ${oldDir} → ${newDir}: ${err?.message ?? err}`); return false; }
 }
-const migratedData = migrateLegacyDir(path.join(app.getPath('appData'), LEGACY_PRODUCT), app.getPath('userData'));
+// Chỉ di trú thư mục con `data` (CSDL, auth, model, phiên): Electron đã tạo sẵn userData mới (cache Chromium) trước khi mã này chạy,
+// nên không thể đổi tên cả thư mục; phần cache của tên cũ để lại, vô hại.
+const migratedData = migrateLegacyDir(path.join(app.getPath('appData'), LEGACY_PRODUCT, 'data'), path.join(app.getPath('userData'), 'data'));
 const migratedWs = migrateLegacyDir(path.join(app.getPath('documents'), LEGACY_PRODUCT), path.join(app.getPath('documents'), PRODUCT));
 
 // Đặt thư mục dữ liệu TRƯỚC khi nạp lõi — src/config.js đọc biến môi trường ngay lúc import.
