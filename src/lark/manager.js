@@ -91,15 +91,21 @@ export class LarkManager extends EventEmitter {
     this.names.set(openId, name); return name;
   }
 
-  /** Liệt kê phiếu trong khoảng thời gian (theo từng approval_code, hoặc mọi quy trình khi danh sách trống). */
+  /** Đăng ký nhận dữ liệu của một quy trình (Lark yêu cầu subscribe trước khi truy vấn phiếu). Bỏ qua nếu đã đăng ký. */
+  async subscribe(cfg, code) {
+    try { await this.api(cfg, 'POST', `/open-apis/approval/v4/approvals/${encodeURIComponent(code)}/subscribe`); }
+    catch (err) { if (!/already|đã|subscrib/i.test(String(err?.message))) this.log?.warn(`Lark: subscribe ${code}: ${err?.message ?? err}`); }
+  }
+  /** Liệt kê phiếu trong khoảng thời gian. Lark BẮT BUỘC có approval_code — không có thì báo lỗi rõ ràng. */
   async listInstances(cfg, fromMs, toMs) {
-    const codes = cfg.approvalCodes?.length ? cfg.approvalCodes : [null];
+    const codes = cfg.approvalCodes?.length ? cfg.approvalCodes : [];
+    if (!codes.length) { const e = new Error('Cần nhập ít nhất một mã quy trình duyệt (approval_code). Mở một phiếu trên Lark, phần chi tiết/URL có mã quy trình; hoặc lấy trong Lark Developer Console → ứng dụng → Approval.'); e.needCodes = true; throw e; }
     const out = [];
     for (const code of codes) {
+      await this.subscribe(cfg, code);
       let pageToken = ''; let guard = 0;
       do {
-        const body = { instance_start_time_from: String(fromMs), instance_start_time_to: String(toMs) };
-        if (code) body.approval_code = code;
+        const body = { approval_code: code, instance_start_time_from: String(fromMs), instance_start_time_to: String(toMs) };
         const d = await this.api(cfg, 'POST', '/open-apis/approval/v4/instances/query', { query: { page_size: '100', user_id_type: 'open_id', ...(pageToken ? { page_token: pageToken } : {}) }, body });
         for (const it of d.instance_list ?? []) out.push({ approvalName: it.approval?.name, approvalCode: it.approval?.code, code: it.instance?.code, status: it.instance?.status, title: it.instance?.title, serial: it.instance?.serial_id, userId: it.instance?.user_id, startTime: Number(it.instance?.start_time ?? 0), link: it.instance?.link?.pc_link });
         pageToken = d.has_more ? d.page_token : ''; guard++;
@@ -146,9 +152,10 @@ export class LarkManager extends EventEmitter {
       if (inserted) this.emit('message', { source: 'old_sync', count: inserted });
       this.log?.info(`Lark (${reason}): ${codes.size} phiếu, đọc ${fetched}, thêm ${inserted} bước mới, ${updated} phiếu đổi trạng thái (${((Date.now() - t0) / 1000).toFixed(1)}s).`);
     } catch (err) {
-      this.lastError = String(err?.message ?? err).slice(0, 300);
+      this.lastError = String(err?.message ?? err).slice(0, 400);
       if (err?.larkCode === 99991663 || err?.larkCode === 99991672) this.lastError += ' — ứng dụng Lark chưa được cấp quyền Approval (approval:approval:readonly, approval:instance:readonly) hoặc chưa phát hành.';
-      this.log?.error(`Lark (${reason}) lỗi: ${err?.message ?? err}`);
+      if (err?.needCodes) { this.log?.warn(`Lark (${reason}): ${err.message}`); this.stop(); }   // thiếu mã ⇒ dừng lịch, chờ người dùng nhập
+      else this.log?.error(`Lark (${reason}) lỗi: ${err?.message ?? err}`);
     } finally { this.syncing = false; this.emitChange(); }
     return this.status();
   }

@@ -52,7 +52,12 @@ export async function discoverImap(email) {
   // MX: ai đang host mail cho tên miền này
   let mx = [];
   try { mx = (await dns.resolveMx(domain)).sort((a, b) => a.priority - b.priority).map((r) => r.exchange.toLowerCase()); } catch { /* không có MX */ }
-  for (const ex of mx) for (const [re, cfg] of MX_HINTS) if (re.test(ex)) add(cfg, `MX ${ex}`);
+  for (const ex of mx) {
+    for (const [re, cfg] of MX_HINTS) if (re.test(ex)) add(cfg, `MX ${ex}`);
+    // Máy chủ MX của tên miền riêng thường cũng là máy chủ IMAP, và chứng chỉ khớp chính tên đó (giải quyết trường hợp
+    // mail.<domain> là CNAME tới máy chủ nhà cung cấp: cert của nhà cung cấp không khớp mail.<domain>).
+    if (!/\.outlook\.com$|google(mail)?\.com$|\.protection\.|larksuite\.com$|feishu\.cn$/i.test(ex)) { add({ host: ex, port: 993, secure: true }, `máy chủ MX ${ex}`); add({ host: ex, port: 143, secure: false }, `máy chủ MX ${ex}, STARTTLS`); }
+  }
   // SRV (RFC 6186)
   for (const [name, secure] of [[`_imaps._tcp.${domain}`, true], [`_imap._tcp.${domain}`, false]]) {
     try { const rr = (await dns.resolveSrv(name)).sort((a, b) => a.priority - b.priority); for (const r of rr) if (r.name && r.name !== '.') add({ host: r.name.replace(/\.$/, ''), port: r.port, secure }, 'DNS SRV'); } catch { /* không có SRV */ }
@@ -71,4 +76,39 @@ export async function reachableCandidates(candidates, { timeout = 4000, max = 6 
     chunk.forEach((c, j) => { if (res[j]) ok.push(c); });
   }
   return ok;
+}
+
+/**
+ * Mở một kết nối IMAP đã đăng nhập cho `cfg` (user/password bắt buộc): thử máy chủ ĐÃ LƯU trước, nếu lỗi chứng chỉ/mạng thì tự dò
+ * (nhà cung cấp quen → MX → SRV → tên quen) và thử tiếp; sai mật khẩu thì dừng ngay. Trả về { client (đã kết nối), applied
+ * (host/port/secure dùng được), changed (khác bản đã lưu), discovered, note }. Người gọi tự mở khoá thư mục rồi logout.
+ */
+export async function connectImap(ImapFlow, cfg, { probeTimeout = 4000 } = {}) {
+  if (!cfg.user || !cfg.password) throw new Error('Cần địa chỉ email và mật khẩu.');
+  const base = { auth: { user: cfg.user, pass: cfg.password }, logger: false, connectionTimeout: 20000, greetingTimeout: 15000, socketTimeout: 120000 };
+  const candidates = [];
+  if (cfg.host) candidates.push({ host: cfg.host, port: cfg.port || 993, secure: cfg.secure !== false, reason: 'đã lưu' });
+  let discovered = false;
+  const addDiscovered = async () => {
+    if (discovered) return; discovered = true;
+    const disc = await discoverImap(cfg.user);
+    const reach = await reachableCandidates(disc.candidates, { timeout: probeTimeout });
+    for (const c of reach) if (!candidates.some((x) => x.host === c.host && x.port === c.port)) candidates.push(c);
+  };
+  if (!cfg.host) await addDiscovered();
+  const tried = [];
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+    const client = new ImapFlow({ ...base, host: c.host, port: c.port, secure: c.secure });
+    try {
+      await client.connect();
+      return { client, applied: { host: c.host, port: c.port, secure: c.secure }, changed: c.reason !== 'đã lưu', discovered: c.reason !== 'đã lưu' ? `${c.host}:${c.port} (${c.reason})` : null, note: c.note ?? null };
+    } catch (err) {
+      try { client.close(); } catch { /* bỏ qua */ }
+      const msg = String(err?.message ?? err); tried.push(`${c.host}:${c.port} — ${msg}`);
+      if (/AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|Logon failure|authentication failed/i.test(msg)) { const e = new Error('Sai tài khoản hoặc mật khẩu (Gmail/Microsoft 365/Lark cần mật khẩu ứng dụng hoặc bật IMAP).'); e.authFailed = true; throw e; }
+      if (i === candidates.length - 1) await addDiscovered();   // hết ứng viên đã lưu ⇒ dò thêm rồi thử tiếp
+    }
+  }
+  const e = new Error(`Không kết nối được IMAP cho ${cfg.user}. Đã thử: ${tried.slice(0, 4).join(' ; ')}`); e.triedAll = tried; throw e;
 }

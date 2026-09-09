@@ -148,27 +148,12 @@ export function friendlyError(err) {
 async function testImap(d) {
   if (!d.user || !d.password) throw new Error('Cần địa chỉ email và mật khẩu.');
   const { ImapFlow } = await import('imapflow');
-  const tryLogin = async (c) => {
-    const client = new ImapFlow({ host: c.host, port: c.port, secure: !!c.secure, auth: { user: d.user, pass: d.password }, logger: false, connectionTimeout: 15000, greetingTimeout: 10000 });
-    await client.connect();
-    try {
-      const lock = await client.getMailboxLock(d.folder || 'INBOX');
-      try { return { mailbox: client.mailbox?.path, messages: client.mailbox?.exists ?? null }; } finally { lock.release(); }
-    } finally { await client.logout().catch(() => {}); }
-  };
-  if (d.host) return tryLogin(d);
-  // Chưa có máy chủ ⇒ dò từ địa chỉ email: nhà cung cấp quen → MX → SRV → tên quen; đăng nhập thử theo thứ tự, ứng viên nào vào được thì lưu.
-  const { discoverImap, reachableCandidates } = await import('./mail/discover.js');
-  const disc = await discoverImap(d.user);
-  const reachable = await reachableCandidates(disc.candidates);
-  if (!reachable.length) throw new Error(`Không tìm được máy chủ IMAP cho ${disc.domain} (đã thử ${disc.candidates.length} địa chỉ). Nhập máy chủ và cổng ở mục Nâng cao.`);
-  const errors = [];
-  for (const c of reachable) {
-    try { const r = await tryLogin(c); return { ...r, apply: { host: c.host, port: c.port, secure: c.secure }, discovered: `${c.host}:${c.port} (${c.reason})`, note: c.note ?? null }; }
-    catch (err) { errors.push(`${c.host}:${c.port} — ${friendlyError(err)}`); if (/AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|authentication/i.test(String(err?.message))) break; }
-  }
-  const hint = reachable[0]?.note ? ` ${reachable[0].note}` : '';
-  throw new Error(`Đã tìm thấy máy chủ nhưng không đăng nhập được: ${errors[0] ?? 'không rõ'}.${hint}`);
+  const { connectImap } = await import('./mail/discover.js');
+  const { client, applied, changed, discovered, note } = await connectImap(ImapFlow, d);
+  try {
+    const lock = await client.getMailboxLock(d.folder || 'INBOX');
+    try { return { mailbox: client.mailbox?.path, messages: client.mailbox?.exists ?? null, ...(changed ? { apply: applied } : {}), discovered, note }; } finally { lock.release(); }
+  } finally { await client.logout().catch(() => {}); }
 }
 
 export function larkBase(domain) { return domain === 'feishu' ? 'https://open.feishu.cn' : 'https://open.larksuite.com'; }

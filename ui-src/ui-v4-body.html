@@ -89,7 +89,7 @@
 
     <div class="card" id="emailCard">
       <h2>Email (IMAP, chỉ đọc)</h2>
-      <p class="desc">Chỉ cần <b>địa chỉ email</b> và <b>mật khẩu</b>: ứng dụng tự tìm máy chủ IMAP (Gmail, Microsoft 365, Lark Mail, iCloud, Zoho hoặc theo tên miền công ty). Thư mới được gom theo chuỗi và tổng hợp cùng Zalo, Telegram; không gửi, không đánh dấu đã đọc. Gmail và Microsoft 365 thường cần <b>mật khẩu ứng dụng</b> thay cho mật khẩu đăng nhập.</p>
+      <p class="desc">Chỉ cần <b>địa chỉ email</b> và <b>mật khẩu</b>: ứng dụng tự tìm máy chủ IMAP (Gmail, Microsoft 365, Lark Mail, iCloud, Zoho hoặc theo tên miền công ty). Thư mới được gom theo chuỗi và tổng hợp cùng Zalo, Telegram; không gửi, không đánh dấu đã đọc. Gmail và Microsoft 365 thường cần <b>mật khẩu ứng dụng</b>; nhiều tổ chức Microsoft 365 <b>tắt đăng nhập IMAP</b> (báo "Login is disabled") — khi đó cần quản trị viên bật IMAP cho hộp thư.</p>
       <div class="kv" id="emailKv"></div>
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld grow"><span>Địa chỉ email</span><input type="email" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu (hoặc mật khẩu ứng dụng)</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
@@ -106,7 +106,7 @@
       <div class="kv" id="larkKv"></div>
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld"><span>Máy chủ</span><select id="lkDomain"><option value="larksuite">Lark (open.larksuite.com)</option><option value="feishu">Feishu (open.feishu.cn)</option></select></label><label class="fld grow"><span>App ID</span><input type="text" id="lkAppId" placeholder="cli_xxxxxxxxxxxxxxxx" autocomplete="off"></label><label class="fld grow"><span>App Secret</span><input type="password" id="lkAppSecret" autocomplete="new-password" placeholder="để trống = giữ khoá đã lưu"></label></div>
-        <div class="row"><label class="fld grow"><span>Mã quy trình duyệt (approval_code), mỗi dòng một mã; để trống = mọi quy trình ứng dụng được cấp quyền</span><textarea id="lkCodes" rows="2" placeholder="7C468A54-8745-2245-9675-08B7C63E7A85"></textarea></label></div>
+        <div class="row"><label class="fld grow"><span>Mã quy trình duyệt (approval_code), mỗi dòng một mã — <b>bắt buộc ít nhất một mã</b> (Lark không cho liệt kê mọi quy trình)</span><textarea id="lkCodes" rows="2" placeholder="7C468A54-8745-2245-9675-08B7C63E7A85"></textarea></label></div>
         <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="fld grow"><span>Open ID của bạn <span class="muted">(tuỳ chọn, để đánh dấu phiếu "chờ BẠN duyệt")</span></span><input type="text" id="lkUserId" placeholder="ou_xxxxxxxx" autocomplete="off"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
         <div class="row acts"><button class="primary" id="btnLarkTest">Kiểm tra kết nối</button><button id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkSync">Đồng bộ phiếu ngay</button><span class="small muted" id="larkMsg"></span></div>
       </div>

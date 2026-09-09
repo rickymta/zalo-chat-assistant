@@ -42,7 +42,7 @@ export class MailManager extends EventEmitter {
     super();
     this.db = db; this.log = log; this.integrations = integrations; this.file = file;
     this.state = this.load();
-    this.timer = null; this.syncing = false; this.lastError = null; this.lastResult = null; this.nextRunAt = null;
+    this.timer = null; this.syncing = false; this.lastError = null; this.lastResult = null; this.nextRunAt = null; this.fails = 0;
   }
   load() { try { return JSON.parse(fs.readFileSync(this.file, 'utf8')); } catch { return { boxes: {}, lastSyncAt: null }; } }
   save() { fs.mkdirSync(path.dirname(this.file), { recursive: true }); fs.writeFileSync(this.file, JSON.stringify(this.state, null, 2), { mode: 0o600 }); }
@@ -57,7 +57,7 @@ export class MailManager extends EventEmitter {
 
   /** Bật lịch: chạy ngay một lượt (nếu bật) rồi mỗi 15 phút. Gọi sau khi mở khoá. */
   schedule() {
-    this.stop();
+    this.stop(); this.fails = 0;
     const cfg = this.integrations.view('email');
     if (!cfg.enabled || !cfg.configured) { this.emitChange(); return; }
     this.nextRunAt = Date.now() + 5000;
@@ -74,13 +74,16 @@ export class MailManager extends EventEmitter {
     const t0 = Date.now();
     const { ImapFlow } = await import('imapflow');
     const { simpleParser } = await import('mailparser');
-    const client = new ImapFlow({ host: cfg.host, port: cfg.port, secure: !!cfg.secure, auth: { user: cfg.user, pass: cfg.password }, logger: false, connectionTimeout: 20000, greetingTimeout: 15000, socketTimeout: 120000 });
+    const { connectImap } = await import('./discover.js');
     const accountId = MAIL_PREFIX + cfg.user.toLowerCase();
     const boxKey = `${cfg.user.toLowerCase()}|${cfg.folder || 'INBOX'}`;
     const box = this.state.boxes[boxKey] ?? (this.state.boxes[boxKey] = { lastUid: 0, uidValidity: null, inserted: 0 });
-    let scanned = 0, inserted = 0;
+    let scanned = 0, inserted = 0, client = null;
     try {
-      await client.connect();
+      const conn = await connectImap(ImapFlow, cfg, { probeTimeout: 3500 });
+      client = conn.client;
+      // Máy chủ dò được (hoặc khác bản đã lưu — vd mail.<domain> là CNAME hỏng chứng chỉ ⇒ chuyển sang máy chủ MX) thì lưu lại để lần sau vào thẳng.
+      if (conn.changed) { this.integrations.set('email', conn.applied); this.log?.info(`Email: chuyển máy chủ IMAP sang ${conn.discovered}.`); }
       this.db.upsertAccount({ id: accountId, displayName: `${cfg.user} (Email)`, avatarUrl: null, phone: null, status: 'connected' });
       const lock = await client.getMailboxLock(cfg.folder || 'INBOX');
       try {
@@ -121,12 +124,17 @@ export class MailManager extends EventEmitter {
       this.state.lastSyncAt = Date.now(); this.save();
       this.lastResult = { scanned, inserted, at: Date.now(), ms: Date.now() - t0 };
       if (inserted) this.emit('message', { source: 'old_sync', count: inserted });
+      this.fails = 0;
       this.log?.info(`Email (${reason}): quét ${scanned} thư, thêm ${inserted} thư mới từ ${cfg.user}/${cfg.folder} (${((Date.now() - t0) / 1000).toFixed(1)}s).`);
     } catch (err) {
       this.lastError = friendlyError(err);
-      this.log?.error(`Email (${reason}) lỗi: ${err?.message ?? err}`);
+      this.fails++;
+      this.log?.error(`Email (${reason}) lỗi (lần ${this.fails}): ${err?.message ?? err}`);
+      // Sau 3 lần lỗi liên tiếp (thường do máy chủ tắt IMAP mật khẩu — vd Microsoft 365) thì DỪNG lịch tự động để khỏi lặp lỗi mỗi 15 phút;
+      // người dùng sửa cấu hình (onChange sẽ đặt lại lịch) hoặc bấm "Đồng bộ thư ngay".
+      if (this.fails >= 3 && reason === 'tự động') { this.stop(); this.lastError += ' — đã tạm dừng tự đồng bộ sau 3 lần lỗi; sửa cấu hình hoặc bấm "Đồng bộ thư ngay" để thử lại.'; }
     } finally {
-      try { await client.logout(); } catch { try { client.close(); } catch { /* bỏ qua */ } }
+      if (client) { try { await client.logout(); } catch { try { client.close(); } catch { /* bỏ qua */ } } }
       this.syncing = false; this.emitChange();
     }
     return this.status();
