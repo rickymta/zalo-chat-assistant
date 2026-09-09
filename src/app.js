@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, TELEGRAM_FILE, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, TELEGRAM_FILE, INTEGRATIONS_FILE, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -28,6 +28,7 @@ import { createUpdater } from './updates.js';
 import { LocalEngine } from './ai/engine.js';
 import { createLocalPipeline } from './ai/pipeline.js';
 import { TelegramManager } from './telegram/manager.js';
+import { IntegrationStore } from './integrations.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -37,6 +38,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   const manager = new ZaloManager({ db, log, sessionsDir: SESSIONS_DIR, sentDir: SENT_DIR, getSettings: loadSettings });
   /** Telegram tài khoản cá nhân — chỉ đọc, ghi chung bảng hội thoại với tiền tố tg:. */
   const telegram = new TelegramManager({ db, log, file: TELEGRAM_FILE, getCipher: () => cipher });
+  const integrations = new IntegrationStore({ file: INTEGRATIONS_FILE, getCipher: () => cipher, log });
   const auth = new AuthClient({ authFile: AUTH_FILE, log, defaultServerUrl: DEFAULT_SERVER_URL });
   const cipher = new Cipher();
   cipher.onWarn = (m) => log.warn(`Mã hoá: ${m}`);
@@ -260,7 +262,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram, integrations });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;

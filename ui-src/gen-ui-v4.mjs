@@ -54,6 +54,19 @@ const css = `
   #reencryptBar { flex: none; padding: 8px 16px 0; }
   /* Thanh báo có bản cập nhật — nền xanh nhạt cho bản thường, dùng .topbar-warn (nền cảnh báo) cho bản bắt buộc. */
   #updateBar { flex: none; padding: 8px 16px 0; }
+  /* Biểu mẫu khoá tích hợp (Email / Lark / bot bản tin): gọn hơn form đăng nhập, xếp ngang, xuống dòng khi hẹp. */
+  .int-form { gap: 10px; max-width: 760px; }
+  .int-form .row { align-items: flex-end; flex-wrap: wrap; gap: 10px; }
+  .int-form .fld { gap: 4px; min-width: 120px; }
+  .int-form .fld > span:first-child { font-size: 12.5px; }
+  .int-form .fld input, .int-form .fld select { height: 38px; font-size: 14px; }
+  .int-form .fld textarea { width: 100%; min-height: 56px; resize: vertical; font: inherit; font-size: 13.5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .int-form .fld textarea:focus { outline: 3px solid #cfe0ff; border-color: var(--primary); }
+  .int-form .chk { display: flex; align-items: center; gap: 6px; height: 38px; font-size: 13.5px; white-space: nowrap; cursor: pointer; }
+  .int-form .chk input { width: 16px; height: 16px; margin: 0; }
+  .int-form .acts { margin-top: 2px; }
+  .int-form .acts .muted { max-width: 100%; }
+  .kv .ok { color: #15803d; } .kv .bad { color: #b91c1c; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
   .tg-dialogs label:last-child { border-bottom: 0; }

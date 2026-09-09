@@ -61,7 +61,7 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram, integrations: s.integrations });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
@@ -681,7 +681,7 @@
     $('#setGifKey').value = s.gifApiKey || '';
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
-    renderUpdateSettings(); renderAiSettings(); renderTelegramSettings();
+    renderUpdateSettings(); renderAiSettings(); renderTelegramSettings(); renderIntegrations();
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
@@ -801,6 +801,74 @@
   $('#btnTgDialogs').onclick = async () => { $('#tgMsg').textContent = 'Đang tải…'; try { tgDialogs = (await api('/api/telegram/dialogs')).items; renderTgDialogs(); $('#tgMsg').textContent = tgDialogs.length + ' hội thoại.'; } catch (err) { $('#tgMsg').textContent = '❌ ' + err.message; } };
   $('#btnTgWatch').onclick = () => { const boxes = [...$('#tgDialogs').querySelectorAll('input:checked')]; const titles = {}; boxes.forEach((b) => { titles[b.dataset.id] = b.dataset.title; }); void tgCall('/api/telegram/watch', { chatIds: boxes.map((b) => b.dataset.id), titles, historyDays: Number($('#tgHistoryDays').value) || 7 }, 'Đã lưu ' + boxes.length + ' nhóm theo dõi — đang kéo lịch sử.'); };
   $('#btnTgSync').onclick = () => tgCall('/api/telegram/sync', {}, 'Đang đồng bộ lại lịch sử.');
+  // ── Khoá tích hợp: Email IMAP · Lark Approval · bot bản tin ───────────────
+  /** Biểu mẫu chỉ đổ dữ liệu từ máy chủ MỘT lần cho mỗi phiên (và sau khi lưu) để không ghi đè thứ người dùng đang gõ. */
+  const INT_FILLED = {};
+  const INT_FIELDS = {
+    email: { host: '#emHost', port: '#emPort', secure: '#emSecure', user: '#emUser', folder: '#emFolder', days: '#emDays', enabled: '#emEnabled' },
+    lark: { domain: '#lkDomain', appId: '#lkAppId', approvalCodes: '#lkCodes', days: '#lkDays', enabled: '#lkEnabled' },
+    digest: { chatId: '#dgChatId', voice: '#dgVoice', times: '#dgTimes', sendText: '#dgSendText', enabled: '#dgEnabled' },
+  };
+  const INT_SECRET = { email: ['#emPassword'], lark: ['#lkAppSecret'], digest: ['#dgToken'] };
+  const fmtTest = (t) => !t ? '<span class="muted">chưa kiểm tra</span>' : (t.ok ? '<span class="ok">✅ OK</span>' : '<span class="bad">❌ ' + esc(t.error || 'lỗi') + '</span>') + ' <span class="muted small">· ' + fmtTime(t.at) + ' · ' + t.ms + ' ms</span>';
+  function fillIntegration(kind, d) {
+    for (const [k, sel] of Object.entries(INT_FIELDS[kind])) {
+      const el = $(sel); if (!el) continue; const v = d[k];
+      if (el.type === 'checkbox') el.checked = !!v;
+      else if (Array.isArray(v)) el.value = v.join(k === 'approvalCodes' ? '\n' : ', ');
+      else el.value = v ?? '';
+    }
+    INT_SECRET[kind].forEach((sel) => { $(sel).value = ''; });
+    INT_FILLED[kind] = true;
+  }
+  function readIntegration(kind) {
+    const body = {};
+    for (const [k, sel] of Object.entries(INT_FIELDS[kind])) { const el = $(sel); body[k] = el.type === 'checkbox' ? el.checked : el.value; }
+    INT_SECRET[kind].forEach((sel) => { const v = $(sel).value; if (v) body[{ '#emPassword': 'password', '#lkAppSecret': 'appSecret', '#dgToken': 'botToken' }[sel]] = v; });
+    return body;
+  }
+  function renderIntegrations() {
+    const all = state.integrations; const show = !!all;
+    ['#emailCard', '#larkCard', '#digestCard'].forEach((sel) => { $(sel).hidden = !show; });
+    if (!show) { Object.keys(INT_FILLED).forEach((k) => delete INT_FILLED[k]); return; }
+    const e = all.email, l = all.lark, g = all.digest;
+    $('#emailKv').innerHTML = '<div>Trạng thái</div><div>' + (e.configured ? (e.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa đủ máy chủ, tài khoản, mật khẩu') + '</div>'
+      + '<div>Mật khẩu</div><div>' + (e.hasPassword ? 'đã lưu (mã hoá)' : 'chưa có') + '</div>'
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(e.lastTest) + (e.lastTest?.ok && e.lastTest.messages != null ? ' <span class="muted small">· ' + esc(e.lastTest.mailbox || '') + ': ' + num(e.lastTest.messages) + ' thư</span>' : '') + '</div>';
+    $('#larkKv').innerHTML = '<div>Trạng thái</div><div>' + (l.configured ? (l.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có App ID / App Secret') + '</div>'
+      + '<div>App Secret</div><div>' + (l.hasAppSecret ? 'đã lưu (mã hoá)' : 'chưa có') + '</div>'
+      + '<div>Quy trình theo dõi</div><div>' + (l.approvalCodes?.length ? l.approvalCodes.length + ' mã' : 'tất cả') + '</div>'
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(l.lastTest) + '</div>';
+    $('#digestKv').innerHTML = '<div>Trạng thái</div><div>' + (g.configured ? (g.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có bot token / chat ID') + '</div>'
+      + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' : 'chưa có') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
+      + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(g.voice || '') + '</div>'
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>';
+    if (!INT_FILLED.email) fillIntegration('email', e);
+    if (!INT_FILLED.lark) fillIntegration('lark', l);
+    if (!INT_FILLED.digest) fillIntegration('digest', g);
+  }
+  const INT_MSG = { email: '#emailMsg', lark: '#larkMsg', digest: '#digestMsg' };
+  async function intSave(kind, btn) {
+    const msg = $(INT_MSG[kind]); msg.textContent = '';
+    await busy(btn, 'Đang lưu…', async () => {
+      try { const v = await api('/api/integrations/' + kind, { method: 'POST', body: readIntegration(kind) }); state.integrations = { ...(state.integrations || {}), [kind]: v }; INT_FILLED[kind] = false; renderIntegrations(); renderRail(); toast('Đã lưu cấu hình.'); }
+      catch (err) { msg.textContent = '❌ ' + err.message; }
+    });
+  }
+  async function intTest(kind, btn, extra) {
+    const msg = $(INT_MSG[kind]); msg.textContent = 'Đang kiểm tra bằng khoá ĐÃ LƯU… (chưa lưu thì bấm Lưu trước)';
+    await busy(btn, 'Đang kiểm tra…', async () => {
+      try { const v = await api('/api/integrations/' + kind + '/test', { method: 'POST', body: extra || {} }); state.integrations = { ...(state.integrations || {}), [kind]: v }; renderIntegrations(); msg.textContent = v.lastTest?.ok ? '✅ Kết nối được.' + (v.lastTest.sent ? ' Đã gửi tin thử vào chat.' : '') : '❌ ' + (v.lastTest?.error || 'lỗi'); }
+      catch (err) { msg.textContent = '❌ ' + err.message; }
+    });
+  }
+  $('#btnEmailSave').onclick = (e) => intSave('email', e.currentTarget);
+  $('#btnEmailTest').onclick = (e) => intTest('email', e.currentTarget);
+  $('#btnLarkSave').onclick = (e) => intSave('lark', e.currentTarget);
+  $('#btnLarkTest').onclick = (e) => intTest('lark', e.currentTarget);
+  $('#btnDigestSave').onclick = (e) => intSave('digest', e.currentTarget);
+  $('#btnDigestTest').onclick = (e) => intTest('digest', e.currentTarget);
+  $('#btnDigestSend').onclick = (e) => { if (!confirm('Gửi một tin nhắn thử vào chat ID đã lưu qua bot?')) return; void intTest('digest', e.currentTarget, { sendTest: true }); };
   // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
   const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
   function showView(name) {
@@ -818,7 +886,8 @@
     dot.title = p.running ? 'AI đang tổng hợp' : a.loaded ? 'Model đang trong bộ nhớ' : 'AI cục bộ (chưa nạp)';
     $('#railVer').textContent = state.platform?.version ? 'v' + state.platform.version.replace(/-beta\.\d+$/, 'β') : '';
     const t = state.telegram || {}; const zalo = (state.accounts || []).some((x) => x.status === 'connected');
-    const el = $('#connSummary'); if (el) el.innerHTML = '<span class="pill ' + (zalo ? 'ok' : '') + '">Zalo ' + (zalo ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (t.status === 'connected' ? 'ok' : '') + '">Telegram ' + (t.status === 'connected' ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (a.modelFile ? 'ok' : 'warn') + '">AI ' + (a.engine === 'cowork' ? 'Claude Cowork' : (a.modelFile ? 'cục bộ · sẵn sàng' : 'chưa có model')) + '</span>';
+    const el = $('#connSummary'); if (el) el.innerHTML = '<span class="pill ' + (zalo ? 'ok' : '') + '">Zalo ' + (zalo ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (t.status === 'connected' ? 'ok' : '') + '">Telegram ' + (t.status === 'connected' ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (a.modelFile ? 'ok' : 'warn') + '">AI ' + (a.engine === 'cowork' ? 'Claude Cowork' : (a.modelFile ? 'cục bộ · sẵn sàng' : 'chưa có model')) + '</span>'
+      + (state.integrations ? ['email', 'lark', 'digest'].map((k) => { const d = state.integrations[k] || {}; const label = { email: 'Email', lark: 'Lark', digest: 'Bot bản tin' }[k]; return '<span class="pill ' + (d.configured && d.enabled ? 'ok' : '') + '">' + label + ' ' + (d.configured ? (d.enabled ? 'đang bật' : 'đã cấu hình') : 'chưa cấu hình') + '</span>'; }).join('') : '');
   }
   $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
   $('#btnReportRail').onclick = () => $('#btnReport').click();
@@ -978,7 +1047,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram', 'integrations'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

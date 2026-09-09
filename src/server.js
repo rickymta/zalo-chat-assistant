@@ -52,7 +52,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram, integrations }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -130,6 +130,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       update: updater?.status() ?? null,
       ai: ai ? { ...ai.engine.status(), pipeline: ai.pipeline.status() } : null,
       telegram: telegram ? telegram.status() : null,
+      integrations: integrations && unlocked ? integrations.viewAll() : null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -370,6 +371,13 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/telegram/dialogs', withUi(async () => { needTg(); return { items: await telegram.listDialogs() }; }));
   app.post('/api/telegram/watch', withUi(async (req) => { needTg(); return telegram.setWatched({ chatIds: Array.isArray(req.body?.chatIds) ? req.body.chatIds : [], titles: req.body?.titles ?? {}, historyDays: req.body?.historyDays }); }));
   app.post('/api/telegram/sync', withUi(async () => { needTg(); void telegram.syncHistory(); return telegram.status(); }));
+
+  // ── Khoá tích hợp khác: Email IMAP, Lark Approval, bot Telegram gửi bản tin ─
+  const needInt = () => { if (!integrations) throw Object.assign(new Error('Kho cấu hình chưa sẵn sàng.'), { status: 501 }); if (!security.unlocked) throw Object.assign(new Error('Cần đăng nhập để xem cấu hình.'), { status: 401 }); };
+  app.get('/api/integrations', withUi(async () => { needInt(); return integrations.viewAll(); }));
+  app.get('/api/integrations/:kind', withUi(async (req) => { needInt(); return integrations.view(req.params.kind); }));
+  app.post('/api/integrations/:kind', withUi(async (req) => { needInt(); const v = integrations.set(req.params.kind, req.body ?? {}); broadcast('integrations', integrations.viewAll()); return v; }));
+  app.post('/api/integrations/:kind/test', withUi(async (req) => { needInt(); const v = await integrations.test(req.params.kind, { sendTest: !!req.body?.sendTest }); broadcast('integrations', integrations.viewAll()); return v; }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {

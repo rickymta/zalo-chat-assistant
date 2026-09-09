@@ -86,6 +86,41 @@
       </div>
     </div>
 
+    <div class="card" id="emailCard">
+      <h2>Email (IMAP, chỉ đọc)</h2>
+      <p class="desc">Ứng dụng đọc hộp thư qua IMAP để tổng hợp email mới cùng Zalo và Telegram; không gửi, không đánh dấu đã đọc. Gmail và Outlook cần bật IMAP và dùng <b>mật khẩu ứng dụng</b>, không dùng mật khẩu đăng nhập thường.</p>
+      <div class="kv" id="emailKv"></div>
+      <div class="form int-form" style="margin-top:10px">
+        <div class="row"><label class="fld grow"><span>Máy chủ IMAP</span><input type="text" id="emHost" placeholder="mail.congty.vn" autocomplete="off"></label><label class="fld"><span>Cổng</span><input type="number" id="emPort" value="993" min="1" max="65535" style="width:96px"></label><label class="chk"><input type="checkbox" id="emSecure" checked> SSL/TLS</label></div>
+        <div class="row"><label class="fld grow"><span>Tài khoản</span><input type="text" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label></div>
+        <div class="row"><label class="fld"><span>Thư mục</span><input type="text" id="emFolder" value="INBOX" style="width:170px"></label><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="emDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
+        <div class="row acts"><button class="primary" id="btnEmailSave">Lưu cấu hình</button><button id="btnEmailTest">Kiểm tra kết nối</button><span class="small muted" id="emailMsg"></span></div>
+      </div>
+    </div>
+
+    <div class="card" id="larkCard">
+      <h2>Lark Approval (phiếu duyệt, chỉ đọc)</h2>
+      <p class="desc">Ứng dụng đọc phiếu duyệt trong Lark Approval để tổng hợp phiếu chờ bạn xử lý và phiếu vừa có kết quả. Tạo <b>ứng dụng nội bộ</b> ở <a href="https://open.larksuite.com/app" target="_blank" rel="noopener">Lark Developer Console</a>, bật quyền Approval chỉ đọc (<code>approval:approval:readonly</code>, <code>approval:instance:readonly</code>) rồi phát hành ứng dụng.</p>
+      <div class="kv" id="larkKv"></div>
+      <div class="form int-form" style="margin-top:10px">
+        <div class="row"><label class="fld"><span>Máy chủ</span><select id="lkDomain"><option value="larksuite">Lark (open.larksuite.com)</option><option value="feishu">Feishu (open.feishu.cn)</option></select></label><label class="fld grow"><span>App ID</span><input type="text" id="lkAppId" placeholder="cli_xxxxxxxxxxxxxxxx" autocomplete="off"></label><label class="fld grow"><span>App Secret</span><input type="password" id="lkAppSecret" autocomplete="new-password" placeholder="để trống = giữ khoá đã lưu"></label></div>
+        <div class="row"><label class="fld grow"><span>Mã quy trình duyệt (approval_code), mỗi dòng một mã; để trống = mọi quy trình ứng dụng được cấp quyền</span><textarea id="lkCodes" rows="2" placeholder="7C468A54-8745-2245-9675-08B7C63E7A85"></textarea></label></div>
+        <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
+        <div class="row acts"><button class="primary" id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkTest">Kiểm tra kết nối</button><span class="small muted" id="larkMsg"></span></div>
+      </div>
+    </div>
+
+    <div class="card" id="digestCard">
+      <h2>Bot Telegram gửi bản tin giọng nói</h2>
+      <p class="desc">Sau mỗi lần tổng hợp theo lịch, ứng dụng đọc bản tin bằng giọng tiếng Việt (Microsoft Edge TTS) và gửi file giọng nói kèm bản chữ vào Telegram qua bot. Tạo bot với <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>, bấm <b>Start</b> với bot (hoặc thêm bot vào nhóm), rồi điền chat ID nhận bản tin (nhắn cho @userinfobot để xem ID của bạn; ID nhóm bắt đầu bằng -100).</p>
+      <div class="kv" id="digestKv"></div>
+      <div class="form int-form" style="margin-top:10px">
+        <div class="row"><label class="fld grow"><span>Bot token</span><input type="password" id="dgToken" autocomplete="new-password" placeholder="123456789:AAH… (để trống = giữ token đã lưu)"></label><label class="fld"><span>Chat ID nhận bản tin</span><input type="text" id="dgChatId" placeholder="123456789 hoặc -100…" style="width:210px"></label></div>
+        <div class="row"><label class="fld"><span>Giọng đọc</span><select id="dgVoice"><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option></select></label><label class="fld"><span>Giờ gửi (HH:MM, cách nhau bằng dấu phẩy)</span><input type="text" id="dgTimes" placeholder="07:30, 17:30" style="width:210px"></label><label class="chk"><input type="checkbox" id="dgSendText" checked> Gửi kèm bản chữ</label><label class="chk"><input type="checkbox" id="dgEnabled"> Bật bản tin</label></div>
+        <div class="row acts"><button class="primary" id="btnDigestSave">Lưu cấu hình</button><button id="btnDigestTest">Kiểm tra bot</button><button id="btnDigestSend">Gửi tin thử</button><span class="small muted" id="digestMsg"></span></div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Bộ máy tổng hợp AI</h2>
       <p class="desc"><b>AI cục bộ</b>: model chạy ngay trong ứng dụng, không cần Claude, dữ liệu không rời máy; lần đầu cần tải model (~2 GB), máy 8 GB dùng model 3B. <b>Claude Cowork</b>: dùng lịch Cowork như trước (khi chọn AI cục bộ hãy tạm dừng lịch Cowork để hai bên không ghi đè nhau).</p>

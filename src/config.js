@@ -20,6 +20,7 @@ export const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
 export const MODELS_DIR = path.join(DATA_DIR, 'models');
 /** Phiên + API ID/Hash Telegram (tài khoản cá nhân), quyền 600, chuỗi phiên mã hoá bằng chuỗi của tài khoản. */
 export const TELEGRAM_FILE = path.join(DATA_DIR, 'telegram.json');
+export const INTEGRATIONS_FILE = path.join(DATA_DIR, 'integrations.json'); // khoá Email IMAP / Lark / bot bản tin (bí mật mã hoá)
 export const SENT_DIR = path.join(DATA_DIR, 'sent');
 export const EXPORTS_DIR = process.env.ZCA_EXPORTS_DIR
   ? path.resolve(process.env.ZCA_EXPORTS_DIR)

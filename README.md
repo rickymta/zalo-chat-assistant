@@ -140,6 +140,19 @@ sách nhóm**, tích các nhóm/kênh cần theo dõi, chọn số ngày lịch 
   Telegram giới hạn tần suất (FloodWait) thì ứng dụng tự chờ.
 - Không thấy nhóm trong danh sách: nhóm phải có ít nhất một tin và tài khoản phải đang là thành viên; kênh chỉ đọc cũng liệt kê được.
 
+### Màn Kết nối: khoá cho Email, Lark Approval và bot bản tin (từ 0.1.0)
+
+Thanh trái → **Kết nối** gom mọi khoá cấu hình vào một chỗ: Zalo (QR), Telegram (API ID/Hash + đăng nhập), **Email IMAP**
+(máy chủ, cổng, SSL, tài khoản, mật khẩu ứng dụng, thư mục, số ngày lấy về), **Lark Approval** (Lark/Feishu, App ID, App Secret,
+danh sách approval_code, số ngày) và **Bot Telegram gửi bản tin** (bot token, chat ID, giọng đọc, giờ gửi, gửi kèm bản chữ), cùng
+thẻ Bộ máy AI. Mỗi thẻ có **Lưu cấu hình** và **Kiểm tra kết nối** (IMAP đăng nhập rồi mở thư mục; Lark xin tenant token; bot gọi
+`getMe`, nút **Gửi tin thử** gửi một dòng xác nhận vào chat ID). Kết quả kiểm tra gần nhất hiện ngay trên thẻ.
+
+- Khoá lưu ở `data/integrations.json` (quyền 600); mật khẩu, App Secret và bot token được mã hoá bằng chuỗi mã hoá của tài khoản,
+  giao diện chỉ thấy "đã lưu". Lưu lại mà để trống ô bí mật thì giữ bí mật cũ.
+- Việc **đọc thư / phiếu duyệt và gửi bản tin theo lịch** là các bước kế tiếp (F3–F5 trong hợp đồng
+  `docs/2026-09-09-tong-hop-da-nguon-ai-cuc-bo-hop-dong-thuc-thi.md`); màn này chuẩn bị sẵn khoá để các bước đó chạy được ngay.
+
 ### Dùng thử trên máy khác không có Docker
 
 Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá

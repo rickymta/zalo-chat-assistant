@@ -100,3 +100,10 @@ họ. Mọi bí mật (phiên Telegram, mật khẩu IMAP, app_secret Lark, bot 
   callback chờ giao diện; danh sách nhóm; kéo lịch sử N ngày, tối đa 400 tin/nhóm, tiếp theo theo lastMsgId; nghe NewMessage; ghi
   chung bảng `messages/conversations` với `tg:` ⇒ mọi luồng cũ dùng nguyên), route `/api/telegram/*`, chặn `/send` cho `tg:`, thẻ Cài
   đặt Telegram, huy hiệu ✈️ ở cột hội thoại, dòng "Nguồn: TELEGRAM" trong gói. Thử với khoá API giả: máy trạng thái báo lỗi đúng và huỷ được.
+- 09/09/2026 (giao diện + khoá, chuẩn bị cho F3–F5): đổi tên ứng dụng thành **Chat Assistant** (thư mục dữ liệu và `~/Documents`
+  tự di trú từ tên cũ ở lần mở đầu), bố cục mới có thanh trái Hội thoại / Kết nối / Cài đặt, bỏ tính năng tin nhắn mẫu. Màn
+  **Kết nối** có đủ thẻ Zalo, Telegram, Email IMAP, Lark Approval, bot bản tin, Bộ máy AI; kho khoá `src/integrations.js`
+  (`data/integrations.json`, bí mật mã hoá bằng chuỗi của tài khoản), route `GET/POST /api/integrations/:kind` +
+  `POST /api/integrations/:kind/test` (IMAP: đăng nhập + mở thư mục; Lark: tenant_access_token; bot: getMe, tuỳ chọn gửi tin thử).
+  Đã kiểm tra: bí mật trên đĩa dạng `enc:v3:…`, lưu không kèm bí mật giữ bí mật cũ, thông báo lỗi thân thiện (sai host, sai token),
+  xác thực cổng/giờ/định dạng token. Bản 0.1.0-beta.4 (arm64) để người dùng nhập khoá thật.
