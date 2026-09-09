@@ -165,10 +165,11 @@ thẻ Bộ máy AI. Mỗi thẻ có **Lưu cấu hình** và **Kiểm tra kết 
   ứng dụng được cấp), số ngày, và Open ID của bạn (tuỳ chọn) để đánh dấu phiếu "chờ BẠN duyệt". Mỗi phiếu là một hội thoại `lark:` (📋),
   tên mang trạng thái hiện tại `[Chờ duyệt] Đề nghị thanh toán · #123`; mỗi bước (nộp phiếu kèm biểu mẫu, duyệt, từ chối, bình luận) là một tin.
   Tự đồng bộ mỗi 15 phút; phiếu còn chờ được xem lại cho tới khi có kết quả. Cần thêm quyền `contact:user.base:readonly` để hiện tên người thay mã.
-- **Bản tin giọng nói:** theo giờ đã đặt (mặc định 07:30 và 17:30), ứng dụng đồng bộ thư/phiếu → cập nhật gói → chạy AI cục bộ → dựng
-  bản tin từ báo cáo ngày (tổng quan, điểm nổi bật, việc cần làm, hội thoại chờ trả lời) → đọc bằng Microsoft Edge TTS (giọng Hoài My/Nam Minh,
-  MP3) → bot gửi `sendVoice` + bản chữ. Nút **Xem trước bản tin** (không gửi) và **Gửi bản tin ngay**. Máy ngủ qua giờ thì gửi bù trong 20 phút,
-  muộn hơn thì bỏ. Tệp giọng nói ở `data/digest/` (giữ 7 ngày); lịch sử gửi ở `data/digest.json`.
+- **Bản tin giọng nói (RIÊNG theo từng kênh):** theo giờ đã đặt (mặc định 07:30 và 17:30), ứng dụng đồng bộ thư/phiếu → cập nhật gói → chạy
+  AI cục bộ → dựng **một bản tin riêng cho mỗi kênh có nội dung** (Zalo 💬, Telegram ✈️, Email ✉️, Lark 📋), mỗi kênh có tóm tắt việc riêng
+  (việc gom theo từng người/nhóm) → đọc thành giọng nói và bot **gửi một voice + bản chữ riêng cho từng kênh**. Giọng chọn được: **Nữ miền Bắc
+  (Google)** mặc định, Hoài My (nữ miền Nam) hoặc Nam Minh (nam) của Microsoft. Nút **Xem trước bản tin** (hiện tất cả kênh, không gửi) và
+  **Gửi bản tin ngay**. Máy ngủ qua giờ thì gửi bù trong 20 phút, muộn hơn thì bỏ. Tệp giọng nói ở `data/digest/` (giữ 7 ngày); lịch sử ở `data/digest.json`.
 - Gói `du-lieu/` ghi dòng `Nguồn: EMAIL` / `Nguồn: LARK APPROVAL` cho từng hội thoại; AI cục bộ đọc dòng đó để hiểu "tin" là email hay bước duyệt.
 
 ### Dùng thử trên máy khác không có Docker

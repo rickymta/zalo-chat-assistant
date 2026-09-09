@@ -1923,7 +1923,15 @@
   $('#btnEmailSync').onclick = (e) => srcAction(e.currentTarget, '/api/mail/sync', '#emailMsg', 'Đang lấy thư — theo dõi ở dòng "Đồng bộ thư".');
   $('#btnLarkSync').onclick = (e) => srcAction(e.currentTarget, '/api/lark/sync', '#larkMsg', 'Đang lấy phiếu — theo dõi ở dòng "Đồng bộ phiếu".');
   $('#btnDigestNow').onclick = (e) => { if (!confirm('Gửi bản tin giọng nói ngay bây giờ?\nỨng dụng sẽ cập nhật dữ liệu, chạy AI cục bộ (có thể vài phút), đọc bản tin và gửi vào chat ID đã lưu.')) return; void srcAction(e.currentTarget, '/api/digest/send', '#digestMsg', 'Đang làm bản tin — theo dõi ở dòng "Bản tin".'); };
-  $('#btnDigestPreview').onclick = async (e) => { const msg = $('#digestMsg'); msg.textContent = ''; await busy(e.currentTarget, 'Đang dựng…', async () => { try { const r = await api('/api/digest/preview', { method: 'POST', body: {} }); const p = r.preview; $('#digestPreview').hidden = false; $('#digestPreview').textContent = (p ? 'BẢN CHỮ GỬI TELEGRAM\n' + p.text + '\n\nLỜI ĐỌC (' + p.spoken.length + ' ký tự)\n' + p.spoken : (r.lastError || 'Không dựng được.')); } catch (err) { msg.textContent = '❌ ' + err.message; } }); };
+  $('#btnDigestPreview').onclick = async (e) => { const msg = $('#digestMsg'); msg.textContent = ''; await busy(e.currentTarget, 'Đang dựng…', async () => {
+    try {
+      const r = await api('/api/digest/preview', { method: 'POST', body: {} });
+      const chans = r.preview?.channels || [];
+      $('#digestPreview').hidden = false;
+      if (!chans.length) { $('#digestPreview').textContent = 'Chưa có hoạt động mới trên kênh nào để dựng bản tin. ' + (r.lastError ? '(' + r.lastError + ')' : ''); return; }
+      $('#digestPreview').textContent = 'Sẽ gửi ' + chans.length + ' bản tin riêng cho từng kênh:\n\n' + chans.map((d) => '━━━ ' + (d.emoji || '') + ' ' + d.label + ' ━━━\nBẢN CHỮ:\n' + d.text + '\n\nLỜI ĐỌC (' + d.spoken.length + ' ký tự):\n' + d.spoken).join('\n\n\n');
+    } catch (err) { msg.textContent = '❌ ' + err.message; }
+  }); };
   // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
   const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
   function showView(name) {

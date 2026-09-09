@@ -92,53 +92,91 @@ export function spokenClean(s) {
 }
 
 /** Dựng hai bản: `spoken` (đọc) và `text` (gửi chữ) từ báo cáo ngày. */
-export function composeDigest(report, { now = Date.now(), label = '' } = {}) {
-  const date = report?.date ?? dayKeyVn(now);
-  const hhmm = hhmmVn(now);
-  const buoi = label || (Number(hhmm.slice(0, 2)) < 12 ? 'sáng' : (Number(hhmm.slice(0, 2)) < 18 ? 'chiều' : 'tối'));
-  const ov = report?.overview ?? {};
-  // loadReport() trải tổng quan của AI vào overview.claudeSummary / claudeBrief / highlights và actionItems ở gốc.
-  const claude = ov.claudeSummary || ov.claudeBrief || ov.highlights?.length ? { summary: ov.claudeSummary, brief: ov.claudeBrief, highlights: ov.highlights ?? [] } : null;
-  const convs = (report?.conversations ?? []).filter((c) => c);
-  const withAi = convs.filter((c) => c.claude);
-  const tasks = (Array.isArray(report?.actionItems) && report.actionItems.length
-    ? report.actionItems.map((a) => ({ name: a.name, task: a.task, priority: a.priority ?? 'P3' }))
-    : convs.flatMap((c) => (c.claude?.tasksForYou ?? []).map((t) => ({ name: c.name, task: t, priority: c.claude?.priority ?? 'P3' })))
-  ).filter((t) => t.task).sort((a, b) => (PRIO[a.priority] ?? 9) - (PRIO[b.priority] ?? 9));
-  const taskGroups = groupTasks(tasks);
-  const waiting = convs.filter((c) => !c.isGroup && c.lastOutbound === false && c.inbound > 0);
-  const hot = withAi.filter((c) => ['P1', 'P2'].includes(c.claude?.priority)).slice(0, 5);
+/** Kênh nguồn suy từ tiền tố account_id. */
+export const CHANNELS = [
+  { key: 'zalo', label: 'Zalo', emoji: '💬' },
+  { key: 'telegram', label: 'Telegram', emoji: '✈️' },
+  { key: 'email', label: 'Email', emoji: '✉️' },
+  { key: 'lark', label: 'Lark Approval', emoji: '📋' },
+];
+export function sourceOf(id) { id = String(id ?? ''); return id.startsWith('tg:') ? 'telegram' : id.startsWith('mail:') ? 'email' : id.startsWith('lark:') ? 'lark' : 'zalo'; }
+const buoiOf = (hhmm) => (Number(hhmm.slice(0, 2)) < 12 ? 'sáng' : (Number(hhmm.slice(0, 2)) < 18 ? 'chiều' : 'tối'));
+function counts(convs) {
+  const messages = convs.reduce((n, c) => n + (c.messages || 0), 0);
+  const waiting = convs.filter((c) => !c.isGroup && c.lastOutbound === false && (c.inbound || 0) > 0);
+  return { conversations: convs.length, messages, needReply: waiting.length, waiting };
+}
+/** Danh sách việc [{name, task, priority, accountId}] từ báo cáo (actionItems) hoặc từ tasksForYou của hội thoại. */
+function tasksOf(report, convs) {
+  return (Array.isArray(report?.actionItems) && report.actionItems.length
+    ? report.actionItems.map((a) => ({ name: a.name, task: a.task, priority: a.priority ?? 'P3', accountId: a.accountId }))
+    : convs.flatMap((c) => (c.claude?.tasksForYou ?? []).map((t) => ({ name: c.name, task: t, priority: c.claude?.priority ?? 'P3', accountId: c.accountId })))
+  ).filter((t) => t.task);
+}
+
+/** Dựng MỘT bản tin (bản đọc + bản chữ) cho một tập hội thoại/việc. `label` rỗng = bản gộp mọi kênh. */
+export function composeOne({ date, hhmm, buoi, label = '', emoji = '🗞', convs, tasks, claude = null }) {
+  const c = counts(convs);
+  const withAi = convs.filter((x) => x.claude);
+  const hot = withAi.filter((x) => ['P1', 'P2'].includes(x.claude?.priority)).slice(0, 5);
+  const taskGroups = groupTasks([...tasks].sort((a, b) => (PRIO[a.priority] ?? 9) - (PRIO[b.priority] ?? 9)));
+  const overviewText = spokenClean(claude?.summary || claude?.brief || '');
+  const stt = ['một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám'];
 
   const sp = [];
-  sp.push(`Bản tin ${buoi} ngày ${dateVnText(date)}, lúc ${hhmm.replace(':', ' giờ ')}.`);
-  if (ov.conversations != null) sp.push(`Hôm nay có ${ov.conversations} hội thoại với ${ov.messages ?? 0} tin, trong đó ${ov.needReply ?? waiting.length} hội thoại đang chờ bạn trả lời.`);
-  const overviewText = spokenClean(claude?.summary || claude?.brief || '');
+  sp.push(`Bản tin ${buoi}${label ? `, kênh ${label}` : ''} ngày ${dateVnText(date)}, lúc ${hhmm.replace(':', ' giờ ')}.`);
+  sp.push(`${label ? `Kênh ${label} có` : 'Hôm nay có'} ${c.conversations} hội thoại với ${c.messages} tin, trong đó ${c.needReply} hội thoại đang chờ bạn trả lời.`);
   if (overviewText) sp.push(short(overviewText, 900));
+  else if (hot.length) sp.push('Cần chú ý: ' + hot.map((x) => `${x.name}: ${spokenClean(x.claude.brief || x.claude.summary)}`).join('. ') + '.');
   if (claude?.highlights?.length) sp.push('Điểm nổi bật: ' + claude.highlights.slice(0, 5).map((h, i) => `${i + 1}, ${spokenClean(h)}`).join('. ') + '.');
-  else if (hot.length) sp.push('Cần chú ý: ' + hot.map((c) => `${c.name}: ${spokenClean(c.claude.brief || c.claude.summary)}`).join('. ') + '.');
   if (taskGroups.length) {
-    const stt = ['một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám'];
     const say = (g) => `Với ${g.name}: ` + g.tasks.map((t, i) => (g.tasks.length > 1 ? `${stt[i] || (i + 1)}, ` : '') + spokenClean(t)).join('; ') + '.';
     sp.push(`Việc cần bạn xử lý, ${tasks.length} việc cho ${taskGroups.length} người. ` + taskGroups.map(say).join(' '));
   }
-  if (waiting.length) sp.push(`Đang chờ trả lời: ${waiting.slice(0, 5).map((c) => c.name).join(', ')}${waiting.length > 5 ? ` và ${waiting.length - 5} hội thoại khác` : ''}.`);
-  if (!overviewText && !tasks.length && !waiting.length) sp.push('Chưa có nội dung tổng hợp mới. Hết bản tin.'); else sp.push('Hết bản tin.');
+  if (c.waiting.length) sp.push(`Đang chờ trả lời: ${c.waiting.slice(0, 5).map((x) => x.name).join(', ')}${c.waiting.length > 5 ? ` và ${c.waiting.length - 5} hội thoại khác` : ''}.`);
+  if (!overviewText && !taskGroups.length && !c.waiting.length && !hot.length) sp.push('Chưa có nội dung mới. Hết bản tin.'); else sp.push('Hết bản tin.');
   let spoken = sp.join(' ');
   if (spoken.length > MAX_SPOKEN) spoken = spoken.slice(0, MAX_SPOKEN - 20).replace(/[^.]*$/, '') + ' Hết bản tin.';
 
   const tx = [];
-  tx.push(`🗞 Bản tin ${buoi} ${dateVnText(date)} · ${hhmm}`);
-  if (ov.conversations != null) tx.push(`${ov.conversations} hội thoại · ${ov.messages ?? 0} tin · ${ov.needReply ?? waiting.length} đang chờ trả lời`);
+  tx.push(`${emoji} Bản tin ${buoi}${label ? ` · ${label}` : ''} ${dateVnText(date)} · ${hhmm}`);
+  tx.push(`${c.conversations} hội thoại · ${c.messages} tin · ${c.needReply} đang chờ trả lời`);
   if (overviewText) tx.push('', short(overviewText, 1200));
   if (claude?.highlights?.length) tx.push('', '✨ Nổi bật:', ...claude.highlights.slice(0, 6).map((h) => `• ${spokenClean(h)}`));
+  else if (hot.length) tx.push('', '⭐ Cần chú ý:', ...hot.map((x) => `• ${x.name}: ${spokenClean(x.claude.brief || x.claude.summary)}`));
   if (taskGroups.length) {
     tx.push('', `✅ Việc của bạn (${tasks.length} việc · ${taskGroups.length} người/nhóm):`);
     for (const g of taskGroups) { tx.push(`👤 ${g.name}${g.priority ? ` [${g.priority}]` : ''}:`, ...g.tasks.map((t) => `   • ${spokenClean(t)}`)); }
   }
-  if (waiting.length) tx.push('', `⏳ Chờ trả lời (${waiting.length}): ` + waiting.slice(0, 8).map((c) => c.name).join(', '));
+  if (c.waiting.length) tx.push('', `⏳ Chờ trả lời (${c.waiting.length}): ` + c.waiting.slice(0, 8).map((x) => x.name).join(', '));
+  if (tx.length <= 2) tx.push('', 'Chưa có nội dung tổng hợp mới.');
   let text = tx.join('\n');
   if (text.length > MAX_TG_TEXT) text = text.slice(0, MAX_TG_TEXT - 2) + '…';
-  return { spoken, text, date, hhmm, counts: { conversations: ov.conversations ?? 0, tasks: tasks.length, waiting: waiting.length } };
+  return { spoken, text, date, hhmm, counts: { conversations: c.conversations, messages: c.messages, tasks: tasks.length, waiting: c.waiting.length } };
+}
+
+/** Bản tin GỘP mọi kênh (dùng cho xem trước tổng và tương thích cũ). */
+export function composeDigest(report, { now = Date.now() } = {}) {
+  const date = report?.date ?? dayKeyVn(now); const hhmm = hhmmVn(now); const buoi = buoiOf(hhmm);
+  const convs = (report?.conversations ?? []).filter(Boolean);
+  const ov = report?.overview ?? {};
+  const claude = (ov.claudeSummary || ov.claudeBrief || ov.highlights?.length) ? { summary: ov.claudeSummary, brief: ov.claudeBrief, highlights: ov.highlights ?? [] } : null;
+  return composeOne({ date, hhmm, buoi, convs, tasks: tasksOf(report, convs), claude });
+}
+
+/** Một bản tin RIÊNG cho mỗi kênh có nội dung (Zalo / Telegram / Email / Lark). */
+export function composeChannelDigests(report, { now = Date.now() } = {}) {
+  const date = report?.date ?? dayKeyVn(now); const hhmm = hhmmVn(now); const buoi = buoiOf(hhmm);
+  const convs = (report?.conversations ?? []).filter(Boolean);
+  const tasks = tasksOf(report, convs);
+  const out = [];
+  for (const ch of CHANNELS) {
+    const cc = convs.filter((c) => sourceOf(c.accountId) === ch.key);
+    const ct = tasks.filter((t) => sourceOf(t.accountId) === ch.key);
+    if (!cc.length && !ct.length) continue;
+    out.push({ channel: ch.key, label: ch.label, emoji: ch.emoji, ...composeOne({ date, hhmm, buoi, label: ch.label, emoji: ch.emoji, convs: cc, tasks: ct, claude: null }) });
+  }
+  return out;
 }
 
 export class DigestManager extends EventEmitter {
@@ -193,28 +231,39 @@ export class DigestManager extends EventEmitter {
       if (!skipRefresh && this.refresh) { try { await this.refresh(); } catch (err) { this.log?.warn(`Bản tin: làm mới dữ liệu lỗi, dùng báo cáo hiện có: ${err?.message ?? err}`); } }
       this.phase = 'compose'; this.emitChange();
       const report = this.getReport(dayKeyVn(Date.now()));
-      const d = composeDigest(report);
-      entry = { ...entry, date: d.date, counts: d.counts, textChars: d.text.length, spokenChars: d.spoken.length };
-      if (preview) { entry.ok = true; entry.preview = true; this.lastPreview = { ...d, at: Date.now() }; return { ...this.status(), preview: d }; }
-      this.phase = 'tts'; this.emitChange();
-      const audio = await this.synthesize(d.spoken, cfg.voice);
-      entry.audio = path.basename(audio.file); entry.audioBytes = audio.bytes;
-      this.phase = 'send'; this.emitChange();
+      // MỖI KÊNH một bản tin riêng (Zalo / Telegram / Email / Lark), gửi voice riêng. Không có kênh nào có nội dung ⇒ một dòng báo "chưa có".
+      const digests = composeChannelDigests(report, { now: Date.now() });
+      entry = { ...entry, date: report?.date ?? dayKeyVn(Date.now()), channels: digests.map((d) => ({ channel: d.channel, counts: d.counts })) };
+      if (preview) { entry.ok = true; entry.preview = true; this.lastPreview = { channels: digests, at: Date.now() }; return { ...this.status(), preview: { channels: digests } }; }
       const base = `https://api.telegram.org/bot${cfg.botToken}`;
-      const form = new FormData();
-      form.append('chat_id', cfg.chatId);
-      form.append('caption', short(`🗞 Bản tin ${dateVnText(d.date)} · ${d.hhmm} — ${d.counts.conversations} hội thoại, ${d.counts.tasks} việc, ${d.counts.waiting} chờ trả lời`, 1000));
-      form.append('voice', new Blob([fs.readFileSync(audio.file)], { type: 'audio/mpeg' }), `ban-tin-${d.date}-${d.hhmm.replace(':', '')}.mp3`);
-      const rv = await fetch(`${base}/sendVoice`, { method: 'POST', body: form, signal: AbortSignal.timeout(60000) }).then((r) => r.json());
-      if (!rv.ok) throw new Error(`sendVoice thất bại (${rv.error_code}): ${rv.description}`);
-      entry.voiceMsgId = rv.result?.message_id ?? null;
-      if (cfg.sendText !== false) {
-        const rt = await fetch(`${base}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chatId, text: d.text, disable_web_page_preview: true }), signal: AbortSignal.timeout(30000) }).then((r) => r.json());
-        if (!rt.ok) this.log?.warn(`Bản tin: gửi bản chữ thất bại (${rt.error_code}): ${rt.description}`); else entry.textMsgId = rt.result?.message_id ?? null;
+      if (!digests.length) {
+        this.phase = 'send'; this.emitChange();
+        await fetch(`${base}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chatId, text: `🗞 Bản tin ${dateVnText(report?.date ?? dayKeyVn(Date.now()))}: chưa có hoạt động mới trên các kênh.` }), signal: AbortSignal.timeout(30000) }).then((r) => r.json());
+        entry.ok = true; entry.empty = true;
+      } else {
+        const results = [];
+        for (const d of digests) {
+          this.phase = 'tts'; this.emitChange();
+          const audio = await this.synthesize(d.spoken, cfg.voice, `-${d.channel}`);
+          this.phase = 'send'; this.emitChange();
+          const form = new FormData();
+          form.append('chat_id', cfg.chatId);
+          form.append('caption', short(`${d.emoji} ${d.label} · ${dateVnText(d.date)} ${d.hhmm} — ${d.counts.conversations} hội thoại, ${d.counts.tasks} việc, ${d.counts.waiting} chờ trả lời`, 1000));
+          form.append('voice', new Blob([fs.readFileSync(audio.file)], { type: 'audio/mpeg' }), `ban-tin-${d.channel}-${d.date}-${d.hhmm.replace(':', '')}.mp3`);
+          const rv = await fetch(`${base}/sendVoice`, { method: 'POST', body: form, signal: AbortSignal.timeout(60000) }).then((r) => r.json());
+          if (!rv.ok) throw new Error(`sendVoice (${d.label}) thất bại (${rv.error_code}): ${rv.description}`);
+          if (cfg.sendText !== false) {
+            const rt = await fetch(`${base}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chatId, text: d.text, disable_web_page_preview: true }), signal: AbortSignal.timeout(30000) }).then((r) => r.json());
+            if (!rt.ok) this.log?.warn(`Bản tin ${d.label}: gửi bản chữ thất bại (${rt.error_code}): ${rt.description}`);
+          }
+          results.push(`${d.label} ${Math.round(audio.bytes / 1024)}KB`);
+          await new Promise((r) => setTimeout(r, 400));   // giãn nhịp giữa các kênh cho Telegram
+        }
+        entry.ok = true; entry.sent = results;
+        this.log?.info(`Bản tin (${reason}): đã gửi ${digests.length} kênh riêng (${results.join(', ')}) vào chat ${cfg.chatId} (${((Date.now() - t0) / 1000).toFixed(0)}s).`);
       }
-      entry.ok = true; entry.ms = Date.now() - t0;
+      entry.ms = Date.now() - t0;
       if (key) (this.state.sent ??= {})[key] = { at: Date.now() };
-      this.log?.info(`Bản tin (${reason}): đã gửi giọng nói ${Math.round(audio.bytes / 1024)} KB${cfg.sendText !== false ? ' + bản chữ' : ''} vào chat ${cfg.chatId} (${((Date.now() - t0) / 1000).toFixed(0)}s).`);
       this.cleanup();
     } catch (err) {
       entry.error = String(err?.message ?? err).slice(0, 300); this.lastError = entry.error;
@@ -227,9 +276,9 @@ export class DigestManager extends EventEmitter {
   }
 
   /** Đọc văn bản → MP3 trong data/digest/. Giọng "google" = giọng nữ MIỀN BẮC của Google (không cần khoá); còn lại là giọng Edge. */
-  async synthesize(text, voice = DEFAULT_VOICE) {
+  async synthesize(text, voice = DEFAULT_VOICE, tag = '') {
     fs.mkdirSync(this.dir, { recursive: true });
-    const dest = path.join(this.dir, `ban-tin-${dayKeyVn(Date.now())}-${hhmmVn(Date.now()).replace(':', '')}.mp3`);
+    const dest = path.join(this.dir, `ban-tin-${dayKeyVn(Date.now())}-${hhmmVn(Date.now()).replace(':', '')}${tag}-${Math.random().toString(36).slice(2, 6)}.mp3`);
     if (isGoogleVoice(voice)) await googleTtsToFile(text, dest);
     else await edgeTtsToFile(text, voice, this.dir, dest);
     const bytes = fs.statSync(dest).size;

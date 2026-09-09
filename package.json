@@ -1,6 +1,6 @@
 {
   "name": "zalo-chat-assistant",
-  "version": "0.1.0-beta.7",
+  "version": "0.1.0-beta.8",
   "private": true,
   "description": "Chat Assistant — lưu tin nhắn Zalo và Telegram (mã hoá) trên máy, tổng hợp bằng AI cục bộ, gợi ý trả lời, bản tin giọng nói.",
   "type": "module",
