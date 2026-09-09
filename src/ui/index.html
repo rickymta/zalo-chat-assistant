@@ -768,7 +768,6 @@
     <select id="presetSel" class="chat-only" title="Kiểu dữ liệu đưa vào gói tổng hợp"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
     <button class="primary chat-only" id="btnWsUpdate">📁 Cập nhật gói dữ liệu</button>
     <button class="chat-only" data-open="workspace" title="Mở thư mục làm việc trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
-    <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
   </header>
   <div class="ws-line chat-only"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
   <div id="reencryptBar" hidden></div>
@@ -1953,7 +1952,7 @@
       + (state.integrations ? ['email', 'lark', 'digest'].map((k) => { const d = state.integrations[k] || {}; const label = { email: 'Email', lark: 'Lark', digest: 'Bot bản tin' }[k]; return '<span class="pill ' + (d.configured && d.enabled ? 'ok' : '') + '">' + label + ' ' + (d.configured ? (d.enabled ? 'đang bật' : 'đã cấu hình') : 'chưa cấu hình') + '</span>'; }).join('') : '');
   }
   $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
-  $('#btnReportRail').onclick = () => $('#btnReport').click();
+  $('#btnReportRail').onclick = openReport;
   function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -2051,7 +2050,6 @@
     }).join('') + '</div>' : '<div class="card"><div class="empty">Không có hội thoại nào có tin trong ngày này.</div></div>';
     $('#rpBody').innerHTML = tiles + overview + actions + convs;
   }
-  $('#btnReport').onclick = openReport;
   $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
   const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
   $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);

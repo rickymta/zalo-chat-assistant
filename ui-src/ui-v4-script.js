@@ -925,7 +925,7 @@
       + (state.integrations ? ['email', 'lark', 'digest'].map((k) => { const d = state.integrations[k] || {}; const label = { email: 'Email', lark: 'Lark', digest: 'Bot bản tin' }[k]; return '<span class="pill ' + (d.configured && d.enabled ? 'ok' : '') + '">' + label + ' ' + (d.configured ? (d.enabled ? 'đang bật' : 'đã cấu hình') : 'chưa cấu hình') + '</span>'; }).join('') : '');
   }
   $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
-  $('#btnReportRail').onclick = () => $('#btnReport').click();
+  $('#btnReportRail').onclick = openReport;
   function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
@@ -1023,7 +1023,6 @@
     }).join('') + '</div>' : '<div class="card"><div class="empty">Không có hội thoại nào có tin trong ngày này.</div></div>';
     $('#rpBody').innerHTML = tiles + overview + actions + convs;
   }
-  $('#btnReport').onclick = openReport;
   $('#rpDate').onchange = () => { report.date = $('#rpDate').value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); };
   const stepDate = (dir) => { const o = [...$('#rpDate').options]; const i = o.findIndex((x) => x.value === report.date); const j = i + dir; if (j >= 0 && j < o.length) { report.date = o[j].value; renderDateSelect(); loadReport().catch((e) => toast(e.message)); } };
   $('#rpPrev').onclick = () => stepDate(1); $('#rpNext').onclick = () => stepDate(-1);
