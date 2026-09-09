@@ -840,7 +840,7 @@
       + '<div>Quy trình theo dõi</div><div>' + (l.approvalCodes?.length ? l.approvalCodes.length + ' mã' : 'tất cả') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(l.lastTest) + '</div>';
     $('#digestKv').innerHTML = '<div>Trạng thái</div><div>' + (g.configured ? (g.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có bot token / chat ID') + '</div>'
-      + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' : 'chưa có') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
+      + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' + (g.botTokenHint ? ' · <code>' + esc(g.botTokenHint) + '</code>' : '') : 'chưa có — dán token rồi bấm <b>Lưu cấu hình</b> trước khi kiểm tra') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
       + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(g.voice || '') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>';
     if (!INT_FILLED.email) fillIntegration('email', e);

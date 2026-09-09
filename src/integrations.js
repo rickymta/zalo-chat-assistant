@@ -39,6 +39,7 @@ export class IntegrationStore {
   /** Bản cho giao diện: bí mật thay bằng cờ has<Field>. */
   view(kind) {
     const d = this.secrets(kind);
+    if (kind === 'digest' && d.botToken) d.botTokenHint = tokenHint(d.botToken);
     for (const f of SECRET_FIELDS[kind] ?? []) { d[`has${f[0].toUpperCase()}${f.slice(1)}`] = !!d[f]; delete d[f]; }
     d.configured = this.isConfigured(kind, this.secrets(kind));
     d.lastTest = this.lastTest[kind] ?? null;
@@ -113,6 +114,13 @@ export class IntegrationStore {
   }
 }
 
+/** Dạng che của bot token để người dùng đối chiếu với BotFather mà không lộ token: `<id bot>:AAH…k2Q (35 ký tự sau dấu hai chấm)`. */
+export function tokenHint(token) {
+  const i = String(token).indexOf(':'); if (i < 0) return '';
+  const id = token.slice(0, i), secret = token.slice(i + 1);
+  return `${id}:${secret.slice(0, 3)}…${secret.slice(-3)} (${secret.length} ký tự sau dấu hai chấm)`;
+}
+
 function friendlyError(err) {
   const m = String(err?.message ?? err);
   if (/ENOTFOUND|EAI_AGAIN/.test(m)) return 'Không tìm thấy máy chủ (sai host hoặc chưa có mạng).';
@@ -146,7 +154,10 @@ async function testBot(d, sendTest) {
   if (!d.botToken) throw new Error('Chưa có bot token.');
   const base = `https://api.telegram.org/bot${d.botToken}`;
   const me = await fetch(`${base}/getMe`, { signal: AbortSignal.timeout(15000) }).then((r) => r.json()).catch((e) => { throw new Error(`Không gọi được Telegram: ${e?.message ?? e}`); });
-  if (!me.ok) throw new Error(`Telegram từ chối token (${me.error_code}): ${me.description}`);
+  if (!me.ok) {
+    if (me.error_code === 401) throw new Error(`Telegram không nhận token này (401 Unauthorized). Token đang lưu: ${tokenHint(d.botToken)} — mở BotFather → /mybots → API Token, so từng ký tự đầu/cuối và độ dài (thường 35 ký tự sau dấu hai chấm); thiếu hay dư một ký tự khi sao chép, hoặc đã bấm /revoke để cấp token mới, đều gây 401. Dán lại token rồi bấm Lưu cấu hình trước khi kiểm tra.`);
+    throw new Error(`Telegram từ chối token (${me.error_code}): ${me.description}`);
+  }
   const out = { bot: me.result?.username ? `@${me.result.username}` : me.result?.first_name, sent: false };
   if (sendTest) {
     if (!d.chatId) throw new Error('Chưa có chat ID để gửi tin thử.');
