@@ -67,6 +67,8 @@ const css = `
   .int-form .acts { margin-top: 2px; }
   .int-form .acts .muted { max-width: 100%; }
   .kv .ok { color: #15803d; } .kv .bad { color: #b91c1c; }
+  .int-form details.adv summary { cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+  .digest-preview { white-space: pre-wrap; font: 13px/1.45 -apple-system, system-ui, sans-serif; background: #f6f8fc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
   .tg-dialogs label:last-child { border-bottom: 0; }

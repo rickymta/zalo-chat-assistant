@@ -107,3 +107,10 @@ họ. Mọi bí mật (phiên Telegram, mật khẩu IMAP, app_secret Lark, bot 
   `POST /api/integrations/:kind/test` (IMAP: đăng nhập + mở thư mục; Lark: tenant_access_token; bot: getMe, tuỳ chọn gửi tin thử).
   Đã kiểm tra: bí mật trên đĩa dạng `enc:v3:…`, lưu không kèm bí mật giữ bí mật cũ, thông báo lỗi thân thiện (sai host, sai token),
   xác thực cổng/giờ/định dạng token. Bản 0.1.0-beta.4 (arm64) để người dùng nhập khoá thật.
+- 09/09/2026 (F3–F5 code xong, chưa thử với tài khoản thật): `src/mail/{discover,manager}.js` (dò IMAP từ email; đồng bộ theo UID,
+  gom chuỗi, ghi `mail:`), `src/lark/manager.js` (query instances + chi tiết/timeline, ghi `lark:`, tên mang trạng thái),
+  `src/digest/manager.js` (composeDigest từ loadReport → msedge-tts MP3 → sendVoice + sendMessage; lịch 30 s/lần, chống trùng theo
+  "ngày giờ"), route `/api/mail/*`, `/api/lark/*`, `/api/digest/*`, chip nguồn Email/Lark, thẻ Kết nối có Đồng bộ ngay / Xem trước /
+  Gửi bản tin ngay. Kiểm tra bằng khoá ĐÃ NHẬP TRÊN BIỂU MẪU, đúng mới lưu (người dùng yêu cầu sau khi hiểu nhầm "401").
+  Phát hiện: mail meddental.vn do Microsoft 365 host và trả "Login is disabled" cho IMAP mật khẩu ⇒ F3 với hộp thư công ty cần
+  OAuth2 (device code) hoặc quản trị viên bật xác thực cơ bản — ghi nợ F3b. Edge TTS thử OK (60 KB MP3 / 9 s).

@@ -10,7 +10,7 @@ import { isEncrypted } from './crypto/cipher.js';
 const SECRET_FIELDS = { email: ['password'], lark: ['appSecret'], digest: ['botToken'] };
 const DEFAULTS = {
   email: { enabled: false, host: '', port: 993, secure: true, user: '', password: '', folder: 'INBOX', days: 7 },
-  lark: { enabled: false, domain: 'larksuite', appId: '', appSecret: '', approvalCodes: [], days: 7 },
+  lark: { enabled: false, domain: 'larksuite', appId: '', appSecret: '', approvalCodes: [], days: 7, userId: '' },
   digest: { enabled: false, botToken: '', chatId: '', voice: 'vi-VN-HoaiMyNeural', times: ['07:30', '17:30'], sendText: true },
 };
 export const KINDS = Object.keys(DEFAULTS);
@@ -47,7 +47,7 @@ export class IntegrationStore {
   }
   viewAll() { const o = {}; for (const k of KINDS) o[k] = this.view(k); return o; }
   isConfigured(kind, d) {
-    if (kind === 'email') return !!(d.host && d.user && d.password);
+    if (kind === 'email') return !!(d.user && d.password);
     if (kind === 'lark') return !!(d.appId && d.appSecret);
     if (kind === 'digest') return !!(d.botToken && d.chatId);
     return false;
@@ -55,6 +55,7 @@ export class IntegrationStore {
 
   set(kind, patch = {}) {
     this.data[kind] = this.buildNext(kind, patch); this.save();
+    this.onChange?.(kind);
     return this.view(kind);
   }
   /** Dựng bản cấu hình mới từ bản đã lưu + thay đổi (xác thực đầu vào, mã hoá bí mật) — KHÔNG ghi đĩa. */
@@ -77,6 +78,7 @@ export class IntegrationStore {
       if (patch.appId !== undefined) next.appId = str(patch.appId, 100);
       if (patch.approvalCodes !== undefined) next.approvalCodes = (Array.isArray(patch.approvalCodes) ? patch.approvalCodes : String(patch.approvalCodes).split(/[\n,;]+/)).map((x) => String(x).trim()).filter(Boolean).slice(0, 50);
       if (patch.days !== undefined) next.days = Math.min(Math.max(Math.round(Number(patch.days) || 7), 1), 60);
+      if (patch.userId !== undefined) next.userId = str(patch.userId, 100);   // open_id của chính người dùng để đánh dấu "chờ BẠN duyệt" (tuỳ chọn)
       if (patch.enabled !== undefined) next.enabled = !!patch.enabled;
       if (typeof patch.appSecret === 'string' && patch.appSecret) next.appSecret = this.enc(patch.appSecret);
     } else if (kind === 'digest') {
@@ -113,8 +115,10 @@ export class IntegrationStore {
       else if (kind === 'lark') result = await testLark(d);
       else if (kind === 'digest') result = await testBot(d, sendTest);
       else throw new Error('Loại cấu hình không hợp lệ.');
-      result = { ok: true, ...result, saved: !!patch };
-      if (patch) { this.data[kind] = next; this.save(); }
+      const { apply, ...rest } = result ?? {};
+      result = { ok: true, ...rest, saved: !!patch || !!apply };
+      if (apply) Object.assign(next, apply);          // máy chủ IMAP dò được ⇒ ghi lại để các lần sau không dò nữa
+      if (patch || apply) { this.data[kind] = next; this.save(); this.onChange?.(kind); }
     } catch (err) {
       result = { ok: false, error: friendlyError(err) };
     }
@@ -132,7 +136,7 @@ export function tokenHint(token) {
   return `${id}:${secret.slice(0, 3)}…${secret.slice(-3)} (${secret.length} ký tự sau dấu hai chấm)`;
 }
 
-function friendlyError(err) {
+export function friendlyError(err) {
   const m = String(err?.message ?? err);
   if (/ENOTFOUND|EAI_AGAIN/.test(m)) return 'Không tìm thấy máy chủ (sai host hoặc chưa có mạng).';
   if (/ECONNREFUSED/.test(m)) return 'Máy chủ từ chối kết nối (sai cổng hoặc chưa mở IMAP).';
@@ -142,14 +146,29 @@ function friendlyError(err) {
 }
 
 async function testImap(d) {
-  if (!d.host || !d.user || !d.password) throw new Error('Chưa đủ host, tài khoản, mật khẩu.');
+  if (!d.user || !d.password) throw new Error('Cần địa chỉ email và mật khẩu.');
   const { ImapFlow } = await import('imapflow');
-  const client = new ImapFlow({ host: d.host, port: d.port, secure: !!d.secure, auth: { user: d.user, pass: d.password }, logger: false, connectionTimeout: 15000, greetingTimeout: 10000 });
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock(d.folder || 'INBOX');
-    try { return { mailbox: client.mailbox?.path, messages: client.mailbox?.exists ?? null }; } finally { lock.release(); }
-  } finally { await client.logout().catch(() => {}); }
+  const tryLogin = async (c) => {
+    const client = new ImapFlow({ host: c.host, port: c.port, secure: !!c.secure, auth: { user: d.user, pass: d.password }, logger: false, connectionTimeout: 15000, greetingTimeout: 10000 });
+    await client.connect();
+    try {
+      const lock = await client.getMailboxLock(d.folder || 'INBOX');
+      try { return { mailbox: client.mailbox?.path, messages: client.mailbox?.exists ?? null }; } finally { lock.release(); }
+    } finally { await client.logout().catch(() => {}); }
+  };
+  if (d.host) return tryLogin(d);
+  // Chưa có máy chủ ⇒ dò từ địa chỉ email: nhà cung cấp quen → MX → SRV → tên quen; đăng nhập thử theo thứ tự, ứng viên nào vào được thì lưu.
+  const { discoverImap, reachableCandidates } = await import('./mail/discover.js');
+  const disc = await discoverImap(d.user);
+  const reachable = await reachableCandidates(disc.candidates);
+  if (!reachable.length) throw new Error(`Không tìm được máy chủ IMAP cho ${disc.domain} (đã thử ${disc.candidates.length} địa chỉ). Nhập máy chủ và cổng ở mục Nâng cao.`);
+  const errors = [];
+  for (const c of reachable) {
+    try { const r = await tryLogin(c); return { ...r, apply: { host: c.host, port: c.port, secure: c.secure }, discovered: `${c.host}:${c.port} (${c.reason})`, note: c.note ?? null }; }
+    catch (err) { errors.push(`${c.host}:${c.port} — ${friendlyError(err)}`); if (/AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|authentication/i.test(String(err?.message))) break; }
+  }
+  const hint = reachable[0]?.note ? ` ${reachable[0].note}` : '';
+  throw new Error(`Đã tìm thấy máy chủ nhưng không đăng nhập được: ${errors[0] ?? 'không rõ'}.${hint}`);
 }
 
 export function larkBase(domain) { return domain === 'feishu' ? 'https://open.feishu.cn' : 'https://open.larksuite.com'; }

@@ -30,6 +30,7 @@ export function parseConversationFile(text) {
   const m = {
     name: /^# Hội thoại: (.*)$/m.exec(text)?.[1]?.trim() ?? '(chưa rõ tên)',
     isGroup: /- Loại: Nhóm/.test(text),
+    source: /^- Nguồn: EMAIL/m.test(text) ? 'email' : (/^- Nguồn: LARK/m.test(text) ? 'lark' : (/^- Nguồn: TELEGRAM/m.test(text) ? 'telegram' : 'zalo')),
     threadId: /Mã thread: `([^`]+)`/.exec(text)?.[1] ?? null,
     accountId: /Mã tài khoản: `([^`]+)`/.exec(text)?.[1] ?? null,
     phone: /^- SĐT khách: (.*)$/m.exec(text)?.[1]?.trim() ?? '',

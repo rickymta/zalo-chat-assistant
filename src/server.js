@@ -52,7 +52,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram, integrations }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai, telegram, integrations, mail, lark, digest }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -78,6 +78,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('update', (d) => broadcast('update', d));
   events.on('ai', (d) => broadcast('ai', d));
   events.on('telegram', (d) => broadcast('telegram', d));
+  for (const ev of ['mail', 'lark', 'digest']) events.on(ev, (d) => broadcast(ev, d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -108,8 +109,8 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   // ── Trạng thái tổng ──────────────────────────────────────────────────────────
   app.get('/api/state', async () => {
     const unlocked = security.unlocked;
-    // Tài khoản Telegram (tg:) không phải Zalo — không đưa vào dải Zalo trên thanh trên (có mục riêng ở Cài đặt).
-    const accounts = unlocked ? db.listAccounts().filter((a) => !String(a.id).startsWith('tg:')).map((a) => ({
+    // Tài khoản Telegram/Email/Lark (tg:, mail:, lark:) không phải Zalo — không đưa vào dải Zalo trên thanh trên (có thẻ riêng ở Kết nối).
+    const accounts = unlocked ? db.listAccounts().filter((a) => !/^(tg|mail|lark):/.test(String(a.id))).map((a) => ({
       id: a.id, displayName: a.display_name, avatarUrl: a.avatar_url, phone: a.phone,
       status: manager.isLive(a.id) ? (a.status === 'reconnecting' ? 'reconnecting' : 'connected') : a.status,
       lastError: a.last_error, hasSession: !!manager.readSession(a.id),
@@ -131,6 +132,9 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       ai: ai ? { ...ai.engine.status(), pipeline: ai.pipeline.status() } : null,
       telegram: telegram ? telegram.status() : null,
       integrations: integrations && unlocked ? integrations.viewAll() : null,
+      mail: mail && unlocked ? mail.status() : null,
+      lark: lark && unlocked ? lark.status() : null,
+      digest: digest && unlocked ? digest.status() : null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -203,7 +207,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const s = settings.load();
     return db.listConversations({
       accountIds: q.accountId ? [q.accountId] : undefined,
-      source: ['zalo', 'telegram'].includes(q.source) ? q.source : undefined,
+      source: ['zalo', 'telegram', 'email', 'lark'].includes(q.source) ? q.source : undefined,
       q: q.q || undefined,
       onlyWaiting: q.waiting === 'true',
       onlyUnread: q.unread === 'true',
@@ -232,7 +236,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.post('/api/conversations/:accountId/:threadId/read', async (req) => { const changed = db.markRead(req.params.accountId, req.params.threadId); if (changed) broadcast('status', { read: true }); return { ok: true }; });
 
   // ── Gửi tin & gợi ý của Claude ───────────────────────────────────────────────
-  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => { if (String(req.params.accountId).startsWith('tg:')) throw Object.assign(new Error('Hội thoại Telegram hiện chỉ đọc — chưa gửi tin từ ứng dụng.'), { status: 400 }); return manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null }); }));
+  app.post('/api/conversations/:accountId/:threadId/send', withUi(async (req) => { if (/^(tg|mail|lark):/.test(String(req.params.accountId))) throw Object.assign(new Error('Nguồn này chỉ đọc (Telegram/Email/Lark) — không gửi từ ứng dụng.'), { status: 400 }); return manager.sendMessage(req.params.accountId, req.params.threadId, req.body?.text, { quoteMsgId: req.body?.quoteMsgId ? String(req.body.quoteMsgId) : null }); }));
   // Thả cảm xúc như Zalo: 6 cảm xúc chuẩn; icon rỗng = bỏ cảm xúc của mình.
   const REACTION_ICONS = ['/-heart', '/-strong', ':>', ':o', ':-((', ':-h'];
   // Sticker Zalo, ảnh/GIF/tệp từ máy, GIF Tenor
@@ -378,6 +382,17 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   app.get('/api/integrations/:kind', withUi(async (req) => { needInt(); return integrations.view(req.params.kind); }));
   app.post('/api/integrations/:kind', withUi(async (req) => { needInt(); const v = integrations.set(req.params.kind, req.body ?? {}); broadcast('integrations', integrations.viewAll()); return v; }));
   // Thân request = giá trị đang gõ trên biểu mẫu (+ sendTest): kiểm bằng giá trị đó, OK mới lưu. Thân rỗng = kiểm bản đã lưu.
+  // ── Email IMAP · Lark Approval · Bản tin giọng nói ──────────────────────────
+  const needMail = () => { if (!mail) throw Object.assign(new Error('Email chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/mail/status', withUi(async () => { needMail(); return mail.status(); }));
+  app.post('/api/mail/sync', withUi(async () => { needMail(); void mail.sync('tay'); return mail.status(); }));
+  const needLark = () => { if (!lark) throw Object.assign(new Error('Lark chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/lark/status', withUi(async () => { needLark(); return lark.status(); }));
+  app.post('/api/lark/sync', withUi(async () => { needLark(); void lark.sync('tay'); return lark.status(); }));
+  const needDigest = () => { if (!digest) throw Object.assign(new Error('Bản tin chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/digest/status', withUi(async () => { needDigest(); return digest.status(); }));
+  app.post('/api/digest/preview', withUi(async (req) => { needDigest(); return digest.sendNow('xem trước', { preview: true, skipRefresh: !req.body?.refresh }); }));
+  app.post('/api/digest/send', withUi(async (req) => { needDigest(); void digest.sendNow('người dùng bấm', { skipRefresh: !!req.body?.skipRefresh }); return digest.status(); }));
   app.post('/api/integrations/:kind/test', withUi(async (req) => { needInt(); const { sendTest, ...patch } = req.body ?? {}; const v = await integrations.test(req.params.kind, { sendTest: !!sendTest, patch: Object.keys(patch).length ? patch : null }); broadcast('integrations', integrations.viewAll()); return v; }));
 
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.

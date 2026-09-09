@@ -26,6 +26,7 @@
     "fastify": "^5.2.0",
     "imapflow": "^2.0.0",
     "mailparser": "^3.9.23",
+    "msedge-tts": "^2.0.7",
     "node-llama-cpp": "^3.20.0",
     "qrcode": "^1.5.4",
     "telegram": "^2.26.22",

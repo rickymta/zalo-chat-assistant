@@ -111,6 +111,7 @@ const KIND_VI = { 'tra-loi': 'cần Bạn trả lời', 'theo-doi': 'Bạn nhắ
 /** Đề bài bước B: gắn kết quả phân loại lên đầu để phần tóm tắt/đề xuất nhất quán. */
 export function summaryPrompt({ meta, transcript, truncatedCount, cls }) {
   const head = [
+    ...(sourceHint(meta) ? [sourceHint(meta)] : []),
     `PHÂN LOẠI ĐÃ CHỐT: quan hệ = ${REL_VI[cls.relation] || cls.relation}${cls.relationNote ? ` (${cls.relationNote})` : ''}; loại = ${KIND_VI[cls.kind] || cls.kind}${cls.priority ? `; ưu tiên ${cls.priority}` : ''}; cảm xúc = ${cls.sentiment}.`,
     cls.kind === 'khong-can' ? 'KHÔNG cần đề xuất tin nhắn: reply để rỗng, reason 1 câu.' : 'Cần một tin đề xuất (reply) đúng giọng đã nêu.',
     '',
@@ -124,9 +125,16 @@ export const SYSTEM_OVERVIEW = `Bạn là trợ lý riêng của chủ tài kho�
 - highlights: 3–7 điểm nổi bật ngắn (mỗi điểm ≤ 15 từ), ưu tiên việc khẩn và khách đang chờ.
 Không bịa thông tin ngoài danh sách được cung cấp.`;
 
+/** Dòng mô tả nguồn để model hiểu "tin" là gì với email và phiếu duyệt Lark (mặc định là chat Zalo/Telegram). */
+export function sourceHint(meta) {
+  if (meta.source === 'email') return 'NGUỒN: EMAIL — mỗi tin là một email (dòng "Tiêu đề", "Từ → Đến" rồi nội dung). "Bạn" là chủ hộp thư. Quan hệ suy từ tên miền/chữ ký; thư quảng cáo, thông báo tự động ⇒ khong-can.';
+  if (meta.source === 'lark') return 'NGUỒN: PHIẾU DUYỆT LARK — mỗi tin là một bước (nộp phiếu kèm nội dung biểu mẫu, duyệt, từ chối, bình luận); tin cuối ghi trạng thái hiện tại. Đây là việc nội bộ (relation dong-nghiep), KHÔNG phải khách hàng. Nếu ghi "đang chờ BẠN duyệt" ⇒ kind theo-doi, tasksForYou có việc duyệt phiếu; đã duyệt/từ chối ⇒ chỉ tóm tắt kết quả.';
+  return '';
+}
 export function conversationPrompt({ meta, transcript, truncatedCount }) {
   const lines = [
     `Hội thoại: ${meta.name}`,
+    ...(sourceHint(meta) ? [sourceHint(meta)] : []),
     `Loại: ${meta.isGroup ? 'NHÓM chat' : '1-1'}${meta.phone && meta.phone !== 'không có' ? ` · SĐT: ${meta.phone}` : ''}`,
     `Số tin trong gói: ${meta.total} (${meta.isGroup ? 'thành viên' : 'người kia'} ${meta.inbound} / Bạn ${meta.outbound})`,
     `Tin cuối: ${meta.lastAtText} do ${meta.lastBy} gửi`,

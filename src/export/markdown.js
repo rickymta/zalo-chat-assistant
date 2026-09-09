@@ -87,6 +87,8 @@ export async function exportMarkdown({
     lines.push(`- Loại: ${c.is_group ? 'Nhóm' : '1-1'} · Mã thread: \`${c.thread_id}\` · Mã tài khoản: \`${c.account_id}\``);
     lines.push(`- SĐT khách: ${c.phone || 'không có'}`);
     if (String(c.account_id).startsWith('tg:')) lines.push(`- Nguồn: TELEGRAM (tài khoản cá nhân, chỉ đọc) · Tài khoản của mình: ${account?.display_name || c.account_id}`);
+    else if (String(c.account_id).startsWith('mail:')) lines.push(`- Nguồn: EMAIL (hộp thư IMAP, chỉ đọc) — mỗi "tin" là một email gồm tiêu đề, người gửi/nhận và phần chữ; "Bạn" là chủ hộp thư ${account?.display_name || c.account_id}`);
+    else if (String(c.account_id).startsWith('lark:')) lines.push(`- Nguồn: LARK APPROVAL (phiếu duyệt, chỉ đọc) — mỗi "tin" là một bước trong dòng thời gian của phiếu (nộp, duyệt, từ chối, bình luận); tin cuối ghi trạng thái hiện tại`);
     else lines.push(`- Tài khoản Zalo của mình: ${account?.display_name || c.account_id}${account?.phone ? ` (${account.phone})` : ''}`);
     lines.push(`- Khoảng thời gian trong gói: ${formatVn(stats?.first_at)} → ${formatVn(stats?.last_at)}`);
     const other = c.is_group ? 'thành viên' : 'người kia';

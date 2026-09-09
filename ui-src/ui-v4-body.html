@@ -27,7 +27,7 @@
     <aside class="convcol">
       <div class="toolbar">
         <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
-        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button></div>
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button><button class="chip src" data-source="email">✉️ Email</button><button class="chip src" data-source="lark">📋 Lark</button></div>
       </div>
       <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
       <div class="foot" id="convFoot"></div>
@@ -89,13 +89,14 @@
 
     <div class="card" id="emailCard">
       <h2>Email (IMAP, chỉ đọc)</h2>
-      <p class="desc">Ứng dụng đọc hộp thư qua IMAP để tổng hợp email mới cùng Zalo và Telegram; không gửi, không đánh dấu đã đọc. Gmail và Outlook cần bật IMAP và dùng <b>mật khẩu ứng dụng</b>, không dùng mật khẩu đăng nhập thường.</p>
+      <p class="desc">Chỉ cần <b>địa chỉ email</b> và <b>mật khẩu</b>: ứng dụng tự tìm máy chủ IMAP (Gmail, Microsoft 365, Lark Mail, iCloud, Zoho hoặc theo tên miền công ty). Thư mới được gom theo chuỗi và tổng hợp cùng Zalo, Telegram; không gửi, không đánh dấu đã đọc. Gmail và Microsoft 365 thường cần <b>mật khẩu ứng dụng</b> thay cho mật khẩu đăng nhập.</p>
       <div class="kv" id="emailKv"></div>
       <div class="form int-form" style="margin-top:10px">
-        <div class="row"><label class="fld grow"><span>Máy chủ IMAP</span><input type="text" id="emHost" placeholder="mail.congty.vn" autocomplete="off"></label><label class="fld"><span>Cổng</span><input type="number" id="emPort" value="993" min="1" max="65535" style="width:96px"></label><label class="chk"><input type="checkbox" id="emSecure" checked> SSL/TLS</label></div>
-        <div class="row"><label class="fld grow"><span>Tài khoản</span><input type="text" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label></div>
-        <div class="row"><label class="fld"><span>Thư mục</span><input type="text" id="emFolder" value="INBOX" style="width:170px"></label><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="emDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
-        <div class="row acts"><button class="primary" id="btnEmailSave">Lưu cấu hình</button><button id="btnEmailTest">Kiểm tra kết nối</button><span class="small muted" id="emailMsg"></span></div>
+        <div class="row"><label class="fld grow"><span>Địa chỉ email</span><input type="email" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu (hoặc mật khẩu ứng dụng)</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
+        <details class="adv"><summary>Nâng cao: máy chủ IMAP, thư mục, số ngày</summary>
+          <div class="row" style="margin-top:8px"><label class="fld grow"><span>Máy chủ IMAP <span class="muted">(để trống = tự tìm)</span></span><input type="text" id="emHost" placeholder="tự tìm theo địa chỉ email" autocomplete="off"></label><label class="fld"><span>Cổng</span><input type="number" id="emPort" value="993" min="1" max="65535" style="width:96px"></label><label class="chk"><input type="checkbox" id="emSecure" checked> SSL/TLS</label><label class="fld"><span>Thư mục</span><input type="text" id="emFolder" value="INBOX" style="width:150px"></label><label class="fld"><span>Lấy về (ngày)</span><input type="number" id="emDays" min="1" max="60" value="7" style="width:90px"></label></div>
+        </details>
+        <div class="row acts"><button class="primary" id="btnEmailTest">Kiểm tra kết nối</button><button id="btnEmailSave">Lưu cấu hình</button><button id="btnEmailSync">Đồng bộ thư ngay</button><span class="small muted" id="emailMsg"></span></div>
       </div>
     </div>
 
@@ -106,8 +107,8 @@
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld"><span>Máy chủ</span><select id="lkDomain"><option value="larksuite">Lark (open.larksuite.com)</option><option value="feishu">Feishu (open.feishu.cn)</option></select></label><label class="fld grow"><span>App ID</span><input type="text" id="lkAppId" placeholder="cli_xxxxxxxxxxxxxxxx" autocomplete="off"></label><label class="fld grow"><span>App Secret</span><input type="password" id="lkAppSecret" autocomplete="new-password" placeholder="để trống = giữ khoá đã lưu"></label></div>
         <div class="row"><label class="fld grow"><span>Mã quy trình duyệt (approval_code), mỗi dòng một mã; để trống = mọi quy trình ứng dụng được cấp quyền</span><textarea id="lkCodes" rows="2" placeholder="7C468A54-8745-2245-9675-08B7C63E7A85"></textarea></label></div>
-        <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
-        <div class="row acts"><button class="primary" id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkTest">Kiểm tra kết nối</button><span class="small muted" id="larkMsg"></span></div>
+        <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="fld grow"><span>Open ID của bạn <span class="muted">(tuỳ chọn, để đánh dấu phiếu "chờ BẠN duyệt")</span></span><input type="text" id="lkUserId" placeholder="ou_xxxxxxxx" autocomplete="off"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
+        <div class="row acts"><button class="primary" id="btnLarkTest">Kiểm tra kết nối</button><button id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkSync">Đồng bộ phiếu ngay</button><span class="small muted" id="larkMsg"></span></div>
       </div>
     </div>
 
@@ -118,7 +119,8 @@
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld grow"><span>Bot token</span><input type="password" id="dgToken" autocomplete="new-password" placeholder="123456789:AAH… (để trống = giữ token đã lưu)"></label><label class="fld"><span>Chat ID nhận bản tin</span><input type="text" id="dgChatId" placeholder="123456789 hoặc -100…" style="width:210px"></label></div>
         <div class="row"><label class="fld"><span>Giọng đọc</span><select id="dgVoice"><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option></select></label><label class="fld"><span>Giờ gửi (HH:MM, cách nhau bằng dấu phẩy)</span><input type="text" id="dgTimes" placeholder="07:30, 17:30" style="width:210px"></label><label class="chk"><input type="checkbox" id="dgSendText" checked> Gửi kèm bản chữ</label><label class="chk"><input type="checkbox" id="dgEnabled"> Bật bản tin</label></div>
-        <div class="row acts"><button class="primary" id="btnDigestSave">Lưu cấu hình</button><button id="btnDigestTest">Kiểm tra bot</button><button id="btnDigestSend">Gửi tin thử</button><span class="small muted" id="digestMsg"></span></div>
+        <div class="row acts"><button class="primary" id="btnDigestTest">Kiểm tra bot</button><button id="btnDigestSave">Lưu cấu hình</button><button id="btnDigestSend">Gửi tin thử</button><button id="btnDigestPreview">Xem trước bản tin</button><button id="btnDigestNow">🔊 Gửi bản tin ngay</button><span class="small muted" id="digestMsg"></span></div>
+        <pre class="digest-preview" id="digestPreview" hidden></pre>
       </div>
     </div>
 

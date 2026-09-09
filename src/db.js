@@ -266,9 +266,11 @@ export function openDb(dbPath) {
       where.push(`c.account_id IN (${p.accountIds.map((_, i) => `@acc${i}`).join(',')})`);
       p.accountIds.forEach((id, i) => { params[`acc${i}`] = id; });
     }
-    // Lọc theo nguồn: hội thoại Telegram có account_id bắt đầu bằng tg:
+    // Lọc theo nguồn qua tiền tố account_id: tg: (Telegram), mail: (Email), lark: (Lark Approval); còn lại là Zalo.
     if (p.source === 'telegram') where.push("c.account_id LIKE 'tg:%'");
-    else if (p.source === 'zalo') where.push("c.account_id NOT LIKE 'tg:%'");
+    else if (p.source === 'email') where.push("c.account_id LIKE 'mail:%'");
+    else if (p.source === 'lark') where.push("c.account_id LIKE 'lark:%'");
+    else if (p.source === 'zalo') where.push("c.account_id NOT LIKE 'tg:%' AND c.account_id NOT LIKE 'mail:%' AND c.account_id NOT LIKE 'lark:%'");
     if (p.onlyGroups) where.push('c.is_group = 1');
     else if (!p.includeGroups) where.push('c.is_group = 0');
     // "Đang chờ trả lời" chỉ có nghĩa với hội thoại 1-1 — trong nhóm không phải tin nào cũng cần mình trả lời.

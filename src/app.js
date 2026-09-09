@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, TELEGRAM_FILE, INTEGRATIONS_FILE, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, TELEGRAM_FILE, INTEGRATIONS_FILE, MAIL_STATE_FILE, LARK_STATE_FILE, DIGEST_STATE_FILE, DIGEST_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -29,6 +29,9 @@ import { LocalEngine } from './ai/engine.js';
 import { createLocalPipeline } from './ai/pipeline.js';
 import { TelegramManager } from './telegram/manager.js';
 import { IntegrationStore } from './integrations.js';
+import { MailManager } from './mail/manager.js';
+import { LarkManager } from './lark/manager.js';
+import { DigestManager } from './digest/manager.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -83,6 +86,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       void telegram.restore();
       void this.reencryptIfNeeded();
       automation.schedule();
+      mail.schedule(); lark.schedule(); digest.schedule();
       suggestions.start();
       setTimeout(() => { void automation.run('sau khi mở khoá'); }, 10000);
       return true;
@@ -95,6 +99,7 @@ export async function startApp({ platform, port = PORT } = {}) {
       void aiEngine.unload('khoá dữ liệu');
       manager.stopAll();
       void telegram.stop();
+      mail.stop(); lark.stop(); digest.stop();
       db.setCipher(null);
       cipher.clear();
       events.emit('auth', auth.publicState());
@@ -205,6 +210,20 @@ export async function startApp({ platform, port = PORT } = {}) {
   /** Bộ máy AI cục bộ (node-llama-cpp) + pipeline ghi ket-qua/ y như Cowork. */
   const aiEngine = new LocalEngine({ log, settings, modelsDir: MODELS_DIR });
   const aiPipeline = createLocalPipeline({ engine: aiEngine, root: WORKSPACE_DIR, log, settings, events });
+  /** Email IMAP và Lark Approval: chỉ đọc, ghi vào cùng bảng hội thoại (mail:, lark:); bản tin giọng nói qua bot Telegram. */
+  const mail = new MailManager({ db, log, integrations, file: MAIL_STATE_FILE });
+  const lark = new LarkManager({ db, log, integrations, file: LARK_STATE_FILE });
+  /** Chờ AI cục bộ chạy xong (tối đa 25 phút) — dùng trước khi dựng bản tin để nội dung là mới nhất. */
+  const waitPipelineIdle = async () => { const t0 = Date.now(); await new Promise((r) => setTimeout(r, 3000)); while (aiPipeline.status().running && Date.now() - t0 < 25 * 60e3) await new Promise((r) => setTimeout(r, 2000)); };
+  const digest = new DigestManager({ db, log, integrations, file: DIGEST_STATE_FILE, dir: DIGEST_DIR, workspaceRoot: WORKSPACE_DIR,
+    refresh: async () => { await mail.sync('bản tin').catch(() => {}); await lark.sync('bản tin').catch(() => {}); await automation.run('bản tin'); await waitPipelineIdle(); } });
+  mail.on('message', (m) => { events.emit('message', m); automation.onActivity(); });
+  mail.on('change', (st) => events.emit('mail', st));
+  lark.on('message', (m) => { events.emit('message', m); automation.onActivity(); });
+  lark.on('change', (st) => events.emit('lark', st));
+  digest.on('change', (st) => events.emit('digest', st));
+  // Đổi cấu hình ở màn Kết nối ⇒ đặt lại lịch của nguồn tương ứng ngay (không cần mở lại app).
+  integrations.onChange = (kind) => { if (!db.unlocked) return; if (kind === 'email') mail.schedule(); else if (kind === 'lark') lark.schedule(); else if (kind === 'digest') digest.emitChange(); };
   aiEngine.on('change', (s) => events.emit('ai', { ...s, pipeline: aiPipeline.status() }));
 
   /**
@@ -262,7 +281,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram, integrations });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline }, telegram, integrations, mail, lark, digest });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
@@ -285,6 +304,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     suggestions.stop();
     void aiEngine.unload('thoát');
     void telegram.stop();
+    mail.stop(); lark.stop(); digest.stop();
     power.stop();
     updater.stop();
     manager.stopAll();

@@ -350,6 +350,8 @@
   .int-form .acts { margin-top: 2px; }
   .int-form .acts .muted { max-width: 100%; }
   .kv .ok { color: #15803d; } .kv .bad { color: #b91c1c; }
+  .int-form details.adv summary { cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+  .digest-preview { white-space: pre-wrap; font: 13px/1.45 -apple-system, system-ui, sans-serif; background: #f6f8fc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }
   .tg-dialogs label:last-child { border-bottom: 0; }
@@ -777,7 +779,7 @@
     <aside class="convcol">
       <div class="toolbar">
         <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
-        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button></div>
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button><button class="chip src" data-source="email">✉️ Email</button><button class="chip src" data-source="lark">📋 Lark</button></div>
       </div>
       <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
       <div class="foot" id="convFoot"></div>
@@ -839,13 +841,14 @@
 
     <div class="card" id="emailCard">
       <h2>Email (IMAP, chỉ đọc)</h2>
-      <p class="desc">Ứng dụng đọc hộp thư qua IMAP để tổng hợp email mới cùng Zalo và Telegram; không gửi, không đánh dấu đã đọc. Gmail và Outlook cần bật IMAP và dùng <b>mật khẩu ứng dụng</b>, không dùng mật khẩu đăng nhập thường.</p>
+      <p class="desc">Chỉ cần <b>địa chỉ email</b> và <b>mật khẩu</b>: ứng dụng tự tìm máy chủ IMAP (Gmail, Microsoft 365, Lark Mail, iCloud, Zoho hoặc theo tên miền công ty). Thư mới được gom theo chuỗi và tổng hợp cùng Zalo, Telegram; không gửi, không đánh dấu đã đọc. Gmail và Microsoft 365 thường cần <b>mật khẩu ứng dụng</b> thay cho mật khẩu đăng nhập.</p>
       <div class="kv" id="emailKv"></div>
       <div class="form int-form" style="margin-top:10px">
-        <div class="row"><label class="fld grow"><span>Máy chủ IMAP</span><input type="text" id="emHost" placeholder="mail.congty.vn" autocomplete="off"></label><label class="fld"><span>Cổng</span><input type="number" id="emPort" value="993" min="1" max="65535" style="width:96px"></label><label class="chk"><input type="checkbox" id="emSecure" checked> SSL/TLS</label></div>
-        <div class="row"><label class="fld grow"><span>Tài khoản</span><input type="text" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label></div>
-        <div class="row"><label class="fld"><span>Thư mục</span><input type="text" id="emFolder" value="INBOX" style="width:170px"></label><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="emDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
-        <div class="row acts"><button class="primary" id="btnEmailSave">Lưu cấu hình</button><button id="btnEmailTest">Kiểm tra kết nối</button><span class="small muted" id="emailMsg"></span></div>
+        <div class="row"><label class="fld grow"><span>Địa chỉ email</span><input type="email" id="emUser" placeholder="ten@congty.vn" autocomplete="off"></label><label class="fld grow"><span>Mật khẩu (hoặc mật khẩu ứng dụng)</span><input type="password" id="emPassword" autocomplete="new-password" placeholder="để trống = giữ mật khẩu đã lưu"></label><label class="chk"><input type="checkbox" id="emEnabled"> Bật nguồn này</label></div>
+        <details class="adv"><summary>Nâng cao: máy chủ IMAP, thư mục, số ngày</summary>
+          <div class="row" style="margin-top:8px"><label class="fld grow"><span>Máy chủ IMAP <span class="muted">(để trống = tự tìm)</span></span><input type="text" id="emHost" placeholder="tự tìm theo địa chỉ email" autocomplete="off"></label><label class="fld"><span>Cổng</span><input type="number" id="emPort" value="993" min="1" max="65535" style="width:96px"></label><label class="chk"><input type="checkbox" id="emSecure" checked> SSL/TLS</label><label class="fld"><span>Thư mục</span><input type="text" id="emFolder" value="INBOX" style="width:150px"></label><label class="fld"><span>Lấy về (ngày)</span><input type="number" id="emDays" min="1" max="60" value="7" style="width:90px"></label></div>
+        </details>
+        <div class="row acts"><button class="primary" id="btnEmailTest">Kiểm tra kết nối</button><button id="btnEmailSave">Lưu cấu hình</button><button id="btnEmailSync">Đồng bộ thư ngay</button><span class="small muted" id="emailMsg"></span></div>
       </div>
     </div>
 
@@ -856,8 +859,8 @@
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld"><span>Máy chủ</span><select id="lkDomain"><option value="larksuite">Lark (open.larksuite.com)</option><option value="feishu">Feishu (open.feishu.cn)</option></select></label><label class="fld grow"><span>App ID</span><input type="text" id="lkAppId" placeholder="cli_xxxxxxxxxxxxxxxx" autocomplete="off"></label><label class="fld grow"><span>App Secret</span><input type="password" id="lkAppSecret" autocomplete="new-password" placeholder="để trống = giữ khoá đã lưu"></label></div>
         <div class="row"><label class="fld grow"><span>Mã quy trình duyệt (approval_code), mỗi dòng một mã; để trống = mọi quy trình ứng dụng được cấp quyền</span><textarea id="lkCodes" rows="2" placeholder="7C468A54-8745-2245-9675-08B7C63E7A85"></textarea></label></div>
-        <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
-        <div class="row acts"><button class="primary" id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkTest">Kiểm tra kết nối</button><span class="small muted" id="larkMsg"></span></div>
+        <div class="row"><label class="fld"><span>Lấy về (ngày gần nhất)</span><input type="number" id="lkDays" min="1" max="60" value="7" style="width:96px"></label><label class="fld grow"><span>Open ID của bạn <span class="muted">(tuỳ chọn, để đánh dấu phiếu "chờ BẠN duyệt")</span></span><input type="text" id="lkUserId" placeholder="ou_xxxxxxxx" autocomplete="off"></label><label class="chk"><input type="checkbox" id="lkEnabled"> Bật nguồn này</label></div>
+        <div class="row acts"><button class="primary" id="btnLarkTest">Kiểm tra kết nối</button><button id="btnLarkSave">Lưu cấu hình</button><button id="btnLarkSync">Đồng bộ phiếu ngay</button><span class="small muted" id="larkMsg"></span></div>
       </div>
     </div>
 
@@ -868,7 +871,8 @@
       <div class="form int-form" style="margin-top:10px">
         <div class="row"><label class="fld grow"><span>Bot token</span><input type="password" id="dgToken" autocomplete="new-password" placeholder="123456789:AAH… (để trống = giữ token đã lưu)"></label><label class="fld"><span>Chat ID nhận bản tin</span><input type="text" id="dgChatId" placeholder="123456789 hoặc -100…" style="width:210px"></label></div>
         <div class="row"><label class="fld"><span>Giọng đọc</span><select id="dgVoice"><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option></select></label><label class="fld"><span>Giờ gửi (HH:MM, cách nhau bằng dấu phẩy)</span><input type="text" id="dgTimes" placeholder="07:30, 17:30" style="width:210px"></label><label class="chk"><input type="checkbox" id="dgSendText" checked> Gửi kèm bản chữ</label><label class="chk"><input type="checkbox" id="dgEnabled"> Bật bản tin</label></div>
-        <div class="row acts"><button class="primary" id="btnDigestSave">Lưu cấu hình</button><button id="btnDigestTest">Kiểm tra bot</button><button id="btnDigestSend">Gửi tin thử</button><span class="small muted" id="digestMsg"></span></div>
+        <div class="row acts"><button class="primary" id="btnDigestTest">Kiểm tra bot</button><button id="btnDigestSave">Lưu cấu hình</button><button id="btnDigestSend">Gửi tin thử</button><button id="btnDigestPreview">Xem trước bản tin</button><button id="btnDigestNow">🔊 Gửi bản tin ngay</button><span class="small muted" id="digestMsg"></span></div>
+        <pre class="digest-preview" id="digestPreview" hidden></pre>
       </div>
     </div>
 
@@ -1085,7 +1089,7 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram, integrations: s.integrations });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai, telegram: s.telegram, integrations: s.integrations, mail: s.mail, lark: s.lark, digest: s.digest });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
@@ -1838,7 +1842,7 @@
   const INT_FILLED = {};
   const INT_FIELDS = {
     email: { host: '#emHost', port: '#emPort', secure: '#emSecure', user: '#emUser', folder: '#emFolder', days: '#emDays', enabled: '#emEnabled' },
-    lark: { domain: '#lkDomain', appId: '#lkAppId', approvalCodes: '#lkCodes', days: '#lkDays', enabled: '#lkEnabled' },
+    lark: { domain: '#lkDomain', appId: '#lkAppId', approvalCodes: '#lkCodes', days: '#lkDays', userId: '#lkUserId', enabled: '#lkEnabled' },
     digest: { chatId: '#dgChatId', voice: '#dgVoice', times: '#dgTimes', sendText: '#dgSendText', enabled: '#dgEnabled' },
   };
   const INT_SECRET = { email: ['#emPassword'], lark: ['#lkAppSecret'], digest: ['#dgToken'] };
@@ -1864,21 +1868,29 @@
     ['#emailCard', '#larkCard', '#digestCard'].forEach((sel) => { $(sel).hidden = !show; });
     if (!show) { Object.keys(INT_FILLED).forEach((k) => delete INT_FILLED[k]); return; }
     const e = all.email, l = all.lark, g = all.digest;
-    $('#emailKv').innerHTML = '<div>Trạng thái</div><div>' + (e.configured ? (e.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa đủ máy chủ, tài khoản, mật khẩu') + '</div>'
-      + '<div>Mật khẩu</div><div>' + (e.hasPassword ? 'đã lưu (mã hoá)' : 'chưa có') + '</div>'
-      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(e.lastTest) + (e.lastTest?.ok && e.lastTest.messages != null ? ' <span class="muted small">· ' + esc(e.lastTest.mailbox || '') + ': ' + num(e.lastTest.messages) + ' thư</span>' : '') + '</div>';
+    const ms = state.mail || {}, ls = state.lark || {}, ds = state.digest || {};
+    const syncLine = (st) => !st ? '' : (st.syncing ? '⏳ đang đồng bộ…' : (st.lastError ? '<span class="bad">❌ ' + esc(st.lastError) + '</span>' : (st.lastSyncAt ? '✅ ' + fmtTime(st.lastSyncAt) + (st.lastResult ? ' · +' + num(st.lastResult.inserted) + ' mới' : '') : 'chưa chạy'))) + (st.nextRunAt && !st.syncing ? ' <span class="muted small">· tự chạy mỗi ' + st.everyMinutes + ' phút</span>' : '');
+    $('#emailKv').innerHTML = '<div>Trạng thái</div><div>' + (e.configured ? (e.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt (tích "Bật nguồn này" để tự lấy thư)') : '⚠️ chưa có địa chỉ email / mật khẩu') + '</div>'
+      + '<div>Máy chủ IMAP</div><div>' + (e.host ? '<code>' + esc(e.host + ':' + e.port) + '</code>' + (e.lastTest?.discovered ? ' <span class="muted small">· tự tìm: ' + esc(e.lastTest.discovered) + '</span>' : '') : 'chưa biết — bấm Kiểm tra kết nối để tự tìm') + '</div>'
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(e.lastTest) + (e.lastTest?.ok && e.lastTest.messages != null ? ' <span class="muted small">· ' + esc(e.lastTest.mailbox || '') + ': ' + num(e.lastTest.messages) + ' thư</span>' : '') + (e.lastTest?.note ? '<div class="muted small">' + esc(e.lastTest.note) + '</div>' : '') + '</div>'
+      + '<div>Đồng bộ thư</div><div>' + (syncLine(ms) || 'chưa chạy') + (ms.totalStored ? ' <span class="muted small">· đã lưu ' + num(ms.totalStored) + ' thư</span>' : '') + '</div>';
     $('#larkKv').innerHTML = '<div>Trạng thái</div><div>' + (l.configured ? (l.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có App ID / App Secret') + '</div>'
       + '<div>App Secret</div><div>' + (l.hasAppSecret ? 'đã lưu (mã hoá)' : 'chưa có') + '</div>'
       + '<div>Quy trình theo dõi</div><div>' + (l.approvalCodes?.length ? l.approvalCodes.length + ' mã' : 'tất cả') + '</div>'
-      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(l.lastTest) + '</div>';
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(l.lastTest) + '</div>'
+      + '<div>Đồng bộ phiếu</div><div>' + (syncLine(ls) || 'chưa chạy') + (ls.tracked ? ' <span class="muted small">· theo dõi ' + num(ls.tracked) + ' phiếu, ' + num(ls.pending) + ' chờ duyệt</span>' : '') + '</div>';
     $('#digestKv').innerHTML = '<div>Trạng thái</div><div>' + (g.configured ? (g.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có bot token / chat ID') + '</div>'
       + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' + (g.botTokenHint ? ' · <code>' + esc(g.botTokenHint) + '</code>' : '') : 'chưa có — dán token và chat ID rồi bấm <b>Kiểm tra bot</b> (kết nối được sẽ tự lưu)') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
       + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(g.voice || '') + '</div>'
-      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>';
+      + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>'
+      + '<div>Bản tin</div><div>' + (ds.sending ? '⏳ đang ' + ({ refresh: 'cập nhật dữ liệu và chạy AI', compose: 'dựng nội dung', tts: 'đọc thành giọng nói', send: 'gửi vào Telegram' }[ds.phase] || 'chạy') + '…' : (ds.history?.[0] ? (ds.history[0].ok ? '✅ gửi lúc ' + fmtTime(ds.history[0].at) : '<span class="bad">❌ ' + esc(ds.history[0].error || 'lỗi') + ' · ' + fmtTime(ds.history[0].at) + '</span>') : 'chưa gửi lần nào')) + (ds.nextAt ? ' <span class="muted small">· kế tiếp ' + fmtTime(ds.nextAt) + '</span>' : (g.enabled ? '' : ' <span class="muted small">· đang tắt</span>')) + '</div>';
+    clearTimeout(intPoll);
+    if (ms.syncing || ls.syncing || ds.sending) intPoll = setTimeout(() => { refreshState().catch(() => {}); }, 2000);
     if (!INT_FILLED.email) fillIntegration('email', e);
     if (!INT_FILLED.lark) fillIntegration('lark', l);
     if (!INT_FILLED.digest) fillIntegration('digest', g);
   }
+  let intPoll = null;
   const INT_MSG = { email: '#emailMsg', lark: '#larkMsg', digest: '#digestMsg' };
   async function intSave(kind, btn) {
     const msg = $(INT_MSG[kind]); msg.textContent = '';
@@ -1906,6 +1918,11 @@
   $('#btnDigestSave').onclick = (e) => intSave('digest', e.currentTarget);
   $('#btnDigestTest').onclick = (e) => intTest('digest', e.currentTarget);
   $('#btnDigestSend').onclick = (e) => { if (!confirm('Gửi một tin nhắn thử vào chat ID đã lưu qua bot?')) return; void intTest('digest', e.currentTarget, { sendTest: true }); };
+  const srcAction = async (btn, path, msgSel, okMsg) => { const msg = $(msgSel); msg.textContent = ''; await busy(btn, 'Đang chạy…', async () => { try { await api(path, { method: 'POST', body: {} }); msg.textContent = okMsg; await refreshState(); } catch (err) { msg.textContent = '❌ ' + err.message; } }); };
+  $('#btnEmailSync').onclick = (e) => srcAction(e.currentTarget, '/api/mail/sync', '#emailMsg', 'Đang lấy thư — theo dõi ở dòng "Đồng bộ thư".');
+  $('#btnLarkSync').onclick = (e) => srcAction(e.currentTarget, '/api/lark/sync', '#larkMsg', 'Đang lấy phiếu — theo dõi ở dòng "Đồng bộ phiếu".');
+  $('#btnDigestNow').onclick = (e) => { if (!confirm('Gửi bản tin giọng nói ngay bây giờ?\nỨng dụng sẽ cập nhật dữ liệu, chạy AI cục bộ (có thể vài phút), đọc bản tin và gửi vào chat ID đã lưu.')) return; void srcAction(e.currentTarget, '/api/digest/send', '#digestMsg', 'Đang làm bản tin — theo dõi ở dòng "Bản tin".'); };
+  $('#btnDigestPreview').onclick = async (e) => { const msg = $('#digestMsg'); msg.textContent = ''; await busy(e.currentTarget, 'Đang dựng…', async () => { try { const r = await api('/api/digest/preview', { method: 'POST', body: {} }); const p = r.preview; $('#digestPreview').hidden = false; $('#digestPreview').textContent = (p ? 'BẢN CHỮ GỬI TELEGRAM\n' + p.text + '\n\nLỜI ĐỌC (' + p.spoken.length + ' ký tự)\n' + p.spoken : (r.lastError || 'Không dựng được.')); } catch (err) { msg.textContent = '❌ ' + err.message; } }); };
   // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
   const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
   function showView(name) {
@@ -2084,7 +2101,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram', 'integrations'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai', 'telegram', 'integrations', 'mail', 'lark', 'digest'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }

@@ -153,6 +153,24 @@ thẻ Bộ máy AI. Mỗi thẻ có **Lưu cấu hình** và **Kiểm tra kết 
 - Việc **đọc thư / phiếu duyệt và gửi bản tin theo lịch** là các bước kế tiếp (F3–F5 trong hợp đồng
   `docs/2026-09-09-tong-hop-da-nguon-ai-cuc-bo-hop-dong-thuc-thi.md`); màn này chuẩn bị sẵn khoá để các bước đó chạy được ngay.
 
+### Email, Lark Approval và bản tin giọng nói (từ 0.1.0)
+
+- **Email (IMAP, chỉ đọc):** chỉ cần địa chỉ email + mật khẩu (Gmail/Microsoft 365 dùng *mật khẩu ứng dụng*); ứng dụng tự tìm máy
+  chủ IMAP theo bảng nhà cung cấp → bản ghi MX → DNS SRV → `imap.`/`mail.<tên miền>`, thử đăng nhập, vào được thì lưu. Thư mới
+  (N ngày đầu, sau đó theo UID) được gom theo chuỗi (References/In-Reply-To/tiêu đề) và ghi vào cùng bảng hội thoại (`mail:` — huy hiệu ✉️),
+  không đánh dấu đã đọc, không gửi. Tự đồng bộ mỗi 15 phút khi bật; nút **Đồng bộ thư ngay**. ⚠️ Microsoft 365 tắt đăng nhập IMAP bằng
+  mật khẩu ("Login is disabled") ở nhiều tổ chức — khi đó cần quản trị viên bật IMAP + xác thực cơ bản cho hộp thư, hoặc chờ bản
+  đăng nhập OAuth (chưa làm).
+- **Lark Approval (chỉ đọc):** App ID/App Secret của ứng dụng nội bộ có quyền Approval; danh sách `approval_code` (trống = mọi quy trình
+  ứng dụng được cấp), số ngày, và Open ID của bạn (tuỳ chọn) để đánh dấu phiếu "chờ BẠN duyệt". Mỗi phiếu là một hội thoại `lark:` (📋),
+  tên mang trạng thái hiện tại `[Chờ duyệt] Đề nghị thanh toán · #123`; mỗi bước (nộp phiếu kèm biểu mẫu, duyệt, từ chối, bình luận) là một tin.
+  Tự đồng bộ mỗi 15 phút; phiếu còn chờ được xem lại cho tới khi có kết quả. Cần thêm quyền `contact:user.base:readonly` để hiện tên người thay mã.
+- **Bản tin giọng nói:** theo giờ đã đặt (mặc định 07:30 và 17:30), ứng dụng đồng bộ thư/phiếu → cập nhật gói → chạy AI cục bộ → dựng
+  bản tin từ báo cáo ngày (tổng quan, điểm nổi bật, việc cần làm, hội thoại chờ trả lời) → đọc bằng Microsoft Edge TTS (giọng Hoài My/Nam Minh,
+  MP3) → bot gửi `sendVoice` + bản chữ. Nút **Xem trước bản tin** (không gửi) và **Gửi bản tin ngay**. Máy ngủ qua giờ thì gửi bù trong 20 phút,
+  muộn hơn thì bỏ. Tệp giọng nói ở `data/digest/` (giữ 7 ngày); lịch sử gửi ở `data/digest.json`.
+- Gói `du-lieu/` ghi dòng `Nguồn: EMAIL` / `Nguồn: LARK APPROVAL` cho từng hội thoại; AI cục bộ đọc dòng đó để hiểu "tin" là email hay bước duyệt.
+
 ### Dùng thử trên máy khác không có Docker
 
 Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá
