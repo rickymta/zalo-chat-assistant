@@ -11,9 +11,33 @@ const loginBlock = v3.slice(loginStart, loginEnd);
 const css = `
 <style>
   /* ── v4: bố cục kiểu Zalo ── */
-  .zapp { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+  .zapp { display: flex; flex-direction: row; height: 100vh; background: var(--bg); }
+  .zapp .main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
+  /* Thanh điều hướng trái */
+  .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
+  .zapp.mac .rail { padding-top: 44px; }
+  .rail-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; margin-bottom: 10px; }
+  .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
+  .zapp .rail .rail-btn span { font-size: 10.5px; font-weight: 600; letter-spacing: .1px; }
+  .zapp .rail .rail-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .zapp .rail .rail-btn.active { background: rgba(255,255,255,.16); color: #fff; }
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 10.5px; color: #7f8ca6; padding-bottom: 6px; }
+  .rail-dot { width: 9px; height: 9px; border-radius: 50%; background: #55607a; }
+  .rail-dot.on { background: #22c55e; } .rail-dot.busy { background: #f59e0b; animation: railpulse 1.2s infinite; }
+  @keyframes railpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  /* Trang (Kết nối, Cài đặt) */
+  .page { flex: 1; min-height: 0; overflow: auto; padding: 18px 26px 40px; background: var(--bg); }
+  .page-inner { max-width: 1040px; margin: 0 auto; }
+  .page-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+  .page-head h1 { font-size: 22px; margin-bottom: 4px; } .page-head > div:first-child { flex: 1; }
+  .page .settings-body { overflow: visible; padding: 0; background: transparent; }
+  .page .settings-body .card { padding: 16px 18px; border-radius: 14px; }
+  .conn-summary { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 380px; }
+  .convcol .chip-sep { width: 1px; background: var(--line); margin: 4px 2px; }
+  .convcol .chip.src { background: #eef3fb; }
+  .convcol .chip.src.active { background: var(--primary); color: #fff; }
   .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; min-height: 58px; -webkit-app-region: drag; }
-  .zapp.mac .topbar { padding-left: 86px; }
+  .zapp.mac .topbar { padding-left: 14px; }   /* đèn giao thông nằm trên rail (rail có padding-top) */
   .topbar button, .topbar select, .topbar input, .topbar .pill { -webkit-app-region: no-drag; }
   .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .brand-mini .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; }
@@ -70,19 +94,13 @@ const css = `
   .sidecol .rp-tl { margin-top: 8px; }
   .sidecol .rp-tags { margin-top: 8px; }
   .sidecol .empty.small { padding: 10px 4px; font-size: 14px; }
-  .tpl { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
-  .tpl:first-child { border-top: 0; }
-  .tpl .t { flex: 1; min-width: 0; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
-  .tpl .t:hover { background: #eef4ff; }
-  .tpl .t b { display: block; font-size: 14px; } .tpl .t span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #btnSideToggle.active { background: #eef4ff; border-color: #c7dcff; }
-  .tpl-dlg { width: 640px; }
   .sidecol .sug-card, .sidecol .side-sec { overflow-wrap: anywhere; min-width: 0; }
   .side-head b { white-space: nowrap; } .side-head #sideMeta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .convcol { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
   .convcol .toolbar { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
   .convcol .toolbar input[type=search] { width: 100%; height: 40px; }
-  .convcol .chips { display: flex; gap: 6px; }
+  .convcol .chips { display: flex; gap: 6px; flex-wrap: wrap; row-gap: 6px; }
   .convcol .foot { padding: 6px 12px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12px; }
   .vlist { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
   .vspacer { position: relative; width: 100%; }
@@ -345,7 +363,6 @@ const css = `
   .sc-sum { font-size: 13.5px; line-height: 1.5; }
   .sidecol .rp-list, .sidecol .rp-tl { font-size: 13px; }
   .zapp .pill, .settings-dlg .pill { font-size: 12px; padding: 2px 8px; }
-  .tpl .t b { font-size: 13.5px; } .tpl .t span { font-size: 12.5px; }
   .settings-dlg .card { padding: 14px 16px; } .settings-dlg .card h2 { font-size: 16px; }
   .settings-dlg .settings-head h2 { font-size: 18px; }
   .rp-tiles .tile { padding: 12px 16px; } .rp-tiles .tile .v { font-size: 26px; }

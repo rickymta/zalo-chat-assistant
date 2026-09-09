@@ -1,25 +1,33 @@
 <!-- ═══════════ ỨNG DỤNG (bố cục kiểu Zalo) ═══════════ -->
 <div class="zapp" id="appView" hidden>
+  <nav class="rail" id="rail">
+    <div class="rail-logo" title="Chat Assistant">C</div>
+    <button class="rail-btn active" data-view="chat" title="Hội thoại">💬<span>Hội thoại</span></button>
+    <button class="rail-btn" data-view="connections" title="Kết nối &amp; khoá cấu hình">🔌<span>Kết nối</span></button>
+    <button class="rail-btn" id="btnReportRail" title="Báo cáo ngày">📊<span>Báo cáo</span></button>
+    <button class="rail-btn" data-view="settings" id="btnSettings" title="Cài đặt">⚙️<span>Cài đặt</span></button>
+    <div class="rail-foot"><span class="rail-dot" id="railAiDot" title="Bộ máy AI"></span><span id="railVer"></span></div>
+  </nav>
+  <div class="main">
   <header class="topbar">
-    <div class="brand-mini"><div class="logo">Z</div><b>Chat Assistant</b></div>
+    <div class="brand-mini"><b id="viewTitle">Hội thoại</b></div>
     <div class="zstrip" id="zaloStrip"></div>
     <div class="grow"></div>
-    <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
-    <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
-    <button data-open="workspace" title="Mở thư mục làm việc với Claude trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
+    <select id="presetSel" class="chat-only" title="Kiểu dữ liệu đưa vào gói tổng hợp"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
+    <button class="primary chat-only" id="btnWsUpdate">📁 Cập nhật gói dữ liệu</button>
+    <button class="chat-only" data-open="workspace" title="Mở thư mục làm việc trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
     <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
-    <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
   </header>
-  <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
+  <div class="ws-line chat-only"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
   <div id="reencryptBar" hidden></div>
   <div id="powerBar" hidden></div>
   <div id="updateBar" hidden></div>
 
-  <div class="cols">
+  <div class="cols" id="viewChat">
     <aside class="convcol">
       <div class="toolbar">
         <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
-        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button></div>
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button></div>
       </div>
       <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
       <div class="foot" id="convFoot"></div>
@@ -43,77 +51,21 @@
     <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 
     <aside class="sidecol" id="sidecol">
-      <div class="side-head"><b>💡 Trợ lý Claude</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
+      <div class="side-head"><b>💡 Trợ lý AI</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
       <div class="side-body">
         <div class="sug-card" id="sugCard" hidden></div>
-        <div class="side-sec" id="sideClaude"><div class="empty small">Chọn một hội thoại để xem tóm tắt và gợi ý của Claude.</div></div>
-        <div class="side-sec" id="sideTemplates">
-          <div class="sec-head"><b>✉️ Tin nhắn mẫu</b><span class="muted small">bấm để điền vào ô soạn</span><span class="grow"></span><button class="sm" id="btnTplAdd">＋ Thêm</button></div>
-          <div id="tplList"><div class="empty small">Đang tải…</div></div>
-        </div>
+        <div class="side-sec" id="sideClaude"><div class="empty small">Chọn một hội thoại để xem tóm tắt và gợi ý của AI.</div></div>
       </div>
     </aside>
   </div>
-</div>
 
-<!-- ═══════════ TIN NHẮN MẪU (hộp thoại sửa) ═══════════ -->
-<!-- ═══════════ CHUYỂN TIẾP TIN ═══════════ -->
-<dialog id="dlgForward" class="settings-dlg fwd-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>Chuyển tiếp tin nhắn</h2><span class="muted small" id="fwdCount"></span></div>
-  <div class="settings-tools"><input type="search" id="fwdSearch" placeholder="Tìm hội thoại…" style="flex:1"><button class="primary" id="fwdSend" disabled>Chuyển tiếp</button></div>
-  <div class="settings-body" style="gap:8px"><div class="fwd-preview" id="fwdPreview"></div><div class="fwd-list" id="fwdList"></div></div>
-</div></dialog>
-
-<!-- ═══════════ XEM ẢNH (lightbox — ✕, bấm nền, Esc, ← →) ═══════════ -->
-<dialog id="dlgImage" class="img-dlg"><div class="img-wrap">
-  <button type="button" class="img-nav prev" id="imgPrev" title="Ảnh trước (←)">‹</button>
-  <div class="img-stage" id="imgStage"><img id="imgPreview" alt=""><div class="img-msg" id="imgMsg" hidden></div></div>
-  <button type="button" class="img-nav next" id="imgNext" title="Ảnh sau (→)">›</button>
-  <div class="img-bar"><span class="small" id="imgName"></span><span class="small faint" id="imgCount"></span><span class="grow"></span><button type="button" class="sm" id="imgZoom">Kích cỡ thật</button><button type="button" class="sm" id="imgCopyUrl">Sao chép liên kết</button><button type="button" class="sm" id="imgOpen">Mở bằng trình duyệt</button></div>
-</div></dialog>
-
-<dialog id="dlgTemplate" class="settings-dlg tpl-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2 id="tplDlgTitle">Tin nhắn mẫu</h2></div>
-  <div class="settings-body"><div class="form">
-    <label class="fld"><span>Tên mẫu</span><input id="tplTitle" maxlength="80" placeholder="Ví dụ: Xác nhận lịch hẹn"></label>
-    <label class="fld"><span>Nội dung — dán được thẳng vào Zalo; viết [tên] để tự thay bằng tên người đối thoại, các ô [..] khác tự điền trước khi gửi</span><textarea id="tplText" rows="7" maxlength="2000"></textarea></label>
-    <div class="row"><button class="primary" id="btnTplSave">Lưu mẫu</button><button class="danger" id="btnTplDelete" hidden>Xoá mẫu</button><span class="small muted" id="tplMsg"></span></div>
-  </div></div>
-</div></dialog>
-
-<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
-<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
-  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
-  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
-</div></dialog>
-
-<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
-<dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span></div>
-  <div class="settings-body">
+    <!-- ═══ MÀN KẾT NỐI: mọi nguồn dữ liệu và khoá cấu hình ═══ -->
+    <section class="page" id="viewConnections" hidden>
+      <div class="page-inner">
+        <div class="page-head"><div><h1>Kết nối &amp; khoá cấu hình</h1><p class="muted">Các nguồn ứng dụng đọc để tổng hợp, và bộ máy AI. Mọi khoá chỉ lưu trên máy này (thư mục dữ liệu, quyền 600, mã hoá bằng chuỗi của tài khoản).</p></div><div class="conn-summary" id="connSummary"></div></div>
+        <div class="settings-body page-cards">
     <div class="card">
-      <h2>Tài khoản đăng nhập</h2>
-      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
-      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
-        <div class="form" style="margin-top:10px; max-width:420px">
-          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
-          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
-          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
-        </div>
-      </details>
-      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Bảo mật dữ liệu</h2>
-      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
-      <div class="kv" id="securityKv"></div>
-      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
+      <div class="row" style="margin-bottom:6px"><h2 class="grow">Zalo (tài khoản cá nhân, quét QR)</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
       <div id="accountRows"></div>
     </div>
 
@@ -145,14 +97,43 @@
       <div class="row" style="margin-top:12px"><button class="primary" id="btnAiDownload">⬇️ Tải model</button><button id="btnAiRun">▶️ Tổng hợp ngay</button><button class="sm" id="btnAiUnload">Giải phóng bộ nhớ</button><span class="small muted" id="aiMsg"></span></div>
     </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ MÀN CÀI ĐẶT: tài khoản, bảo mật, gói dữ liệu, tuỳ chọn, cập nhật ═══ -->
+    <section class="page" id="viewSettings" hidden>
+      <div class="page-inner">
+        <div class="page-head"><div><h1>Cài đặt</h1><p class="muted" id="settingsSub"></p></div><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+        <div class="settings-body page-cards">
     <div class="card">
-      <h2>Thư mục làm việc với Claude Cowork</h2>
-      <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
+      <h2>Tài khoản đăng nhập</h2>
+      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
+      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+        <div class="form" style="margin-top:10px; max-width:420px">
+          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
+          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
+        </div>
+      </details>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Bảo mật dữ liệu</h2>
+      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
+      <div class="kv" id="securityKv"></div>
+      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Gói dữ liệu &amp; tự động tổng hợp</h2>
+      <p class="desc">Ứng dụng ghi dữ liệu đã giải mã vào <code>du-lieu/</code> của thư mục làm việc rồi bộ máy AI (cục bộ, hoặc Claude Cowork nếu chọn) ghi kết quả vào <code>ket-qua/</code>. Dùng Cowork thì trỏ Cowork vào thư mục này một lần.</p>
       <div class="kv" id="wsKv"></div>
-      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
+      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Cowork</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
       <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
-      <div class="setting"><div class="txt"><b>Claude tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30); lịch Cowork kiểm tra mỗi 5 phút và chỉ tổng hợp khi gói đổi. Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30) rồi AI tổng hợp lại (Cowork: lịch kiểm tra mỗi 5 phút, chỉ tổng hợp khi gói đổi). Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
       <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
     </div>
 
@@ -193,8 +174,39 @@
 
     <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
   </div>
-  <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+
+        </div>
+        <p class="muted small" style="margin-top:12px">Các tuỳ chọn ở mục "Gói dữ liệu" và "Tuỳ chọn" chỉ có hiệu lực sau khi bấm Lưu tuỳ chọn.</p>
+      </div>
+    </section>
+  </div><!-- /.main -->
+</div>
+
+
+<!-- ═══════════ CHUYỂN TIẾP TIN ═══════════ -->
+<dialog id="dlgForward" class="settings-dlg fwd-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>Chuyển tiếp tin nhắn</h2><span class="muted small" id="fwdCount"></span></div>
+  <div class="settings-tools"><input type="search" id="fwdSearch" placeholder="Tìm hội thoại…" style="flex:1"><button class="primary" id="fwdSend" disabled>Chuyển tiếp</button></div>
+  <div class="settings-body" style="gap:8px"><div class="fwd-preview" id="fwdPreview"></div><div class="fwd-list" id="fwdList"></div></div>
 </div></dialog>
+
+<!-- ═══════════ XEM ẢNH (lightbox — ✕, bấm nền, Esc, ← →) ═══════════ -->
+<dialog id="dlgImage" class="img-dlg"><div class="img-wrap">
+  <button type="button" class="img-nav prev" id="imgPrev" title="Ảnh trước (←)">‹</button>
+  <div class="img-stage" id="imgStage"><img id="imgPreview" alt=""><div class="img-msg" id="imgMsg" hidden></div></div>
+  <button type="button" class="img-nav next" id="imgNext" title="Ảnh sau (→)">›</button>
+  <div class="img-bar"><span class="small" id="imgName"></span><span class="small faint" id="imgCount"></span><span class="grow"></span><button type="button" class="sm" id="imgZoom">Kích cỡ thật</button><button type="button" class="sm" id="imgCopyUrl">Sao chép liên kết</button><button type="button" class="sm" id="imgOpen">Mở bằng trình duyệt</button></div>
+</div></dialog>
+
+<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
+<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
+  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
+  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
+</div></dialog>
+
+<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
+
 
 <!-- ═══════════ BẢN CẬP NHẬT (hộp thoại xem thay đổi) ═══════════ -->
 <dialog id="dlgUpdate" class="settings-dlg upd-dlg"><div class="settings-wrap">

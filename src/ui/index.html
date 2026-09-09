@@ -294,9 +294,33 @@
 
 <style>
   /* ── v4: bố cục kiểu Zalo ── */
-  .zapp { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+  .zapp { display: flex; flex-direction: row; height: 100vh; background: var(--bg); }
+  .zapp .main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
+  /* Thanh điều hướng trái */
+  .rail { width: 66px; flex: none; background: #101a2e; color: #c6d0e3; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; -webkit-app-region: drag; }
+  .zapp.mac .rail { padding-top: 44px; }
+  .rail-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; margin-bottom: 10px; }
+  .zapp .rail .rail-btn { width: 56px; height: 54px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 19px; line-height: 1; cursor: pointer; -webkit-app-region: no-drag; box-shadow: none; }
+  .zapp .rail .rail-btn span { font-size: 10.5px; font-weight: 600; letter-spacing: .1px; }
+  .zapp .rail .rail-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .zapp .rail .rail-btn.active { background: rgba(255,255,255,.16); color: #fff; }
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 10.5px; color: #7f8ca6; padding-bottom: 6px; }
+  .rail-dot { width: 9px; height: 9px; border-radius: 50%; background: #55607a; }
+  .rail-dot.on { background: #22c55e; } .rail-dot.busy { background: #f59e0b; animation: railpulse 1.2s infinite; }
+  @keyframes railpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  /* Trang (Kết nối, Cài đặt) */
+  .page { flex: 1; min-height: 0; overflow: auto; padding: 18px 26px 40px; background: var(--bg); }
+  .page-inner { max-width: 1040px; margin: 0 auto; }
+  .page-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+  .page-head h1 { font-size: 22px; margin-bottom: 4px; } .page-head > div:first-child { flex: 1; }
+  .page .settings-body { overflow: visible; padding: 0; background: transparent; }
+  .page .settings-body .card { padding: 16px 18px; border-radius: 14px; }
+  .conn-summary { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 380px; }
+  .convcol .chip-sep { width: 1px; background: var(--line); margin: 4px 2px; }
+  .convcol .chip.src { background: #eef3fb; }
+  .convcol .chip.src.active { background: var(--primary); color: #fff; }
   .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; min-height: 58px; -webkit-app-region: drag; }
-  .zapp.mac .topbar { padding-left: 86px; }
+  .zapp.mac .topbar { padding-left: 14px; }   /* đèn giao thông nằm trên rail (rail có padding-top) */
   .topbar button, .topbar select, .topbar input, .topbar .pill { -webkit-app-region: no-drag; }
   .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; white-space: nowrap; }
   .brand-mini .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #0a66ff, #22b8ff); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; }
@@ -353,19 +377,13 @@
   .sidecol .rp-tl { margin-top: 8px; }
   .sidecol .rp-tags { margin-top: 8px; }
   .sidecol .empty.small { padding: 10px 4px; font-size: 14px; }
-  .tpl { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
-  .tpl:first-child { border-top: 0; }
-  .tpl .t { flex: 1; min-width: 0; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
-  .tpl .t:hover { background: #eef4ff; }
-  .tpl .t b { display: block; font-size: 14px; } .tpl .t span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #btnSideToggle.active { background: #eef4ff; border-color: #c7dcff; }
-  .tpl-dlg { width: 640px; }
   .sidecol .sug-card, .sidecol .side-sec { overflow-wrap: anywhere; min-width: 0; }
   .side-head b { white-space: nowrap; } .side-head #sideMeta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .convcol { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
   .convcol .toolbar { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
   .convcol .toolbar input[type=search] { width: 100%; height: 40px; }
-  .convcol .chips { display: flex; gap: 6px; }
+  .convcol .chips { display: flex; gap: 6px; flex-wrap: wrap; row-gap: 6px; }
   .convcol .foot { padding: 6px 12px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12px; }
   .vlist { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
   .vspacer { position: relative; width: 100%; }
@@ -628,7 +646,6 @@
   .sc-sum { font-size: 13.5px; line-height: 1.5; }
   .sidecol .rp-list, .sidecol .rp-tl { font-size: 13px; }
   .zapp .pill, .settings-dlg .pill { font-size: 12px; padding: 2px 8px; }
-  .tpl .t b { font-size: 13.5px; } .tpl .t span { font-size: 12.5px; }
   .settings-dlg .card { padding: 14px 16px; } .settings-dlg .card h2 { font-size: 16px; }
   .settings-dlg .settings-head h2 { font-size: 18px; }
   .rp-tiles .tile { padding: 12px 16px; } .rp-tiles .tile .v { font-size: 26px; }
@@ -720,26 +737,34 @@
 
 <!-- ═══════════ ỨNG DỤNG (bố cục kiểu Zalo) ═══════════ -->
 <div class="zapp" id="appView" hidden>
+  <nav class="rail" id="rail">
+    <div class="rail-logo" title="Chat Assistant">C</div>
+    <button class="rail-btn active" data-view="chat" title="Hội thoại">💬<span>Hội thoại</span></button>
+    <button class="rail-btn" data-view="connections" title="Kết nối &amp; khoá cấu hình">🔌<span>Kết nối</span></button>
+    <button class="rail-btn" id="btnReportRail" title="Báo cáo ngày">📊<span>Báo cáo</span></button>
+    <button class="rail-btn" data-view="settings" id="btnSettings" title="Cài đặt">⚙️<span>Cài đặt</span></button>
+    <div class="rail-foot"><span class="rail-dot" id="railAiDot" title="Bộ máy AI"></span><span id="railVer"></span></div>
+  </nav>
+  <div class="main">
   <header class="topbar">
-    <div class="brand-mini"><div class="logo">Z</div><b>Chat Assistant</b></div>
+    <div class="brand-mini"><b id="viewTitle">Hội thoại</b></div>
     <div class="zstrip" id="zaloStrip"></div>
     <div class="grow"></div>
-    <select id="presetSel" title="Chọn dữ liệu đưa cho Claude"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
-    <button class="primary" id="btnWsUpdate">📁 Cập nhật dữ liệu cho Claude</button>
-    <button data-open="workspace" title="Mở thư mục làm việc với Claude trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
+    <select id="presetSel" class="chat-only" title="Kiểu dữ liệu đưa vào gói tổng hợp"><option value="waiting">Khách đang chờ trả lời</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select>
+    <button class="primary chat-only" id="btnWsUpdate">📁 Cập nhật gói dữ liệu</button>
+    <button class="chat-only" data-open="workspace" title="Mở thư mục làm việc trong Finder">📂<span class="lbl"> Mở thư mục</span></button>
     <button id="btnReport" title="Báo cáo tổng hợp theo ngày">📊 Báo cáo</button>
-    <button id="btnSettings" title="Cài đặt" class="icon">⚙️</button>
   </header>
-  <div class="ws-line"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
+  <div class="ws-line chat-only"><span class="stats" id="statChips"></span><span class="grow"></span><span id="wsLine"></span></div>
   <div id="reencryptBar" hidden></div>
   <div id="powerBar" hidden></div>
   <div id="updateBar" hidden></div>
 
-  <div class="cols">
+  <div class="cols" id="viewChat">
     <aside class="convcol">
       <div class="toolbar">
         <input type="search" id="search" placeholder="Tìm tên hoặc số điện thoại…">
-        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button></div>
+        <div class="chips"><button class="chip active" data-filter="all">Tất cả</button><button class="chip" data-filter="unread">Chưa đọc</button><button class="chip" data-filter="groups">Nhóm</button><span class="chip-sep"></span><button class="chip src active" data-source="all">Mọi nguồn</button><button class="chip src" data-source="zalo">Zalo</button><button class="chip src" data-source="telegram">✈️ Telegram</button></div>
       </div>
       <div class="vlist" id="convScroll"><div class="vspacer" id="convSpacer"></div></div>
       <div class="foot" id="convFoot"></div>
@@ -763,77 +788,21 @@
     <div class="gutter" data-gutter="2" title="Kéo để đổi độ rộng · bấm đôi để về mặc định"></div>
 
     <aside class="sidecol" id="sidecol">
-      <div class="side-head"><b>💡 Trợ lý Claude</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
+      <div class="side-head"><b>💡 Trợ lý AI</b><span class="muted small" id="sideMeta"></span><span class="grow"></span><button class="sm icon" id="btnSideHide" title="Thu gọn cột trợ lý">✕</button></div>
       <div class="side-body">
         <div class="sug-card" id="sugCard" hidden></div>
-        <div class="side-sec" id="sideClaude"><div class="empty small">Chọn một hội thoại để xem tóm tắt và gợi ý của Claude.</div></div>
-        <div class="side-sec" id="sideTemplates">
-          <div class="sec-head"><b>✉️ Tin nhắn mẫu</b><span class="muted small">bấm để điền vào ô soạn</span><span class="grow"></span><button class="sm" id="btnTplAdd">＋ Thêm</button></div>
-          <div id="tplList"><div class="empty small">Đang tải…</div></div>
-        </div>
+        <div class="side-sec" id="sideClaude"><div class="empty small">Chọn một hội thoại để xem tóm tắt và gợi ý của AI.</div></div>
       </div>
     </aside>
   </div>
-</div>
 
-<!-- ═══════════ TIN NHẮN MẪU (hộp thoại sửa) ═══════════ -->
-<!-- ═══════════ CHUYỂN TIẾP TIN ═══════════ -->
-<dialog id="dlgForward" class="settings-dlg fwd-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>Chuyển tiếp tin nhắn</h2><span class="muted small" id="fwdCount"></span></div>
-  <div class="settings-tools"><input type="search" id="fwdSearch" placeholder="Tìm hội thoại…" style="flex:1"><button class="primary" id="fwdSend" disabled>Chuyển tiếp</button></div>
-  <div class="settings-body" style="gap:8px"><div class="fwd-preview" id="fwdPreview"></div><div class="fwd-list" id="fwdList"></div></div>
-</div></dialog>
-
-<!-- ═══════════ XEM ẢNH (lightbox — ✕, bấm nền, Esc, ← →) ═══════════ -->
-<dialog id="dlgImage" class="img-dlg"><div class="img-wrap">
-  <button type="button" class="img-nav prev" id="imgPrev" title="Ảnh trước (←)">‹</button>
-  <div class="img-stage" id="imgStage"><img id="imgPreview" alt=""><div class="img-msg" id="imgMsg" hidden></div></div>
-  <button type="button" class="img-nav next" id="imgNext" title="Ảnh sau (→)">›</button>
-  <div class="img-bar"><span class="small" id="imgName"></span><span class="small faint" id="imgCount"></span><span class="grow"></span><button type="button" class="sm" id="imgZoom">Kích cỡ thật</button><button type="button" class="sm" id="imgCopyUrl">Sao chép liên kết</button><button type="button" class="sm" id="imgOpen">Mở bằng trình duyệt</button></div>
-</div></dialog>
-
-<dialog id="dlgTemplate" class="settings-dlg tpl-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2 id="tplDlgTitle">Tin nhắn mẫu</h2></div>
-  <div class="settings-body"><div class="form">
-    <label class="fld"><span>Tên mẫu</span><input id="tplTitle" maxlength="80" placeholder="Ví dụ: Xác nhận lịch hẹn"></label>
-    <label class="fld"><span>Nội dung — dán được thẳng vào Zalo; viết [tên] để tự thay bằng tên người đối thoại, các ô [..] khác tự điền trước khi gửi</span><textarea id="tplText" rows="7" maxlength="2000"></textarea></label>
-    <div class="row"><button class="primary" id="btnTplSave">Lưu mẫu</button><button class="danger" id="btnTplDelete" hidden>Xoá mẫu</button><span class="small muted" id="tplMsg"></span></div>
-  </div></div>
-</div></dialog>
-
-<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
-<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
-  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
-  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
-</div></dialog>
-
-<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
-<dialog id="dlgSettings" class="settings-dlg"><div class="settings-wrap">
-  <div class="settings-head"><h2>Cài đặt</h2><span class="muted small" id="settingsSub"></span></div>
-  <div class="settings-body">
+    <!-- ═══ MÀN KẾT NỐI: mọi nguồn dữ liệu và khoá cấu hình ═══ -->
+    <section class="page" id="viewConnections" hidden>
+      <div class="page-inner">
+        <div class="page-head"><div><h1>Kết nối &amp; khoá cấu hình</h1><p class="muted">Các nguồn ứng dụng đọc để tổng hợp, và bộ máy AI. Mọi khoá chỉ lưu trên máy này (thư mục dữ liệu, quyền 600, mã hoá bằng chuỗi của tài khoản).</p></div><div class="conn-summary" id="connSummary"></div></div>
+        <div class="settings-body page-cards">
     <div class="card">
-      <h2>Tài khoản đăng nhập</h2>
-      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
-      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
-        <div class="form" style="margin-top:10px; max-width:420px">
-          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
-          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
-          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
-        </div>
-      </details>
-      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Bảo mật dữ liệu</h2>
-      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
-      <div class="kv" id="securityKv"></div>
-      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="margin-bottom:6px"><h2 class="grow">Tài khoản Zalo</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
+      <div class="row" style="margin-bottom:6px"><h2 class="grow">Zalo (tài khoản cá nhân, quét QR)</h2><button id="btnAddAccount">＋ Đăng nhập Zalo (QR)</button></div>
       <div id="accountRows"></div>
     </div>
 
@@ -865,14 +834,43 @@
       <div class="row" style="margin-top:12px"><button class="primary" id="btnAiDownload">⬇️ Tải model</button><button id="btnAiRun">▶️ Tổng hợp ngay</button><button class="sm" id="btnAiUnload">Giải phóng bộ nhớ</button><span class="small muted" id="aiMsg"></span></div>
     </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ MÀN CÀI ĐẶT: tài khoản, bảo mật, gói dữ liệu, tuỳ chọn, cập nhật ═══ -->
+    <section class="page" id="viewSettings" hidden>
+      <div class="page-inner">
+        <div class="page-head"><div><h1>Cài đặt</h1><p class="muted" id="settingsSub"></p></div><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+        <div class="settings-body page-cards">
     <div class="card">
-      <h2>Thư mục làm việc với Claude Cowork</h2>
-      <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
+      <h2>Tài khoản đăng nhập</h2>
+      <div class="kv" style="margin:10px 0 14px" id="accountKv"></div>
+      <details id="cpDetails"><summary style="cursor:pointer;font-weight:600">Đổi mật khẩu</summary>
+        <div class="form" style="margin-top:10px; max-width:420px">
+          <label class="fld"><span>Mật khẩu hiện tại</span><input type="password" id="cpCurrent"></label>
+          <label class="fld"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" id="cpNew"></label>
+          <div class="row"><button class="primary" id="cpBtn">Đổi mật khẩu</button><span class="small" id="cpMsg"></span></div>
+        </div>
+      </details>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnLogoutApp">Đăng xuất khỏi ứng dụng</button><span class="small muted">Tin nhắn vẫn nằm trên máy (đã mã hoá) — đăng nhập lại cùng tài khoản là đọc được.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Bảo mật dữ liệu</h2>
+      <p class="desc">Mọi tin nhắn, tên, số điện thoại trong cơ sở dữ liệu trên máy đều được mã hoá bằng chuỗi do máy chủ cấp cho tài khoản của bạn. Chỉ máy này lưu tin nhắn; máy chủ không nhận tin nào.</p>
+      <div class="kv" id="securityKv"></div>
+      <div class="row" style="margin-top:14px"><button id="btnRotate">🔑 Đổi chuỗi mã hoá</button><button class="sm" id="btnReencrypt">Mã hoá lại phần còn thiếu</button><span class="small muted">Đổi chuỗi = mã hoá lại toàn bộ dữ liệu (chạy nền).</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Gói dữ liệu &amp; tự động tổng hợp</h2>
+      <p class="desc">Ứng dụng ghi dữ liệu đã giải mã vào <code>du-lieu/</code> của thư mục làm việc rồi bộ máy AI (cục bộ, hoặc Claude Cowork nếu chọn) ghi kết quả vào <code>ket-qua/</code>. Dùng Cowork thì trỏ Cowork vào thư mục này một lần.</p>
       <div class="kv" id="wsKv"></div>
-      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Claude</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
+      <div class="row" style="margin-top:12px"><button class="primary" data-open="workspace">📂 Mở thư mục</button><button class="sm" id="btnCopyWs">Sao chép đường dẫn</button><button class="sm" id="btnCopyPrompt">Sao chép câu lệnh cho Cowork</button><button class="sm danger" id="btnClearWs">Xoá dữ liệu đã chuẩn bị</button></div>
       <div class="setting" style="margin-top:8px"><div class="txt"><b>Kèm file Excel khi cập nhật</b><span>Mỗi hội thoại một sheet, đặt trong du-lieu/.</span></div><label class="switch"><input type="checkbox" id="setExcel"><i></i></label></div>
       <div class="setting"><div class="txt"><b>Cập nhật gói sau tin nhắn cuối</b><span>Yên lặng đủ số phút này sau tin mới nhất thì cập nhật gói; có tin tiếp thì đếm lại. 0 = tắt.</span></div><div class="row"><input type="number" id="setQuietMinutes" min="0" max="120" step="1" style="width:100px"> <span class="muted">phút</span></div></div>
-      <div class="setting"><div class="txt"><b>Claude tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30); lịch Cowork kiểm tra mỗi 5 phút và chỉ tổng hợp khi gói đổi. Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
+      <div class="setting"><div class="txt"><b>Tổng hợp lại theo chu kỳ</b><span>Ứng dụng làm mới gói dữ liệu đúng mốc tròn (30 phút ⇒ :00 và :30) rồi AI tổng hợp lại (Cowork: lịch kiểm tra mỗi 5 phút, chỉ tổng hợp khi gói đổi). Ngoài chu kỳ, có tin mới vẫn cập nhật sau số phút yên lặng ở trên. 0 = tắt chu kỳ.</span></div><div class="row"><input type="number" id="setAutoMinutes" min="0" max="1440" step="5" style="width:100px"> <span class="muted">phút</span></div></div>
       <div class="setting"><div class="txt"><b>Kiểu dữ liệu mặc định (nút Cập nhật và tự cập nhật)</b></div><select id="setPreset"><option value="waiting">Khách đang chờ trả lời (toàn bộ lịch sử)</option><option value="today">Hôm nay</option><option value="week">7 ngày gần nhất</option><option value="groups">Nhóm chat — 7 ngày</option><option value="all">Tất cả</option></select></div>
     </div>
 
@@ -913,8 +911,39 @@
 
     <div class="card"><details id="logDetails"><summary style="cursor:pointer; font-weight:600">Nhật ký hoạt động (cho hỗ trợ kỹ thuật) <span class="faint small" id="verText"></span></summary><pre class="logbox" id="logbox"></pre></details></div>
   </div>
-  <div class="settings-foot"><span class="muted small">Các tuỳ chọn ở mục "Thư mục làm việc" và "Tuỳ chọn" chỉ có hiệu lực sau khi lưu.</span><span class="grow"></span><button class="primary" id="btnSettingsSave">Lưu tuỳ chọn</button></div>
+
+        </div>
+        <p class="muted small" style="margin-top:12px">Các tuỳ chọn ở mục "Gói dữ liệu" và "Tuỳ chọn" chỉ có hiệu lực sau khi bấm Lưu tuỳ chọn.</p>
+      </div>
+    </section>
+  </div><!-- /.main -->
+</div>
+
+
+<!-- ═══════════ CHUYỂN TIẾP TIN ═══════════ -->
+<dialog id="dlgForward" class="settings-dlg fwd-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>Chuyển tiếp tin nhắn</h2><span class="muted small" id="fwdCount"></span></div>
+  <div class="settings-tools"><input type="search" id="fwdSearch" placeholder="Tìm hội thoại…" style="flex:1"><button class="primary" id="fwdSend" disabled>Chuyển tiếp</button></div>
+  <div class="settings-body" style="gap:8px"><div class="fwd-preview" id="fwdPreview"></div><div class="fwd-list" id="fwdList"></div></div>
 </div></dialog>
+
+<!-- ═══════════ XEM ẢNH (lightbox — ✕, bấm nền, Esc, ← →) ═══════════ -->
+<dialog id="dlgImage" class="img-dlg"><div class="img-wrap">
+  <button type="button" class="img-nav prev" id="imgPrev" title="Ảnh trước (←)">‹</button>
+  <div class="img-stage" id="imgStage"><img id="imgPreview" alt=""><div class="img-msg" id="imgMsg" hidden></div></div>
+  <button type="button" class="img-nav next" id="imgNext" title="Ảnh sau (→)">›</button>
+  <div class="img-bar"><span class="small" id="imgName"></span><span class="small faint" id="imgCount"></span><span class="grow"></span><button type="button" class="sm" id="imgZoom">Kích cỡ thật</button><button type="button" class="sm" id="imgCopyUrl">Sao chép liên kết</button><button type="button" class="sm" id="imgOpen">Mở bằng trình duyệt</button></div>
+</div></dialog>
+
+<!-- ═══════════ BÁO CÁO NGÀY (hộp thoại) ═══════════ -->
+<dialog id="dlgReport" class="settings-dlg report-dlg"><div class="settings-wrap">
+  <div class="settings-head"><h2>📊 Báo cáo ngày</h2><button class="sm" id="rpPrev" title="Ngày trước">◀</button><select id="rpDate"></select><button class="sm" id="rpNext" title="Ngày sau">▶</button><span class="muted small" id="rpSource"></span></div>
+  <div class="settings-tools"><div class="seg" id="rpLevel" title="Mức chi tiết của báo cáo"><button data-level="full">Chi tiết</button><button data-level="medium">Vừa đủ</button><button data-level="brief">Cô đọng</button></div><button class="sm" id="rpCopy">📋 Sao chép báo cáo</button><button class="sm" id="rpOpenMd" hidden>📄 Mở bản .md</button><span class="grow"></span><span class="faint small">Bấm tên hội thoại để mở · ✕ hoặc Esc để đóng</span></div>
+  <div class="settings-body" id="rpBody"><div class="empty">Đang tải…</div></div>
+</div></dialog>
+
+<!-- ═══════════ CÀI ĐẶT (hộp thoại) ═══════════ -->
+
 
 <!-- ═══════════ BẢN CẬP NHẬT (hộp thoại xem thay đổi) ═══════════ -->
 <dialog id="dlgUpdate" class="settings-dlg upd-dlg"><div class="settings-wrap">
@@ -1011,10 +1040,10 @@
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
-    if (justUnlocked && !state.templates?.length) void loadTemplates();
     try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
     renderTop(); renderReencrypt(); renderPower(); renderUpdate();
-    if ($('#dlgSettings').open) renderSettings();
+    if (!$('#viewSettings').hidden || !$('#viewConnections').hidden) renderSettings();
+    renderRail();
   }
   function renderTop() {
     const list = visibleAccounts();
@@ -1033,7 +1062,7 @@
       (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '');
     $('#presetSel').value = state.settings.defaultPreset || 'today';
     const ws = state.workspace || {}; const au = state.automation;
-    $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.') +
+    $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Gói dữ liệu: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có gói dữ liệu — bấm <b>Cập nhật gói dữ liệu</b>.') +
       (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 tổng hợp lại mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
       ' · <button class="link" id="btnCopyPrompt2" title="Sao chép câu lệnh dán vào Claude Cowork">Sao chép câu lệnh</button>';
     $('#btnCopyPrompt2').onclick = copyPrompt;
@@ -1160,7 +1189,7 @@
   async function updateWorkspace(body, btn) {
     body.includeExcel = !!state.settings.includeExcel;
     await busy(btn, 'Đang chuẩn bị…', async () => {
-      try { const r = await api('/api/workspace/update', { method: 'POST', body }); toast('Đã cập nhật ' + num(r.conversations) + ' hội thoại, ' + num(r.messages) + ' tin cho Claude.'); await refreshState(); }
+      try { const r = await api('/api/workspace/update', { method: 'POST', body }); toast('Đã cập nhật ' + num(r.conversations) + ' hội thoại, ' + num(r.messages) + ' tin vào gói dữ liệu.'); await refreshState(); }
       catch (err) { toast('Không cập nhật được: ' + err.message); }
     });
   }
@@ -1172,7 +1201,7 @@
   const vlist = {
     scroll: null, spacer: null, total: 0, rows: [], pages: new Set(), loading: new Set(), gen: 0,
     init() { this.scroll = $('#convScroll'); this.spacer = $('#convSpacer'); this.scroll.addEventListener('scroll', () => this.render()); new ResizeObserver(() => this.render()).observe(this.scroll); },
-    params() { const p = new URLSearchParams({ includeGroups: 'true', limit: String(PAGE) }); if (state.q) p.set('q', state.q); if (state.filter === 'unread') p.set('unread', 'true'); if (state.filter === 'groups') p.set('groups', 'true'); return p; },
+    params() { const p = new URLSearchParams({ includeGroups: 'true', limit: String(PAGE) }); if (state.q) p.set('q', state.q); if (state.filter === 'unread') p.set('unread', 'true'); if (state.filter === 'groups') p.set('groups', 'true'); if (state.source && state.source !== 'all') p.set('source', state.source); return p; },
     reset() { this.gen++; this.rows = []; this.pages = new Set(); this.loading = new Set(); this.total = 0; this.scroll.scrollTop = 0; this.spacer.innerHTML = ''; this.spacer.style.height = '0px'; return this.loadPage(0).then(() => this.render()); },
     /** Tải lại các trang đã có (giữ vị trí cuộn) — dùng khi có tin mới/đổi trạng thái. */
     async refresh() { const gen = ++this.gen; const pages = [...this.pages]; if (!pages.length) return this.reset(); this.pages = new Set(); await Promise.all(pages.map((p) => this.loadPage(p, gen))); if (gen === this.gen) this.render(); },
@@ -1209,8 +1238,10 @@
       '<div class="bottom"><span class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</span>' +
       (unread ? '<span class="badge-unread">' + (unread > 99 ? '99+' : unread) + '</span>' : '') + (s ? '<span class="sugdot ' + (s.reply ? (s.kind === 'theo-doi' ? 'follow' : '') : 'none') + '" title="' + (s.reply ? 'Có gợi ý từ Claude' : 'Claude: không cần nhắn') + '">💡</span>' : '') + '</div></div></div>';
   }
-  function setFilter(f) { state.filter = f; $$('.chip').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
-  $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); vlist.reset(); });
+  function setFilter(f) { state.filter = f; $$('.chip[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
+  function setSource(src) { state.source = src; $$('.chip[data-source]').forEach((b) => b.classList.toggle('active', b.dataset.source === src)); }
+  $$('.chip[data-filter]').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); vlist.reset(); });
+  $$('.chip[data-source]').forEach((b) => b.onclick = () => { setSource(b.dataset.source); vlist.reset(); });
   let searchTimer; $('#search').addEventListener('input', (e) => { state.q = e.target.value.trim(); clearTimeout(searchTimer); searchTimer = setTimeout(() => vlist.reset(), 250); });
   $('#convScroll').addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it || !it.dataset.key) return; openConversation(it.dataset.key); });
 
@@ -1521,12 +1552,12 @@
     const [kcls, klabel] = KIND[it.kind] || KIND['tra-loi'];
     card.hidden = false; card.className = 'sug-card ' + kcls;
     const prio = it.priority ? '<span class="prio ' + (it.priority === 'P1' ? 'p1' : it.priority === 'P3' ? 'p3' : '') + '">' + esc(it.priority) + '</span>' : '';
-    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ Claude</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
+    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ AI</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
       (it.reply ? '<span class="acts"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span>' : '') + '</div>';
     const warn = it.hasNewer ? '<div class="warnnew">⚠️ Có tin mới sau khi Claude viết gợi ý — đọc lại hội thoại trước khi gửi.</div>' : '';
     if (!it.reply) { card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : ''); return; }
     card.innerHTML = head + warn + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') + '<div class="reply">' + esc(it.reply) + '</div>' +
-      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của Claude' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
+      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của AI' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
     $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
     $('#btnCopySug').onclick = async () => { await copyText(it.reply, 'Đã sao chép gợi ý.'); };
   }
@@ -1541,7 +1572,7 @@
   $('#btnSend').onclick = sendCurrent;
   $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } else if (e.key === 'Escape' && chat.quote) { e.preventDefault(); clearQuote(); } });
 
-  // ── Cột trợ lý: tóm tắt của Claude cho hội thoại đang mở + tin nhắn mẫu ───
+  // ── Cột trợ lý: tóm tắt của AI cho hội thoại đang mở ───
   const prefill = (text) => { if (!chat.key) { toast('Chọn một hội thoại trước.'); return; } const t = $('#composeText'); t.value = text; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
   function renderSideClaude() {
     const box = $('#sideClaude'); const cl = chat.claude; const sugs = chat.key ? ((state.sugByKey || {})[chat.key] || []) : [];
@@ -1593,29 +1624,6 @@
   function initSide() { let v = null; try { v = localStorage.getItem(SIDE_KEY); } catch { /* bỏ qua */ } setSide(v === null ? window.innerWidth < 1000 : v === '1'); }
   $('#btnSideToggle').onclick = () => setSide(!$('.cols').classList.contains('noside'));
   $('#btnSideHide').onclick = () => setSide(true);
-  // Tin nhắn mẫu
-  state.templates = []; let tplEditing = null;
-  const applyTpl = (text) => text.replace(/\[tên\]/gi, () => (chat.conv && !chat.conv.is_group && chat.conv.name) ? chat.conv.name : '[tên]');
-  async function loadTemplates() { if (state.locked) return; try { const r = await api('/api/templates'); state.templates = r.items || []; } catch (err) { state.templates = []; if (err.status !== 423) toast('Không tải được tin nhắn mẫu: ' + err.message); } renderTemplates(); }
-  function renderTemplates() {
-    const list = $('#tplList');
-    if (!state.templates.length) { list.innerHTML = '<div class="empty small">Chưa có mẫu nào — bấm ＋ Thêm.</div>'; return; }
-    list.innerHTML = state.templates.map((t, i) => '<div class="tpl" data-i="' + i + '"><div class="t" data-use="' + i + '" title="Điền vào ô soạn"><b>' + esc(t.title) + '</b><span>' + esc(t.text) + '</span></div><button class="sm icon" data-edit="' + i + '" title="Sửa mẫu">✎</button></div>').join('');
-  }
-  $('#tplList').addEventListener('click', (e) => {
-    const u = e.target.closest('[data-use]'); const ed = e.target.closest('[data-edit]');
-    if (ed) { openTplDialog(Number(ed.dataset.edit)); return; }
-    if (u) { const t = state.templates[Number(u.dataset.use)]; if (t) prefill(applyTpl(t.text)); }
-  });
-  function openTplDialog(i) {
-    tplEditing = Number.isInteger(i) ? i : null; const t = tplEditing !== null ? state.templates[tplEditing] : null;
-    $('#tplDlgTitle').textContent = t ? 'Sửa tin nhắn mẫu' : 'Thêm tin nhắn mẫu'; $('#tplTitle').value = t?.title || ''; $('#tplText').value = t?.text || ''; $('#btnTplDelete').hidden = !t; $('#tplMsg').textContent = '';
-    $('#dlgTemplate').showModal(); setTimeout(() => $('#tplTitle').focus(), 50);
-  }
-  async function saveTemplates(items, okMsg) { try { const r = await api('/api/templates', { method: 'POST', body: { items } }); state.templates = r.items || items; renderTemplates(); $('#dlgTemplate').close(); toast(okMsg); } catch (err) { $('#tplMsg').textContent = '❌ ' + err.message; } }
-  $('#btnTplAdd').onclick = () => openTplDialog(null);
-  $('#btnTplSave').onclick = () => { const title = $('#tplTitle').value.trim(), text = $('#tplText').value.trim(); if (!title || !text) { $('#tplMsg').textContent = 'Cần cả tên mẫu và nội dung.'; return; } const items = state.templates.slice(); if (tplEditing !== null) items[tplEditing] = { ...items[tplEditing], title, text }; else items.push({ id: 'tpl-' + Date.now(), title, text }); saveTemplates(items, 'Đã lưu tin nhắn mẫu.'); };
-  $('#btnTplDelete').onclick = () => { if (tplEditing === null) return; if (!confirm('Xoá mẫu này?')) return; saveTemplates(state.templates.filter((_, i) => i !== tplEditing), 'Đã xoá mẫu.'); };
 
   // ── Cài đặt (hộp thoại) ───────────────────────────────────────────────────
   function renderSettings() {
@@ -1768,7 +1776,28 @@
   $('#btnTgDialogs').onclick = async () => { $('#tgMsg').textContent = 'Đang tải…'; try { tgDialogs = (await api('/api/telegram/dialogs')).items; renderTgDialogs(); $('#tgMsg').textContent = tgDialogs.length + ' hội thoại.'; } catch (err) { $('#tgMsg').textContent = '❌ ' + err.message; } };
   $('#btnTgWatch').onclick = () => { const boxes = [...$('#tgDialogs').querySelectorAll('input:checked')]; const titles = {}; boxes.forEach((b) => { titles[b.dataset.id] = b.dataset.title; }); void tgCall('/api/telegram/watch', { chatIds: boxes.map((b) => b.dataset.id), titles, historyDays: Number($('#tgHistoryDays').value) || 7 }, 'Đã lưu ' + boxes.length + ' nhóm theo dõi — đang kéo lịch sử.'); };
   $('#btnTgSync').onclick = () => tgCall('/api/telegram/sync', {}, 'Đang đồng bộ lại lịch sử.');
-  function openSettings() { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); $('#dlgSettings').showModal(); }
+  // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
+  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
+  function showView(name) {
+    state.view = name;
+    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings';
+    $$('.chat-only').forEach((el) => { el.hidden = name !== 'chat'; });
+    $$('.rail-btn[data-view]').forEach((btn) => btn.classList.toggle('active', btn.dataset.view === name));
+    $('#viewTitle').textContent = VIEW_TITLE[name] || '';
+    if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
+    else if (vlist.scroll) applyCols();
+  }
+  function renderRail() {
+    const a = state.ai || {}; const p = a.pipeline || {};
+    const dot = $('#railAiDot'); dot.className = 'rail-dot ' + (p.running ? 'busy' : a.loaded ? 'on' : '');
+    dot.title = p.running ? 'AI đang tổng hợp' : a.loaded ? 'Model đang trong bộ nhớ' : 'AI cục bộ (chưa nạp)';
+    $('#railVer').textContent = state.platform?.version ? 'v' + state.platform.version.replace(/-beta\.\d+$/, 'β') : '';
+    const t = state.telegram || {}; const zalo = (state.accounts || []).some((x) => x.status === 'connected');
+    const el = $('#connSummary'); if (el) el.innerHTML = '<span class="pill ' + (zalo ? 'ok' : '') + '">Zalo ' + (zalo ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (t.status === 'connected' ? 'ok' : '') + '">Telegram ' + (t.status === 'connected' ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (a.modelFile ? 'ok' : 'warn') + '">AI ' + (a.engine === 'cowork' ? 'Claude Cowork' : (a.modelFile ? 'cục bộ · sẵn sàng' : 'chưa có model')) + '</span>';
+  }
+  $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
+  $('#btnReportRail').onclick = () => $('#btnReport').click();
+  function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
@@ -1792,7 +1821,7 @@
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
   };
-  $('#btnLogoutApp').onclick = async () => { const msg = state.auth.mode === 'local' ? 'Thoát chế độ dùng thử?\nTOÀN BỘ dữ liệu thử trên máy này (tin nhắn, hội thoại) sẽ bị XOÁ vì chuỗi mã hoá không được lưu ở đâu khác. Phiên Zalo cần quét QR lại.' : 'Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).'; if (!confirm(msg)) return; try { $('#dlgSettings').close(); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
+  $('#btnLogoutApp').onclick = async () => { const msg = state.auth.mode === 'local' ? 'Thoát chế độ dùng thử?\nTOÀN BỘ dữ liệu thử trên máy này (tin nhắn, hội thoại) sẽ bị XOÁ vì chuỗi mã hoá không được lưu ở đâu khác. Phiên Zalo cần quét QR lại.' : 'Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).'; if (!confirm(msg)) return; try { showView('chat'); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
   $('#cpBtn').onclick = async () => { $('#cpMsg').textContent = ''; try { await api('/api/auth/change-password', { method: 'POST', body: { currentPassword: $('#cpCurrent').value, newPassword: $('#cpNew').value } }); $('#cpMsg').textContent = '✅ Đã đổi mật khẩu.'; $('#cpCurrent').value = ''; $('#cpNew').value = ''; } catch (err) { $('#cpMsg').textContent = '❌ ' + err.message; } };
   $('#btnRotate').onclick = async () => { if (!confirm('Đổi chuỗi mã hoá?\nMáy chủ sẽ cấp chuỗi mới và ứng dụng mã hoá lại TOÀN BỘ dữ liệu trên máy (chạy nền). Máy khác dùng cùng tài khoản sẽ tự lấy chuỗi mới khi mở.')) return; await busy($('#btnRotate'), 'Đang đổi…', async () => { try { const r = await api('/api/security/rotate-key', { method: 'POST' }); toast('Đã đổi sang phiên bản ' + r.version + ' — đang mã hoá lại.'); await refreshState(); } catch (err) { toast(err.message); } }); };
   $('#btnReencrypt').onclick = async () => { try { await api('/api/security/reencrypt', { method: 'POST' }); toast('Đã bắt đầu mã hoá lại phần còn thiếu.'); } catch (err) { toast(err.message); } };
@@ -1893,10 +1922,8 @@
   function closeDialog(d) {
     if (d.id === 'dlgQr') clearInterval(state.qrTimer);
     d.close();
-  }
-  function tplDirty() { const t = tplEditing !== null ? state.templates[tplEditing] : null; return ($('#tplTitle').value.trim() !== (t?.title || '')) || ($('#tplText').value.trim() !== (t?.text || '')); }
-  $$('dialog').forEach((d) => {
-    d.addEventListener('click', (e) => { if (e.target !== d) return; if (d.id === 'dlgTemplate' && tplDirty()) { toast('Mẫu đang sửa chưa lưu — bấm Lưu mẫu hoặc ✕ để bỏ.'); return; } closeDialog(d); });
+  }  $$('dialog').forEach((d) => {
+    d.addEventListener('click', (e) => { if (e.target !== d) return; closeDialog(d); });
     d.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(d); });
     const wrap = d.firstElementChild;
     if (wrap && !wrap.querySelector('.dlg-x')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'dlg-x'; b.title = 'Đóng (Esc)'; b.setAttribute('aria-label', 'Đóng'); b.textContent = '✕'; b.onclick = () => closeDialog(d); wrap.prepend(b); }
@@ -1922,7 +1949,7 @@
 
   // ── Realtime ─────────────────────────────────────────────────────────────
   let reloadTimer, esRetry = 3000;
-  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); void loadTemplates(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
+  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
@@ -1934,7 +1961,7 @@
   (async () => {
     vlist.init(); initSide();
     try { await refreshState(); } catch (err) { toast('Không kết nối được với ứng dụng: ' + err.message); }
-    if (!state.locked) { vlist.reset(); void loadTemplates(); }
+    if (!state.locked) vlist.reset();
     connectEvents();
     setInterval(() => { refreshState().catch(() => {}); }, 30000);
   })();

@@ -65,10 +65,10 @@
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
-    if (justUnlocked && !state.templates?.length) void loadTemplates();
     try { const sg = await api('/api/suggestions'); state.sugByKey = {}; for (const it of sg.items || []) { if (!it.threadId) continue; const k = (it.accountId || '') + '|' + it.threadId; (state.sugByKey[k] ||= []).push(it); } state.sugUnresolved = (sg.items || []).filter((i) => !i.threadId).length; } catch { /* giữ cũ */ }
     renderTop(); renderReencrypt(); renderPower(); renderUpdate();
-    if ($('#dlgSettings').open) renderSettings();
+    if (!$('#viewSettings').hidden || !$('#viewConnections').hidden) renderSettings();
+    renderRail();
   }
   function renderTop() {
     const list = visibleAccounts();
@@ -87,7 +87,7 @@
       (state.suggestionsSummary?.count ? '<span class="chipstat" title="Gợi ý Claude ghi trong ket-qua/">💡 ' + num(state.suggestionsSummary.withReply ?? state.suggestionsSummary.resolved) + ' gợi ý' + (state.sugUnresolved ? ' (+' + state.sugUnresolved + ' chưa khớp)' : '') + '</span>' : '');
     $('#presetSel').value = state.settings.defaultPreset || 'today';
     const ws = state.workspace || {}; const au = state.automation;
-    $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Dữ liệu cho Claude: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có dữ liệu cho Claude — bấm <b>Cập nhật dữ liệu cho Claude</b>.') +
+    $('#wsLine').innerHTML = (ws.hasData && ws.status ? '📁 Gói dữ liệu: <b>' + num(ws.status.conversations) + ' hội thoại, ' + num(ws.status.messages) + ' tin</b> — cập nhật ' + fmtClock(ws.status.updatedAt) : '📁 Chưa có gói dữ liệu — bấm <b>Cập nhật gói dữ liệu</b>.') +
       (au ? (au.quietAt ? ' · ⏱ sẽ cập nhật lúc ' + fmtClock(au.quietAt) : (au.quietMinutes ? ' · ⏱ tự cập nhật ' + au.quietMinutes + ' phút sau tin cuối' : '')) + (au.minutes ? ' · 🔄 tổng hợp lại mỗi ' + au.minutes + ' phút' + (au.nextRunAt ? ' (' + fmtClock(au.nextRunAt) + ')' : '') : '') : '') +
       ' · <button class="link" id="btnCopyPrompt2" title="Sao chép câu lệnh dán vào Claude Cowork">Sao chép câu lệnh</button>';
     $('#btnCopyPrompt2').onclick = copyPrompt;
@@ -214,7 +214,7 @@
   async function updateWorkspace(body, btn) {
     body.includeExcel = !!state.settings.includeExcel;
     await busy(btn, 'Đang chuẩn bị…', async () => {
-      try { const r = await api('/api/workspace/update', { method: 'POST', body }); toast('Đã cập nhật ' + num(r.conversations) + ' hội thoại, ' + num(r.messages) + ' tin cho Claude.'); await refreshState(); }
+      try { const r = await api('/api/workspace/update', { method: 'POST', body }); toast('Đã cập nhật ' + num(r.conversations) + ' hội thoại, ' + num(r.messages) + ' tin vào gói dữ liệu.'); await refreshState(); }
       catch (err) { toast('Không cập nhật được: ' + err.message); }
     });
   }
@@ -226,7 +226,7 @@
   const vlist = {
     scroll: null, spacer: null, total: 0, rows: [], pages: new Set(), loading: new Set(), gen: 0,
     init() { this.scroll = $('#convScroll'); this.spacer = $('#convSpacer'); this.scroll.addEventListener('scroll', () => this.render()); new ResizeObserver(() => this.render()).observe(this.scroll); },
-    params() { const p = new URLSearchParams({ includeGroups: 'true', limit: String(PAGE) }); if (state.q) p.set('q', state.q); if (state.filter === 'unread') p.set('unread', 'true'); if (state.filter === 'groups') p.set('groups', 'true'); return p; },
+    params() { const p = new URLSearchParams({ includeGroups: 'true', limit: String(PAGE) }); if (state.q) p.set('q', state.q); if (state.filter === 'unread') p.set('unread', 'true'); if (state.filter === 'groups') p.set('groups', 'true'); if (state.source && state.source !== 'all') p.set('source', state.source); return p; },
     reset() { this.gen++; this.rows = []; this.pages = new Set(); this.loading = new Set(); this.total = 0; this.scroll.scrollTop = 0; this.spacer.innerHTML = ''; this.spacer.style.height = '0px'; return this.loadPage(0).then(() => this.render()); },
     /** Tải lại các trang đã có (giữ vị trí cuộn) — dùng khi có tin mới/đổi trạng thái. */
     async refresh() { const gen = ++this.gen; const pages = [...this.pages]; if (!pages.length) return this.reset(); this.pages = new Set(); await Promise.all(pages.map((p) => this.loadPage(p, gen))); if (gen === this.gen) this.render(); },
@@ -263,8 +263,10 @@
       '<div class="bottom"><span class="pv">' + (who ? '<span class="faint">' + esc(who) + ':</span> ' : '') + esc(c.last_message_preview || '') + '</span>' +
       (unread ? '<span class="badge-unread">' + (unread > 99 ? '99+' : unread) + '</span>' : '') + (s ? '<span class="sugdot ' + (s.reply ? (s.kind === 'theo-doi' ? 'follow' : '') : 'none') + '" title="' + (s.reply ? 'Có gợi ý từ Claude' : 'Claude: không cần nhắn') + '">💡</span>' : '') + '</div></div></div>';
   }
-  function setFilter(f) { state.filter = f; $$('.chip').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
-  $$('.chip').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); vlist.reset(); });
+  function setFilter(f) { state.filter = f; $$('.chip[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === f)); }
+  function setSource(src) { state.source = src; $$('.chip[data-source]').forEach((b) => b.classList.toggle('active', b.dataset.source === src)); }
+  $$('.chip[data-filter]').forEach((b) => b.onclick = () => { setFilter(b.dataset.filter); vlist.reset(); });
+  $$('.chip[data-source]').forEach((b) => b.onclick = () => { setSource(b.dataset.source); vlist.reset(); });
   let searchTimer; $('#search').addEventListener('input', (e) => { state.q = e.target.value.trim(); clearTimeout(searchTimer); searchTimer = setTimeout(() => vlist.reset(), 250); });
   $('#convScroll').addEventListener('click', (e) => { const it = e.target.closest('.conv'); if (!it || !it.dataset.key) return; openConversation(it.dataset.key); });
 
@@ -575,12 +577,12 @@
     const [kcls, klabel] = KIND[it.kind] || KIND['tra-loi'];
     card.hidden = false; card.className = 'sug-card ' + kcls;
     const prio = it.priority ? '<span class="prio ' + (it.priority === 'P1' ? 'p1' : it.priority === 'P3' ? 'p3' : '') + '">' + esc(it.priority) + '</span>' : '';
-    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ Claude</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
+    const head = '<div class="head"><span class="ttl">💡 Gợi ý từ AI</span><span class="kind">' + klabel + '</span>' + prio + '<span class="meta">' + fmtTime(it.writtenAt) + (list.length > 1 ? ' · ' + list.length + ' gợi ý' : '') + '</span>' +
       (it.reply ? '<span class="acts"><button class="primary sm" id="btnUseSug">✍️ Dùng gợi ý này</button><button class="sm" id="btnCopySug">Sao chép</button></span>' : '') + '</div>';
     const warn = it.hasNewer ? '<div class="warnnew">⚠️ Có tin mới sau khi Claude viết gợi ý — đọc lại hội thoại trước khi gửi.</div>' : '';
     if (!it.reply) { card.innerHTML = head + warn + '<div class="reason">' + esc(it.reason || 'Claude đánh giá lúc này không cần nhắn gì thêm.') + '</div>' + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : ''); return; }
     card.innerHTML = head + warn + (it.summary ? '<div class="ctx"><b>Bối cảnh:</b> ' + esc(it.summary) + '</div>' : '') + '<div class="reply">' + esc(it.reply) + '</div>' +
-      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của Claude' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
+      ((it.notes || it.nextAction) ? '<details class="more"><summary>Ghi chú của AI' + (it.notes && /CẦN XÁC NHẬN/i.test(it.notes) ? ' · có điểm cần xác nhận' : '') + '</summary><div>' + esc([it.notes, it.nextAction ? 'Hành động tiếp: ' + it.nextAction : ''].filter(Boolean).join('\n')) + '</div></details>' : '');
     $('#btnUseSug').onclick = () => { const t = $('#composeText'); t.value = it.reply; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
     $('#btnCopySug').onclick = async () => { await copyText(it.reply, 'Đã sao chép gợi ý.'); };
   }
@@ -595,7 +597,7 @@
   $('#btnSend').onclick = sendCurrent;
   $('#composeText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCurrent(); } else if (e.key === 'Escape' && chat.quote) { e.preventDefault(); clearQuote(); } });
 
-  // ── Cột trợ lý: tóm tắt của Claude cho hội thoại đang mở + tin nhắn mẫu ───
+  // ── Cột trợ lý: tóm tắt của AI cho hội thoại đang mở ───
   const prefill = (text) => { if (!chat.key) { toast('Chọn một hội thoại trước.'); return; } const t = $('#composeText'); t.value = text; t.focus(); t.setSelectionRange(t.value.length, t.value.length); };
   function renderSideClaude() {
     const box = $('#sideClaude'); const cl = chat.claude; const sugs = chat.key ? ((state.sugByKey || {})[chat.key] || []) : [];
@@ -647,29 +649,6 @@
   function initSide() { let v = null; try { v = localStorage.getItem(SIDE_KEY); } catch { /* bỏ qua */ } setSide(v === null ? window.innerWidth < 1000 : v === '1'); }
   $('#btnSideToggle').onclick = () => setSide(!$('.cols').classList.contains('noside'));
   $('#btnSideHide').onclick = () => setSide(true);
-  // Tin nhắn mẫu
-  state.templates = []; let tplEditing = null;
-  const applyTpl = (text) => text.replace(/\[tên\]/gi, () => (chat.conv && !chat.conv.is_group && chat.conv.name) ? chat.conv.name : '[tên]');
-  async function loadTemplates() { if (state.locked) return; try { const r = await api('/api/templates'); state.templates = r.items || []; } catch (err) { state.templates = []; if (err.status !== 423) toast('Không tải được tin nhắn mẫu: ' + err.message); } renderTemplates(); }
-  function renderTemplates() {
-    const list = $('#tplList');
-    if (!state.templates.length) { list.innerHTML = '<div class="empty small">Chưa có mẫu nào — bấm ＋ Thêm.</div>'; return; }
-    list.innerHTML = state.templates.map((t, i) => '<div class="tpl" data-i="' + i + '"><div class="t" data-use="' + i + '" title="Điền vào ô soạn"><b>' + esc(t.title) + '</b><span>' + esc(t.text) + '</span></div><button class="sm icon" data-edit="' + i + '" title="Sửa mẫu">✎</button></div>').join('');
-  }
-  $('#tplList').addEventListener('click', (e) => {
-    const u = e.target.closest('[data-use]'); const ed = e.target.closest('[data-edit]');
-    if (ed) { openTplDialog(Number(ed.dataset.edit)); return; }
-    if (u) { const t = state.templates[Number(u.dataset.use)]; if (t) prefill(applyTpl(t.text)); }
-  });
-  function openTplDialog(i) {
-    tplEditing = Number.isInteger(i) ? i : null; const t = tplEditing !== null ? state.templates[tplEditing] : null;
-    $('#tplDlgTitle').textContent = t ? 'Sửa tin nhắn mẫu' : 'Thêm tin nhắn mẫu'; $('#tplTitle').value = t?.title || ''; $('#tplText').value = t?.text || ''; $('#btnTplDelete').hidden = !t; $('#tplMsg').textContent = '';
-    $('#dlgTemplate').showModal(); setTimeout(() => $('#tplTitle').focus(), 50);
-  }
-  async function saveTemplates(items, okMsg) { try { const r = await api('/api/templates', { method: 'POST', body: { items } }); state.templates = r.items || items; renderTemplates(); $('#dlgTemplate').close(); toast(okMsg); } catch (err) { $('#tplMsg').textContent = '❌ ' + err.message; } }
-  $('#btnTplAdd').onclick = () => openTplDialog(null);
-  $('#btnTplSave').onclick = () => { const title = $('#tplTitle').value.trim(), text = $('#tplText').value.trim(); if (!title || !text) { $('#tplMsg').textContent = 'Cần cả tên mẫu và nội dung.'; return; } const items = state.templates.slice(); if (tplEditing !== null) items[tplEditing] = { ...items[tplEditing], title, text }; else items.push({ id: 'tpl-' + Date.now(), title, text }); saveTemplates(items, 'Đã lưu tin nhắn mẫu.'); };
-  $('#btnTplDelete').onclick = () => { if (tplEditing === null) return; if (!confirm('Xoá mẫu này?')) return; saveTemplates(state.templates.filter((_, i) => i !== tplEditing), 'Đã xoá mẫu.'); };
 
   // ── Cài đặt (hộp thoại) ───────────────────────────────────────────────────
   function renderSettings() {
@@ -822,7 +801,28 @@
   $('#btnTgDialogs').onclick = async () => { $('#tgMsg').textContent = 'Đang tải…'; try { tgDialogs = (await api('/api/telegram/dialogs')).items; renderTgDialogs(); $('#tgMsg').textContent = tgDialogs.length + ' hội thoại.'; } catch (err) { $('#tgMsg').textContent = '❌ ' + err.message; } };
   $('#btnTgWatch').onclick = () => { const boxes = [...$('#tgDialogs').querySelectorAll('input:checked')]; const titles = {}; boxes.forEach((b) => { titles[b.dataset.id] = b.dataset.title; }); void tgCall('/api/telegram/watch', { chatIds: boxes.map((b) => b.dataset.id), titles, historyDays: Number($('#tgHistoryDays').value) || 7 }, 'Đã lưu ' + boxes.length + ' nhóm theo dõi — đang kéo lịch sử.'); };
   $('#btnTgSync').onclick = () => tgCall('/api/telegram/sync', {}, 'Đang đồng bộ lại lịch sử.');
-  function openSettings() { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); $('#dlgSettings').showModal(); }
+  // ── Điều hướng màn: Hội thoại · Kết nối · Cài đặt ─────────────────────────
+  const VIEW_TITLE = { chat: 'Hội thoại', connections: 'Kết nối & khoá cấu hình', settings: 'Cài đặt' };
+  function showView(name) {
+    state.view = name;
+    $('#viewChat').hidden = name !== 'chat'; $('#viewConnections').hidden = name !== 'connections'; $('#viewSettings').hidden = name !== 'settings';
+    $$('.chat-only').forEach((el) => { el.hidden = name !== 'chat'; });
+    $$('.rail-btn[data-view]').forEach((btn) => btn.classList.toggle('active', btn.dataset.view === name));
+    $('#viewTitle').textContent = VIEW_TITLE[name] || '';
+    if (name !== 'chat') { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); }
+    else if (vlist.scroll) applyCols();
+  }
+  function renderRail() {
+    const a = state.ai || {}; const p = a.pipeline || {};
+    const dot = $('#railAiDot'); dot.className = 'rail-dot ' + (p.running ? 'busy' : a.loaded ? 'on' : '');
+    dot.title = p.running ? 'AI đang tổng hợp' : a.loaded ? 'Model đang trong bộ nhớ' : 'AI cục bộ (chưa nạp)';
+    $('#railVer').textContent = state.platform?.version ? 'v' + state.platform.version.replace(/-beta\.\d+$/, 'β') : '';
+    const t = state.telegram || {}; const zalo = (state.accounts || []).some((x) => x.status === 'connected');
+    const el = $('#connSummary'); if (el) el.innerHTML = '<span class="pill ' + (zalo ? 'ok' : '') + '">Zalo ' + (zalo ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (t.status === 'connected' ? 'ok' : '') + '">Telegram ' + (t.status === 'connected' ? 'đã kết nối' : 'chưa kết nối') + '</span><span class="pill ' + (a.modelFile ? 'ok' : 'warn') + '">AI ' + (a.engine === 'cowork' ? 'Claude Cowork' : (a.modelFile ? 'cục bộ · sẵn sàng' : 'chưa có model')) + '</span>';
+  }
+  $('#rail').addEventListener('click', (e) => { const b = e.target.closest('.rail-btn[data-view]'); if (b) showView(b.dataset.view); });
+  $('#btnReportRail').onclick = () => $('#btnReport').click();
+  function openSettings() { showView('settings'); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
@@ -846,7 +846,7 @@
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
   };
-  $('#btnLogoutApp').onclick = async () => { const msg = state.auth.mode === 'local' ? 'Thoát chế độ dùng thử?\nTOÀN BỘ dữ liệu thử trên máy này (tin nhắn, hội thoại) sẽ bị XOÁ vì chuỗi mã hoá không được lưu ở đâu khác. Phiên Zalo cần quét QR lại.' : 'Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).'; if (!confirm(msg)) return; try { $('#dlgSettings').close(); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
+  $('#btnLogoutApp').onclick = async () => { const msg = state.auth.mode === 'local' ? 'Thoát chế độ dùng thử?\nTOÀN BỘ dữ liệu thử trên máy này (tin nhắn, hội thoại) sẽ bị XOÁ vì chuỗi mã hoá không được lưu ở đâu khác. Phiên Zalo cần quét QR lại.' : 'Đăng xuất khỏi ứng dụng?\nZalo sẽ ngừng lưu tin cho tới khi đăng nhập lại. Dữ liệu trên máy vẫn được giữ (đã mã hoá).'; if (!confirm(msg)) return; try { showView('chat'); await api('/api/auth/logout', { method: 'POST' }); await refreshState(); } catch (err) { toast(err.message); } };
   $('#cpBtn').onclick = async () => { $('#cpMsg').textContent = ''; try { await api('/api/auth/change-password', { method: 'POST', body: { currentPassword: $('#cpCurrent').value, newPassword: $('#cpNew').value } }); $('#cpMsg').textContent = '✅ Đã đổi mật khẩu.'; $('#cpCurrent').value = ''; $('#cpNew').value = ''; } catch (err) { $('#cpMsg').textContent = '❌ ' + err.message; } };
   $('#btnRotate').onclick = async () => { if (!confirm('Đổi chuỗi mã hoá?\nMáy chủ sẽ cấp chuỗi mới và ứng dụng mã hoá lại TOÀN BỘ dữ liệu trên máy (chạy nền). Máy khác dùng cùng tài khoản sẽ tự lấy chuỗi mới khi mở.')) return; await busy($('#btnRotate'), 'Đang đổi…', async () => { try { const r = await api('/api/security/rotate-key', { method: 'POST' }); toast('Đã đổi sang phiên bản ' + r.version + ' — đang mã hoá lại.'); await refreshState(); } catch (err) { toast(err.message); } }); };
   $('#btnReencrypt').onclick = async () => { try { await api('/api/security/reencrypt', { method: 'POST' }); toast('Đã bắt đầu mã hoá lại phần còn thiếu.'); } catch (err) { toast(err.message); } };
@@ -947,10 +947,8 @@
   function closeDialog(d) {
     if (d.id === 'dlgQr') clearInterval(state.qrTimer);
     d.close();
-  }
-  function tplDirty() { const t = tplEditing !== null ? state.templates[tplEditing] : null; return ($('#tplTitle').value.trim() !== (t?.title || '')) || ($('#tplText').value.trim() !== (t?.text || '')); }
-  $$('dialog').forEach((d) => {
-    d.addEventListener('click', (e) => { if (e.target !== d) return; if (d.id === 'dlgTemplate' && tplDirty()) { toast('Mẫu đang sửa chưa lưu — bấm Lưu mẫu hoặc ✕ để bỏ.'); return; } closeDialog(d); });
+  }  $$('dialog').forEach((d) => {
+    d.addEventListener('click', (e) => { if (e.target !== d) return; closeDialog(d); });
     d.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(d); });
     const wrap = d.firstElementChild;
     if (wrap && !wrap.querySelector('.dlg-x')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'dlg-x'; b.title = 'Đóng (Esc)'; b.setAttribute('aria-label', 'Đóng'); b.textContent = '✕'; b.onclick = () => closeDialog(d); wrap.prepend(b); }
@@ -976,7 +974,7 @@
 
   // ── Realtime ─────────────────────────────────────────────────────────────
   let reloadTimer, esRetry = 3000;
-  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); void loadTemplates(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
+  const scheduleReload = (ev) => { clearTimeout(reloadTimer); reloadTimer = setTimeout(async () => { try { const wasLocked = state.locked; await refreshState(); if (state.locked) return; if (wasLocked) { vlist.reset(); return; } await vlist.refresh(); if (chat.key && (ev === 'message' || ev === 'suggestions')) await refreshOpenChat(); } catch { /* bỏ qua */ } }, 500); };
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
@@ -988,7 +986,7 @@
   (async () => {
     vlist.init(); initSide();
     try { await refreshState(); } catch (err) { toast('Không kết nối được với ứng dụng: ' + err.message); }
-    if (!state.locked) { vlist.reset(); void loadTemplates(); }
+    if (!state.locked) vlist.reset();
     connectEvents();
     setInterval(() => { refreshState().catch(() => {}); }, 30000);
   })();

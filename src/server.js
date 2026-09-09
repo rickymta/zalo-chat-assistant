@@ -202,6 +202,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     const s = settings.load();
     return db.listConversations({
       accountIds: q.accountId ? [q.accountId] : undefined,
+      source: ['zalo', 'telegram'].includes(q.source) ? q.source : undefined,
       q: q.q || undefined,
       onlyWaiting: q.waiting === 'true',
       onlyUnread: q.unread === 'true',
@@ -382,27 +383,6 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     return reply.code(501).send({ ok: false, error: 'Máy này chưa hỗ trợ sao chép từ ứng dụng.' });
   });
 
-  // ── Tin nhắn mẫu (cột trợ lý): người dùng tự soạn/sửa, lưu data/templates.json; [tên] được thay bằng tên người đối thoại.
-  const TPL_FILE = path.join(paths.dataDir, 'templates.json');
-  const DEFAULT_TEMPLATES = [
-    { id: 'tpl-chao', title: 'Chào và nhận yêu cầu', text: 'Chào [tên], em là tư vấn viên MedDental. Em đã nhận được tin của mình, em kiểm tra và phản hồi ngay ạ.' },
-    { id: 'tpl-cho', title: 'Xin phép trả lời sau', text: 'Dạ [tên], em đang kiểm tra thông tin với bác sĩ, em sẽ báo lại mình trong [thời gian] nhé. Cảm ơn mình đã chờ ạ.' },
-    { id: 'tpl-xin-info', title: 'Xin thêm ảnh / số điện thoại', text: 'Để em tư vấn chính xác hơn, mình cho em xin thêm ảnh răng (chụp rõ, đủ sáng) và số điện thoại liên hệ được không ạ?' },
-    { id: 'tpl-xac-nhan-lich', title: 'Xác nhận lịch hẹn', text: 'Em xác nhận lịch hẹn của [tên]: [ngày] lúc [giờ] tại MedDental [cơ sở]. Mình đến sớm 5–10 phút để làm thủ tục nhé. Có thay đổi mình nhắn em ạ.' },
-    { id: 'tpl-nhac-lich', title: 'Nhắc lịch trước ngày khám', text: 'Em nhắc [tên] mai [giờ] mình có lịch tại MedDental [cơ sở] ạ. Mình vẫn đến được đúng giờ chứ ạ? Nếu bận em đổi giúp mình khung khác nhé.' },
-    { id: 'tpl-dia-chi', title: 'Gửi địa chỉ cơ sở', text: 'Cơ sở gần mình nhất là MedDental [cơ sở], địa chỉ: [địa chỉ]. Giờ làm việc 7h–17h hằng ngày ạ. Em gửi vị trí để mình tiện đi nhé.' },
-    { id: 'tpl-theo-doi', title: 'Hỏi lại nhẹ (theo dõi)', text: 'Dạ [tên], hôm trước mình có hỏi về [chủ đề], mình còn quan tâm không ạ? Nếu tiện em giữ cho mình một khung giờ khám tư vấn nhé.' },
-    { id: 'tpl-cam-on', title: 'Cảm ơn sau khám', text: 'Cảm ơn [tên] đã tin tưởng MedDental ạ. Có gì khó chịu sau khám mình nhắn em ngay nhé, em luôn ở đây để hỗ trợ ạ.' },
-  ];
-  const loadTemplates = () => { try { const j = JSON.parse(fs.readFileSync(TPL_FILE, 'utf8')); if (Array.isArray(j.items)) return j.items; } catch { /* chưa có */ } return DEFAULT_TEMPLATES; };
-  app.get('/api/templates', async () => ({ items: loadTemplates(), isDefault: !fs.existsSync(TPL_FILE) }));
-  app.post('/api/templates', async (req, reply) => {
-    const items = Array.isArray(req.body?.items) ? req.body.items : null;
-    if (!items || items.length > 100) return reply.code(400).send({ ok: false, error: 'Danh sách mẫu không hợp lệ.' });
-    const clean = items.map((t, i) => ({ id: String(t?.id || ('tpl-' + Date.now() + '-' + i)), title: String(t?.title ?? '').trim().slice(0, 80), text: String(t?.text ?? '').trim().slice(0, 2000) })).filter((t) => t.title && t.text);
-    fs.writeFileSync(TPL_FILE, JSON.stringify({ items: clean }, null, 2));
-    return { ok: true, items: clean };
-  });
 
   // ── Thiết lập / nhật ký ─────────────────────────────────────────────────────
   app.get('/api/settings', async () => settings.load());
