@@ -2,12 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { get } from '../api.js';
 import { useSite } from '../site.jsx';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { TARGETS, detectTarget, targetLabel } from '../lib/platform.js';
 import { channelLabel, formatBytes, formatDate } from '../lib/format.js';
 import { CopyButton, ErrorBox, Loading, Prose } from '../components/ui.jsx';
 import { TargetCard } from '../components/ReleaseCard.jsx';
+import { BRAND_NAME, OsIcon } from '../components/Brand.jsx';
+
+const QUARANTINE_CMD = `xattr -dr com.apple.quarantine "/Applications/${BRAND_NAME}.app"`;
 
 export default function Download() {
+  usePageTitle('Tải về');
   const { site } = useSite();
   const [target, setTarget] = useState(null);
   const [release, setRelease] = useState(null);
@@ -41,16 +46,19 @@ export default function Download() {
   }, []);
 
   const latest = site.latest || {};
+  const appName = site.appName || BRAND_NAME;
 
   return (
     <div className="wrap">
       <div className="stack">
-        <div>
-          <h1>Tải Chat Assistant</h1>
-          <p className="muted" style={{ marginTop: 8 }}>
-            Ứng dụng chạy trên máy của bạn. Cài xong, đăng nhập tài khoản rồi quét mã QR Zalo là dùng
-            được.
-          </p>
+        <div className="page-head">
+          <div>
+            <h1>Tải {appName}</h1>
+            <p>
+              Ứng dụng chạy trên máy tính của bạn (macOS hoặc Windows). Cài xong, đăng nhập tài khoản
+              rồi kết nối nguồn ở màn <b>Kết nối</b> là dùng được.
+            </p>
+          </div>
         </div>
 
         {loading ? (
@@ -58,15 +66,20 @@ export default function Download() {
         ) : (
           <>
             <ErrorBox error={error} />
-            <MainDownload target={target} release={release} />
+            <MainDownload target={target} release={release} appName={appName} />
           </>
         )}
 
         <section>
-          <h2 style={{ marginBottom: 6 }}>Bản cho nền tảng khác</h2>
-          <p className="muted" style={{ marginBottom: 16 }}>
-            Cài cho máy khác, hoặc bạn dùng Mac Intel/Windows.
-          </p>
+          <div className="section-head split" style={{ marginBottom: 18 }}>
+            <div>
+              <h2>Mọi nền tảng</h2>
+              <p>Cài cho máy khác, hoặc nếu nhận diện tự động chưa đúng.</p>
+            </div>
+            <Link to="/cap-nhat" className="btn sm">
+              Lịch sử phiên bản
+            </Link>
+          </div>
           <div className="dl-grid">
             {TARGETS.map((t) => (
               <TargetCard
@@ -77,28 +90,24 @@ export default function Download() {
               />
             ))}
           </div>
-          <p className="small muted" style={{ marginTop: 14 }}>
-            Xem toàn bộ lịch sử phát hành và ghi chú từng bản ở trang{' '}
-            <Link to="/cap-nhat">Cập nhật</Link>.
-          </p>
         </section>
 
-        <InstallNotes platform={target ? target.platform : null} />
+        <InstallNotes platform={target ? target.platform : null} appName={appName} />
       </div>
     </div>
   );
 }
 
-function MainDownload({ target, release }) {
+function MainDownload({ target, release, appName }) {
   if (target && !target.supported) {
     return (
       <div className="hero-download">
-        <div className="warnbox">
+        <div className="full warnbox">
           <b>Máy bạn đang dùng không cài được ứng dụng.</b>
           <p style={{ marginTop: 6 }}>
-            Chat Assistant là ứng dụng cho máy tính (macOS hoặc Windows). Bạn đang mở trang này
-            trên {target.label || 'thiết bị di động'}. Hãy mở lại trang này trên máy tính, hoặc chọn
-            bản cài bên dưới rồi chép sang máy tính.
+            {appName} là ứng dụng cho máy tính (macOS hoặc Windows). Bạn đang mở trang này trên{' '}
+            {target.label || 'thiết bị di động'}. Hãy mở lại trang này trên máy tính, hoặc chọn bản cài
+            bên dưới rồi chép sang máy tính.
           </p>
         </div>
       </div>
@@ -107,30 +116,56 @@ function MainDownload({ target, release }) {
 
   return (
     <div className="hero-download">
-      <div className="target-line">
-        <span className="pill info">💻 Máy của bạn</span>
-        <b style={{ fontSize: 17 }}>{target ? target.label : 'Không rõ'}</b>
-        {target && !target.confident && (
-          <span className="small faint">
-            (nhận diện tự động — nếu không đúng, chọn bản khác ở danh sách bên dưới)
+      <div>
+        <div className="target-line">
+          <span className="pill info">Máy của bạn</span>
+          {target && !target.confident && (
+            <span className="small faint">
+              nhận diện tự động — nếu không đúng, chọn bản khác ở danh sách bên dưới
+            </span>
+          )}
+        </div>
+        <div className="big-os">
+          <span className="os-ico">
+            <OsIcon platform={target ? target.platform : 'darwin'} />
           </span>
-        )}
+          <div>
+            <h2>{target ? target.label : 'Không rõ'}</h2>
+            <div className="ver">
+              {release ? (
+                <>
+                  Phiên bản <b>{release.version}</b> · {formatBytes(release.fileSize)} · phát hành{' '}
+                  {formatDate(release.publishedAt)}
+                  {release.channel === 'beta' ? ` · kênh ${channelLabel(release.channel)}` : ''}
+                </>
+              ) : (
+                'Chưa có bản phát hành cho cấu hình này'
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {release ? (
-        <>
-          <div className="row" style={{ gap: 14 }}>
-            <a className="btn primary xl" href={release.downloadUrl} download>
-              ⬇️ Tải bản {release.version}
-            </a>
-            <div className="small muted">
-              {release.fileName}
-              <br />
-              {formatBytes(release.fileSize)} · phát hành {formatDate(release.publishedAt)}
-              {release.channel === 'beta' ? ` · kênh ${channelLabel(release.channel)}` : ''}
-            </div>
-          </div>
+        <div className="dl-side">
+          <a className="btn primary xl" href={release.downloadUrl} download>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v12M6 9l6 6 6-6M4 21h16" />
+            </svg>
+            Tải bản {release.version}
+          </a>
+          <span className="small faint">{release.fileName}</span>
+        </div>
+      ) : (
+        <div className="dl-side">
+          <button type="button" className="xl" disabled>
+            Chưa có bản tải
+          </button>
+        </div>
+      )}
 
+      {release ? (
+        <div className="full stack" style={{ gap: 16 }}>
           {release.mandatory && (
             <div className="warnbox">
               <b>Bản cập nhật bắt buộc.</b> Các bản cũ hơn cần cập nhật để tiếp tục dùng.
@@ -159,18 +194,16 @@ function MainDownload({ target, release }) {
           </div>
 
           {release.notesHtml && (
-            <details>
-              <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--primary)' }}>
-                Có gì mới trong bản {release.version}
-              </summary>
-              <div style={{ marginTop: 12 }}>
+            <details className="disclosure">
+              <summary>Có gì mới trong bản {release.version}</summary>
+              <div>
                 <Prose html={release.notesHtml} />
               </div>
             </details>
           )}
-        </>
+        </div>
       ) : (
-        <div className="warnbox">
+        <div className="full warnbox">
           <b>Chưa có bản phát hành cho {target ? target.label : 'nền tảng này'}.</b>
           <p style={{ marginTop: 6 }}>
             Quản trị viên chưa đăng bản cài nào cho cấu hình máy của bạn. Xem các bản khác bên dưới
@@ -183,94 +216,113 @@ function MainDownload({ target, release }) {
 }
 
 /** Ghi chú cài đặt cho từng nền tảng — lấy từ README của sản phẩm. */
-function InstallNotes({ platform }) {
+function InstallNotes({ platform, appName }) {
   const showMac = platform !== 'win32';
   const showWin = platform !== 'darwin';
   return (
     <section className="stack">
-      <h2>Cách cài đặt</h2>
+      <div className="section-head" style={{ marginBottom: 0 }}>
+        <h2>Cách cài đặt</h2>
+        <p>Bản cài chưa ký số nên hệ điều hành có thể hỏi lại một lần — làm theo các bước dưới đây.</p>
+      </div>
 
-      {showMac && (
-        <div className="card">
-          <h3>🍎 macOS</h3>
-          <ol className="prose" style={{ paddingLeft: 22, marginTop: 10 }}>
-            <li>
-              Mở file <code>.dmg</code> vừa tải, kéo <b>Chat Assistant</b> vào thư mục{' '}
-              <b>Applications</b>.
-            </li>
-            <li>
-              Lần đầu mở, macOS có thể chặn vì ứng dụng chưa ký số: <b>chuột phải vào ứng dụng → Mở</b>{' '}
-              (không mở bằng cách bấm đúp), rồi bấm <b>Mở</b> ở hộp thoại xác nhận.
-            </li>
-            <li>
-              Vẫn bị chặn? Mở Terminal và chạy:
-              <div className="row" style={{ marginTop: 8 }}>
-                <code>xattr -dr com.apple.quarantine "/Applications/Chat Assistant.app"</code>
-                <CopyButton value={'xattr -dr com.apple.quarantine "/Applications/Chat Assistant.app"'} />
-              </div>
-            </li>
-            <li>
-              Chọn đúng chip: <b>Mac chip Apple (M1/M2/M3…)</b> dùng bản <code>arm64</code>, <b>Mac Intel</b>{' '}
-              dùng bản <code>x64</code>. Xem chip ở <b>menu Apple → Giới thiệu về máy Mac này</b>.
-            </li>
-          </ol>
-        </div>
-      )}
-
-      {showWin && (
-        <div className="card">
-          <h3>🪟 Windows (thử nghiệm)</h3>
-          <ol className="prose" style={{ paddingLeft: 22, marginTop: 10 }}>
-            <li>
-              <b>Trình duyệt báo chặn tệp tải về?</b> Bản cài chưa ký số nên Edge/Chrome coi là tệp lạ, không phải virus.
-              <br />
-              Edge: mở danh sách tải (<b>Ctrl+J</b>), bấm <b>⋯</b> cạnh tệp → <b>Giữ lại</b> (Keep) →{' '}
-              <b>Hiển thị thêm</b> (Show more) → <b>Vẫn giữ lại</b> (Keep anyway).
-              <br />
-              Chrome: bấm <b>⋮</b> hoặc mũi tên cạnh tệp → <b>Giữ lại</b> → <b>Vẫn tải xuống</b>.
-            </li>
-            <li>
-              Chạy file <code>.exe</code> vừa tải. Trình cài cho chọn thư mục và tạo lối tắt.
-            </li>
-            <li>
-              SmartScreen hiện cảnh báo màu xanh "Windows đã bảo vệ máy tính của bạn": bấm{' '}
-              <b>Thông tin thêm</b> (More info) → <b>Vẫn chạy</b> (Run anyway).
-            </li>
-            <li>
-              Thư mục dữ liệu của ứng dụng: <code>%APPDATA%\Chat Assistant\data</code>. Thư mục
-              làm việc cho Claude: <code>C:\Users\&lt;tên&gt;\Documents\Chat Assistant</code>.
-            </li>
-          </ol>
-          <div className="warnbox" style={{ marginTop: 12 }}>
-            Bản Windows đang trong giai đoạn thử nghiệm, chưa kiểm tra đầy đủ trên máy Windows thật.
-            Gặp lỗi hãy báo quản trị viên.
+      <div className="install-grid">
+        {showMac && (
+          <div className="card">
+            <div className="card-head">
+              <span className="ico">
+                <OsIcon platform="darwin" />
+              </span>
+              <h3>macOS</h3>
+            </div>
+            <ol>
+              <li>
+                Mở file <code>.dmg</code> vừa tải, kéo <b>{appName}</b> vào thư mục <b>Applications</b>.
+              </li>
+              <li>
+                Lần đầu mở, macOS có thể chặn vì ứng dụng chưa ký số: <b>chuột phải vào ứng dụng → Mở</b>{' '}
+                (không mở bằng cách bấm đúp), rồi bấm <b>Mở</b> ở hộp thoại xác nhận.
+              </li>
+              <li>
+                Vẫn bị chặn? Mở Terminal và chạy:
+                <div className="cmd">
+                  <code>{QUARANTINE_CMD}</code>
+                  <CopyButton value={QUARANTINE_CMD} />
+                </div>
+              </li>
+              <li>
+                Chọn đúng chip: <b>Mac chip Apple (M1/M2/M3…)</b> dùng bản <code>arm64</code>,{' '}
+                <b>Mac Intel</b> dùng bản <code>x64</code>. Xem chip ở <b>menu Apple → Giới thiệu về máy
+                Mac này</b>.
+              </li>
+            </ol>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="card">
-        <h3>Sau khi cài</h3>
-        <ol className="prose" style={{ paddingLeft: 22, marginTop: 10 }}>
-          <li>
-            Đăng nhập bằng tài khoản ứng dụng (email + mật khẩu, có mã đăng ký nếu công ty yêu cầu).
-            Chưa có tài khoản? <Link to="/dang-ky">Đăng ký tại đây</Link>.
-          </li>
-          <li>
-            Ở thanh trên bấm <b>Đăng nhập Zalo (QR)</b>, mở Zalo trên điện thoại → biểu tượng QR →
-            quét → Đồng ý.
-          </li>
-          <li>
-            Bật <b>Cài đặt → Tự mở ứng dụng khi bật máy</b> và <b>Giữ máy không ngủ</b> để không bỏ lỡ
-            tin nhắn.
-          </li>
-          <li>
-            Trỏ Claude Cowork vào thư mục <code>~/Documents/Chat Assistant</code> rồi bấm{' '}
-            <b>📁 Cập nhật dữ liệu cho Claude</b>.
-          </li>
-        </ol>
-        <div className="hint" style={{ marginTop: 12 }}>
-          Không mở <b>chat.zalo.me</b> trên trình duyệt trong lúc ứng dụng đang chạy — Zalo chỉ cho một
-          phiên web, mở thêm sẽ làm ứng dụng mất kết nối.
+        {showWin && (
+          <div className="card">
+            <div className="card-head">
+              <span className="ico">
+                <OsIcon platform="win32" />
+              </span>
+              <h3>
+                Windows <span className="pill warn">thử nghiệm</span>
+              </h3>
+            </div>
+            <ol>
+              <li>
+                <b>Trình duyệt báo chặn tệp tải về?</b> Bản cài chưa ký số nên Edge/Chrome coi là tệp lạ,
+                không phải virus. Edge: mở danh sách tải (<b>Ctrl+J</b>), bấm <b>⋯</b> cạnh tệp →{' '}
+                <b>Giữ lại</b> → <b>Hiển thị thêm</b> → <b>Vẫn giữ lại</b>. Chrome: bấm <b>⋮</b> cạnh tệp →{' '}
+                <b>Giữ lại</b> → <b>Vẫn tải xuống</b>.
+              </li>
+              <li>
+                Chạy file <code>.exe</code> vừa tải. Trình cài cho chọn thư mục và tạo lối tắt.
+              </li>
+              <li>
+                SmartScreen hiện cảnh báo "Windows đã bảo vệ máy tính của bạn": bấm <b>Thông tin thêm</b>{' '}
+                → <b>Vẫn chạy</b>.
+              </li>
+              <li>
+                Thư mục dữ liệu: <code>%APPDATA%\{appName}\data</code>. Thư mục làm việc cho Claude:{' '}
+                <code>C:\Users\&lt;tên&gt;\Documents\{appName}</code>.
+              </li>
+            </ol>
+            <div className="warnbox" style={{ marginTop: 14 }}>
+              Bản Windows đang trong giai đoạn thử nghiệm, chưa kiểm tra đầy đủ trên máy Windows thật.
+              Gặp lỗi hãy báo quản trị viên.
+            </div>
+          </div>
+        )}
+
+        <div className="card" style={{ gridColumn: showMac && showWin ? 'auto' : '1 / -1' }}>
+          <div className="card-head">
+            <span className="ico">✅</span>
+            <h3>Sau khi cài</h3>
+          </div>
+          <ol>
+            <li>
+              Đăng nhập bằng tài khoản ứng dụng (email + mật khẩu, có mã đăng ký nếu công ty yêu cầu).
+              Chưa có tài khoản? <Link to="/dang-ky">Đăng ký tại đây</Link>.
+            </li>
+            <li>
+              Vào <b>Kết nối</b> ở thanh trái: quét mã QR <b>Zalo</b> (Zalo trên điện thoại → biểu tượng
+              QR → quét → Đồng ý), đăng nhập <b>Telegram</b>, điền <b>Email IMAP</b> và <b>Lark Approval</b>{' '}
+              nếu dùng. Mỗi thẻ có nút <b>Kiểm tra kết nối</b>.
+            </li>
+            <li>
+              Bật <b>Cài đặt → Tự mở ứng dụng khi bật máy</b> và <b>Giữ máy không ngủ</b> để không bỏ lỡ
+              tin nhắn và bản tin đúng giờ.
+            </li>
+            <li>
+              Đặt <b>Bot Telegram gửi bản tin</b> (bot token, chat ID, giọng đọc, giờ gửi) để nhận bản tin
+              giọng nói; hoặc trỏ Claude Cowork vào <code>~/Documents/{appName}</code>.
+            </li>
+          </ol>
+          <div className="hint" style={{ marginTop: 14 }}>
+            Không mở <b>chat.zalo.me</b> trên trình duyệt trong lúc ứng dụng đang chạy — Zalo chỉ cho một
+            phiên web, mở thêm sẽ làm ứng dụng mất kết nối.
+          </div>
         </div>
       </div>
     </section>

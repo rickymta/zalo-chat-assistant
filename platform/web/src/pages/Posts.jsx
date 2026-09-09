@@ -1,12 +1,14 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useFetch } from '../lib/useFetch.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { EmptyState, ErrorBox, Loading, Pagination } from '../components/ui.jsx';
-import { formatDate } from '../lib/format.js';
+import PostCard from '../components/PostCard.jsx';
 import { qs } from '../api.js';
 
 const LIMIT = 12;
 
 export default function Posts() {
+  usePageTitle('Bài viết');
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get('page') || 1));
   const tag = params.get('tag') || '';
@@ -18,6 +20,8 @@ export default function Posts() {
 
   const items = (data && data.items) || [];
   const total = (data && data.total) || 0;
+  // Trang đầu, không lọc thẻ ⇒ bài đầu tiên (bài ghim nếu có) hiện dạng thẻ lớn.
+  const featureFirst = page === 1 && !tag && items.length > 1;
 
   const goPage = (p) => {
     const next = new URLSearchParams(params);
@@ -28,11 +32,12 @@ export default function Posts() {
   return (
     <div className="wrap">
       <div className="stack">
-        <div>
-          <h1>Bài viết</h1>
-          <p className="muted" style={{ marginTop: 8 }}>
-            Thông báo, ghi chú phát hành và mẹo dùng Chat Assistant.
-          </p>
+        <div className="page-head">
+          <div>
+            <h1>Bài viết</h1>
+            <p>Thông báo, ghi chú phát hành và mẹo dùng Work Assistant.</p>
+          </div>
+          {total > 0 && <span className="pill">{total} bài</span>}
         </div>
 
         {tag && (
@@ -67,31 +72,8 @@ export default function Posts() {
         ) : (
           <>
             <div className="post-grid">
-              {items.map((p) => (
-                <Link key={p.id} to={`/bai-viet/${p.slug}`} className="post-card">
-                  {p.coverImageUrl ? (
-                    <img className="cover" src={p.coverImageUrl} alt="" loading="lazy" />
-                  ) : (
-                    <div className="cover ph">📄</div>
-                  )}
-                  <div className="body">
-                    <h3>{p.title}</h3>
-                    <p className="excerpt">{p.excerpt}</p>
-                    <div className="foot">
-                      {p.pinned && <span className="tag">📌 Ghim</span>}
-                      <span>{formatDate(p.publishedAt)}</span>
-                      {p.tags && p.tags.length > 0 && (
-                        <span className="tags">
-                          {p.tags.slice(0, 2).map((t) => (
-                            <span key={t} className="tag plain">
-                              {t}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+              {items.map((p, i) => (
+                <PostCard key={p.id} post={p} featured={featureFirst && i === 0} />
               ))}
             </div>
             <Pagination page={page} total={total} limit={LIMIT} onChange={goPage} />

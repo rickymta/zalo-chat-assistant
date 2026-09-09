@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { ErrorBox, PasswordInput } from '../components/ui.jsx';
+import { BRAND_NAME, BrandMark } from '../components/Brand.jsx';
 
 export default function Login() {
+  usePageTitle('Đăng nhập');
   const { user, loading, login } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -34,10 +37,12 @@ export default function Login() {
     <div className="wrap">
       <div className="auth-wrap">
         <div className="auth-card">
+          <div className="auth-brand">
+            <BrandMark size={56} />
+            <b>{BRAND_NAME}</b>
+          </div>
           <h1>Đăng nhập</h1>
-          <p className="form-sub">
-            Dùng chính tài khoản bạn đăng nhập trong ứng dụng Chat Assistant.
-          </p>
+          <p className="form-sub">Dùng chính tài khoản bạn đăng nhập trong ứng dụng trên máy.</p>
 
           <form className="form" onSubmit={submit}>
             <ErrorBox error={error} />

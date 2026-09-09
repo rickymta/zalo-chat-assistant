@@ -1,18 +1,25 @@
 import { formatBytes, formatDate, channelLabel } from '../lib/format.js';
+import { OsIcon } from './Brand.jsx';
 
-const ICONS = { darwin: '🍎', win32: '🪟', linux: '🐧' };
+const SUB = {
+  'darwin-arm64': 'Apple Silicon (M1/M2/M3…) · .dmg',
+  'darwin-x64': 'Chip Intel · .dmg',
+  'win32-x64': 'Windows 10/11 · .exe',
+};
 
 /** Thẻ một bản tải theo hệ điều hành (dùng ở trang chủ và trang Tải về). */
 export function TargetCard({ target, release, highlight = false }) {
-  const icon = ICONS[target.platform] || '💻';
   return (
     <div className={`dl-card${highlight ? ' primary-target' : ''}`}>
+      {highlight && <span className="pill info mine">Máy của bạn</span>}
       <div className="os">
-        <span className="ico" aria-hidden="true">
-          {icon}
+        <span className="os-ico">
+          <OsIcon platform={target.platform} />
         </span>
-        {target.label}
-        {highlight && <span className="pill info">Máy của bạn</span>}
+        <span>
+          {target.label}
+          <small>{SUB[target.key] || target.ext}</small>
+        </span>
       </div>
 
       {release ? (

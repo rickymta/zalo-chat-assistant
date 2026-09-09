@@ -4,9 +4,22 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Chat Assistant — ứng dụng cho tư vấn viên: kết nối Zalo cá nhân bằng mã QR, lưu tin nhắn mã hoá trên máy, để Claude Cowork tổng hợp hội thoại và đề xuất câu trả lời." />
+    <meta
+      name="description"
+      content="Work Assistant — trợ lý công việc đa nguồn cho máy tính: gom Zalo, Telegram, Email và Lark Approval về một chỗ, mã hoá ngay trên máy, AI cục bộ tóm tắt và đọc thành bản tin giọng nói."
+    />
     <meta name="theme-color" content="#0a66ff" />
-    <title>Chat Assistant</title>
+    <meta property="og:title" content="Work Assistant" />
+    <meta property="og:description" content="Tổng hợp công việc từ Zalo, Telegram, Email và Lark — AI cục bộ, bản tin giọng nói, dữ liệu ở trên máy bạn." />
+    <meta property="og:type" content="website" />
+    <title>Work Assistant</title>
+    <script>
+      // Áp giao diện sáng/tối đã chọn TRƯỚC khi vẽ để không chớp màu (đồng bộ với src/lib/theme.js).
+      try {
+        var t = localStorage.getItem('wa-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

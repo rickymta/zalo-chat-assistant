@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, post } from '../api.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { ErrorBox, PasswordInput } from '../components/ui.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { BRAND_NAME, BrandMark } from '../components/Brand.jsx';
 
 /**
  * Quên mật khẩu — 2 bước:
@@ -10,6 +12,7 @@ import { useToast } from '../components/Toast.jsx';
  *  2. Nhập mã 8 ký tự + mật khẩu mới → POST /api/auth/reset-password.
  */
 export default function ForgotPassword() {
+  usePageTitle('Quên mật khẩu');
   const navigate = useNavigate();
   const { toastOk } = useToast();
   const [step, setStep] = useState(1);
@@ -67,6 +70,10 @@ export default function ForgotPassword() {
     <div className="wrap">
       <div className="auth-wrap">
         <div className="auth-card">
+          <div className="auth-brand">
+            <BrandMark size={56} />
+            <b>{BRAND_NAME}</b>
+          </div>
           <h1>Quên mật khẩu</h1>
           <p className="form-sub">
             {step === 1
@@ -128,7 +135,7 @@ export default function ForgotPassword() {
                   autoComplete="one-time-code"
                   required
                   autoFocus
-                  style={{ letterSpacing: '2px', fontFamily: 'ui-monospace, Menlo, monospace' }}
+                  style={{ letterSpacing: '2px', fontFamily: 'var(--mono)' }}
                 />
               </div>
 

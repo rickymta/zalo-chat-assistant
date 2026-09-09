@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
+import { usePageTitle } from '../lib/usePageTitle.js';
 
 /**
  * 403 — dùng cho cả trang công khai lẫn chốt chặn khu quản trị.
  * `standalone` = dựng full màn hình (khu /admin không có header/footer của trang công khai).
  */
 export default function Forbidden({ standalone = false }) {
+  usePageTitle('Không có quyền truy cập');
   const { user, logout } = useAuth();
 
   const content = (

@@ -73,6 +73,8 @@ const css = `
   .rp-datenav select { height: 34px; }
   #viewReport .settings-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
   #viewReport #rpBody { overflow: visible; padding: 0; background: transparent; }
+  #viewReport .page-inner { max-width: none; }   /* Báo cáo dùng full bề ngang màn hình */
+  #viewReport .rp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .digest-preview { white-space: pre-wrap; font: 13px/1.45 -apple-system, system-ui, sans-serif; background: #f6f8fc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
   .tg-dialogs { max-height: 260px; overflow: auto; border: 1px solid #e3e8f0; border-radius: 10px; padding: 4px 8px; background: #fff; }
   .tg-dialogs label { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #f1f4f9; font-size: 13px; cursor: pointer; }

@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useFetch } from '../lib/useFetch.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { ErrorBox, Loading, Prose } from '../components/ui.jsx';
+import PostCard from '../components/PostCard.jsx';
 import { formatDate } from '../lib/format.js';
 import NotFound from './NotFound.jsx';
+
+const KIND_LABEL = { page: 'Hướng dẫn', changelog: 'Ghi chú phát hành', post: 'Bài viết' };
 
 export default function PostDetail({ backTo = '/bai-viet' }) {
   const { slug } = useParams();
@@ -13,14 +16,18 @@ export default function PostDetail({ backTo = '/bai-viet' }) {
   });
 
   const post = data && data.post;
+  const isGuide = backTo === '/huong-dan';
 
   // Đổi tiêu đề tab cho dễ nhận ra khi mở nhiều bài.
-  useEffect(() => {
-    if (post && post.title) document.title = `${post.title} — Chat Assistant`;
-    return () => {
-      document.title = 'Chat Assistant';
-    };
-  }, [post]);
+  usePageTitle(post && post.title ? post.title : '');
+
+  // Bài liên quan: cùng loại, mới nhất — bỏ chính bài đang đọc.
+  const kind = post ? post.kind : null;
+  const { data: relatedData } = useFetch(kind ? `/api/posts?kind=${encodeURIComponent(kind)}&limit=4` : null, {
+    auth: false,
+    deps: [kind],
+  });
+  const related = ((relatedData && relatedData.items) || []).filter((p) => p.slug !== slug).slice(0, 3);
 
   if (loading) {
     return (
@@ -43,21 +50,27 @@ export default function PostDetail({ backTo = '/bai-viet' }) {
 
   if (!post) return <NotFound />;
 
-  const label = post.kind === 'page' ? 'Hướng dẫn' : post.kind === 'changelog' ? 'Ghi chú phát hành' : 'Bài viết';
+  const label = KIND_LABEL[post.kind] || 'Bài viết';
+  const backLabel = isGuide ? 'Hướng dẫn' : 'Bài viết';
 
   return (
     <div className="wrap">
-      <div style={{ marginBottom: 18 }}>
-        <Link to={backTo} className="btn sm">
-          ← Quay lại {backTo === '/huong-dan' ? 'Hướng dẫn' : 'Bài viết'}
-        </Link>
-      </div>
-
       <article className="article">
-        {post.coverImageUrl && <img className="cover" src={post.coverImageUrl} alt="" />}
+        <div style={{ marginBottom: 20 }}>
+          <Link to={backTo} className="back-link">
+            ← Quay lại {backLabel}
+          </Link>
+        </div>
+
+        {post.coverImageUrl && (
+          <div className="article-hero">
+            <img src={post.coverImageUrl} alt="" />
+          </div>
+        )}
+
         <h1>{post.title}</h1>
         <div className="byline">
-          <span className="pill">{label}</span>
+          <span className="pill info">{label}</span>
           <span>{formatDate(post.publishedAt)}</span>
           {post.pinned && <span className="tag">📌 Ghim</span>}
           {post.tags && post.tags.length > 0 && (
@@ -70,8 +83,31 @@ export default function PostDetail({ backTo = '/bai-viet' }) {
             </span>
           )}
         </div>
+
         <Prose html={post.contentHtml} />
+
+        <div className="article-foot">
+          <Link to={backTo} className="back-link">
+            ← Tất cả {backLabel.toLowerCase()}
+          </Link>
+          <Link to="/tai-ve" className="btn sm">
+            Tải ứng dụng
+          </Link>
+        </div>
       </article>
+
+      {related.length > 0 && (
+        <section className="section" style={{ paddingBottom: 0 }}>
+          <div className="section-head" style={{ marginBottom: 18 }}>
+            <h2 style={{ fontSize: 24 }}>{isGuide ? 'Hướng dẫn khác' : 'Bài viết khác'}</h2>
+          </div>
+          <div className="post-grid">
+            {related.map((p) => (
+              <PostCard key={p.id} post={p} to={isGuide ? `/huong-dan/${p.slug}` : undefined} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

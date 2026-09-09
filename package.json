@@ -1,6 +1,6 @@
 {
   "name": "zalo-chat-assistant",
-  "version": "0.1.0-beta.11",
+  "version": "1.0.0",
   "private": true,
   "description": "Work Assistant — tổng hợp công việc từ Zalo, Telegram, Email và Lark Approval (mã hoá trên máy), AI cục bộ tóm tắt và gợi ý, bản tin giọng nói theo kênh.",
   "type": "module",

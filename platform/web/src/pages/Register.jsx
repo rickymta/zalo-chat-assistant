@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { ApiError } from '../api.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { ErrorBox, PasswordInput } from '../components/ui.jsx';
+import { BRAND_NAME, BrandMark } from '../components/Brand.jsx';
 
 export default function Register() {
+  usePageTitle('Đăng ký tài khoản');
   const { user, loading, register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -52,10 +55,14 @@ export default function Register() {
     <div className="wrap">
       <div className="auth-wrap">
         <div className="auth-card">
+          <div className="auth-brand">
+            <BrandMark size={56} />
+            <b>{BRAND_NAME}</b>
+          </div>
           <h1>Đăng ký tài khoản</h1>
           <p className="form-sub">
-            Tài khoản này dùng chung cho website và ứng dụng trên máy. Máy chủ chỉ giữ thông tin đăng
-            nhập và chuỗi mã hoá — không nhận tin nhắn.
+            Tài khoản dùng chung cho website và ứng dụng trên máy. Máy chủ chỉ giữ thông tin đăng nhập
+            và chuỗi mã hoá — không nhận nội dung.
           </p>
 
           <form className="form" onSubmit={submit}>

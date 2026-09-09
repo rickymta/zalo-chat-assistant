@@ -1,10 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useFetch } from '../lib/useFetch.js';
+import { usePageTitle } from '../lib/usePageTitle.js';
 import { EmptyState, ErrorBox, Loading, Prose } from '../components/ui.jsx';
 import { compareSemverDesc, formatBytes, formatDate } from '../lib/format.js';
 import { targetLabel } from '../lib/platform.js';
 
+const CHANNELS = [
+  { value: 'stable', label: 'Ổn định' },
+  { value: 'beta', label: 'Thử nghiệm' },
+];
+
 export default function Updates() {
+  usePageTitle('Lịch sử phiên bản');
   const [channel, setChannel] = useState('stable');
   const { data, loading, error, reload } = useFetch(`/api/releases?channel=${channel}&limit=50`, {
     auth: false,
@@ -16,26 +23,24 @@ export default function Updates() {
   return (
     <div className="wrap">
       <div className="stack">
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div className="page-head">
           <div>
             <h1>Lịch sử phiên bản</h1>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Những gì đã thay đổi trong từng bản phát hành.
-            </p>
+            <p>Những gì đã thay đổi trong từng bản phát hành, kèm tệp cài cho từng nền tảng.</p>
           </div>
-          <div className="row">
-            <label className="lbl small muted" htmlFor="channel">
-              Kênh
-            </label>
-            <select
-              id="channel"
-              value={channel}
-              onChange={(e) => setChannel(e.target.value)}
-              style={{ width: 'auto' }}
-            >
-              <option value="stable">Ổn định</option>
-              <option value="beta">Thử nghiệm</option>
-            </select>
+          <div className="segmented" role="tablist" aria-label="Kênh phát hành">
+            {CHANNELS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                role="tab"
+                aria-selected={channel === c.value}
+                className={channel === c.value ? 'active' : ''}
+                onClick={() => setChannel(c.value)}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -50,38 +55,40 @@ export default function Updates() {
             hint="Khi có bản mới, ghi chú thay đổi sẽ hiện ở đây."
           />
         ) : (
-          groups.map((g, idx) => (
-            <article className="release-item" key={g.version}>
-              <div className="head">
-                <h2>Phiên bản {g.version}</h2>
-                {idx === 0 && <span className="pill ok">Mới nhất</span>}
-                {g.mandatory && <span className="pill bad">Bắt buộc cập nhật</span>}
-                {g.channel === 'beta' && <span className="pill warn">Thử nghiệm</span>}
-                <span className="grow" />
-                <span className="small faint">{formatDate(g.publishedAt)}</span>
-              </div>
+          <div className="timeline">
+            {groups.map((g, idx) => (
+              <article className={`release-item${idx === 0 ? ' latest' : ''}`} key={g.version}>
+                <div className="head">
+                  <h2>Phiên bản {g.version}</h2>
+                  {idx === 0 && <span className="pill ok">Mới nhất</span>}
+                  {g.mandatory && <span className="pill bad">Bắt buộc cập nhật</span>}
+                  {g.channel === 'beta' && <span className="pill warn">Thử nghiệm</span>}
+                  <span className="grow" />
+                  <span className="small faint">{formatDate(g.publishedAt)}</span>
+                </div>
 
-              {g.minVersion && (
-                <p className="small muted" style={{ marginBottom: 10 }}>
-                  Bản cũ hơn <b>{g.minVersion}</b> bắt buộc phải cập nhật lên bản này.
-                </p>
-              )}
+                {g.minVersion && (
+                  <p className="small muted" style={{ marginBottom: 10 }}>
+                    Bản cũ hơn <b>{g.minVersion}</b> bắt buộc phải cập nhật lên bản này.
+                  </p>
+                )}
 
-              {g.notesHtml ? (
-                <Prose html={g.notesHtml} />
-              ) : (
-                <p className="muted">Bản này không kèm ghi chú thay đổi.</p>
-              )}
+                {g.notesHtml ? (
+                  <Prose html={g.notesHtml} />
+                ) : (
+                  <p className="muted">Bản này không kèm ghi chú thay đổi.</p>
+                )}
 
-              <div className="release-files">
-                {g.items.map((r) => (
-                  <a key={r.id} className="btn sm" href={r.downloadUrl} download>
-                    ⬇️ {targetLabel(r.platform, r.arch)} · {formatBytes(r.fileSize)}
-                  </a>
-                ))}
-              </div>
-            </article>
-          ))
+                <div className="release-files">
+                  {g.items.map((r) => (
+                    <a key={r.id} className="btn sm" href={r.downloadUrl} download>
+                      ⬇ {targetLabel(r.platform, r.arch)} · {formatBytes(r.fileSize)}
+                    </a>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </div>
     </div>
