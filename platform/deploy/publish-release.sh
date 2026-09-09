@@ -6,7 +6,7 @@
 # Cùng phiên bản + nền tảng đã có trên máy chủ ⇒ bản cũ bị XOÁ rồi thay bằng tệp mới (không tạo bản trùng).
 # Đăng nhập bằng tài khoản admin của BẠN: đặt ZCA_ADMIN_EMAIL / ZCA_ADMIN_PASSWORD trong môi trường, hoặc script sẽ hỏi
 # (mật khẩu nhập kín, không lưu đâu cả). Tệp tìm trong dist/ theo tên electron-builder tạo ra:
-#   Chat Assistant-<v>-arm64.dmg · Chat Assistant-<v>-x64.dmg · Chat Assistant-Setup-<v>-x64.exe
+#   <productName>-<v>-arm64.dmg · <productName>-<v>-x64.dmg · <productName>-Setup-<v>-x64.exe (tên lấy từ package.json)
 set -euo pipefail
 VER=${1:?Cần phiên bản, ví dụ 0.0.2}
 API=${2:-https://admin.volcanion.vn}; API=${API%/}
@@ -19,9 +19,11 @@ NOTES=${3:-}
 ONLY=${4:-all}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 DIST="$ROOT/dist"
-ARM="$DIST/Chat Assistant-$VER-arm64.dmg"
-X64="$DIST/Chat Assistant-$VER-x64.dmg"
-WIN="$DIST/Chat Assistant-Setup-$VER-x64.exe"
+# Tên sản phẩm lấy từ package.json (đổi tên app là script tự theo).
+PROD=$(node -e 'console.log(require("'"$ROOT"'/package.json").productName)')
+ARM="$DIST/$PROD-$VER-arm64.dmg"
+X64="$DIST/$PROD-$VER-x64.dmg"
+WIN="$DIST/$PROD-Setup-$VER-x64.exe"
 want() { case "$ONLY" in all) return 0;; win32) [[ "$1" == win32 ]];; darwin) [[ "$1" == darwin ]];; darwin-arm64) [[ "$1/$2" == darwin/arm64 ]];; darwin-x64) [[ "$1/$2" == darwin/x64 ]];; *) echo "Bộ lọc không hợp lệ: $ONLY"; exit 1;; esac; }
 want darwin arm64 && { [ -f "$ARM" ] || { echo "Thiếu tệp: $ARM"; exit 1; }; }
 want darwin x64   && { [ -f "$X64" ] || { echo "Thiếu tệp: $X64"; exit 1; }; }
