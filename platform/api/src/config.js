@@ -57,7 +57,7 @@ export const config = {
 
   corsOrigins: list('CORS_ORIGINS', 'http://localhost:4790,http://localhost:5174'),
 
-  appName: process.env.APP_NAME ?? 'Chat Assistant',
+  appName: process.env.APP_NAME ?? 'Work Assistant',
 
   smtp: process.env.SMTP_HOST
     ? {

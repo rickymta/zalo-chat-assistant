@@ -9,8 +9,8 @@ export const siteRouter = Router();
 
 const DEFAULTS = {
   appName: () => config.appName,
-  tagline: 'Trợ lý trả lời tin nhắn Zalo cho phòng khám',
-  hero: { title: 'Chat Assistant', subtitle: 'Đăng nhập Zalo bằng QR, lưu hội thoại vào máy bạn, để Claude gợi ý câu trả lời.' },
+  tagline: 'Trợ lý công việc đa nguồn: Zalo, Telegram, Email và Lark',
+  hero: { title: 'Work Assistant', subtitle: 'Tổng hợp Zalo, Telegram, Email và Lark; AI cục bộ tóm tắt và gợi ý, gửi bản tin giọng nói — dữ liệu ở ngay trên máy bạn.' },
   features: [],
   contact: { email: '', phone: '', zalo: '', address: '', website: '' },
 };

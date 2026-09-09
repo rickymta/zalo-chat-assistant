@@ -101,10 +101,11 @@ services:
     ports:
       - "${BIND_IP:-127.0.0.1}:${ADMIN_PORT:-4792}:80"
 
-  # Cổng vào HTTPS. Caddy tự xin chứng chỉ Let's Encrypt cho DOMAIN, www.DOMAIN, ADMIN_DOMAIN ngay lần đầu chạy
-  # (cần DNS đã trỏ về máy và cổng 80/443 mở), tự gia hạn, lưu ở volume caddy-data. Cấu hình: deploy/caddy/Caddyfile.
+  # Cổng vào DUY NHẤT: nginx (thay Caddy). Định tuyến volcanion.vn -> web, admin.volcanion.vn -> admin.
+  # Chứng chỉ Let's Encrypt lấy/gia hạn bởi service `certbot`. Lần đầu (hoặc khi chuyển từ Caddy) chạy:
+  #   bash deploy/nginx-edge/init-letsencrypt.sh   (tạo cert rồi bật edge) — sau đó chỉ cần: docker compose up -d
   edge:
-    image: caddy:2-alpine
+    image: nginx:1.27-alpine
     container_name: zca-edge
     restart: unless-stopped
     depends_on:
@@ -115,19 +116,29 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
     environment:
-      # Mặc định localhost để máy dev không cần khai; máy chủ thật đặt DOMAIN/ADMIN_DOMAIN trong .env.
+      # envsubst thay ${DOMAIN}/${ADMIN_DOMAIN} trong deploy/nginx-edge/templates/*.template lúc khởi động.
       DOMAIN: ${DOMAIN:-localhost}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.${DOMAIN:-localhost}}
-      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
     volumes:
-      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - ./deploy/nginx-edge/templates:/etc/nginx/templates:ro
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    # Nạp lại cert đã gia hạn mỗi 6h; nginx chạy nền chính.
+    command: sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g 'daemon off;'"
+
+  # Xin và tự gia hạn chứng chỉ Let's Encrypt (webroot). Thử mỗi 12h (không tới hạn thì bỏ qua).
+  certbot:
+    image: certbot/certbot
+    container_name: zca-certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    entrypoint: sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done" 
 
 volumes:
   zca-mongo:
   zca-data:
-  caddy-data:
-  caddy-config:
+  certbot-www:
+  letsencrypt:

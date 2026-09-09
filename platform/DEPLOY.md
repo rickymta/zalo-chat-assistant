@@ -3,8 +3,8 @@
 Mục tiêu: `https://volcanion.vn` là trang chính (tải ứng dụng, lịch sử phiên bản, bài viết, đăng nhập/đăng ký, **API cho ứng
 dụng desktop**), `https://admin.volcanion.vn` là khu quản trị (bài viết, phiên bản, người dùng, nội dung trang chủ).
 **Một lệnh `docker compose up -d` chạy cả máy chủ**: `mongo` + `api` + `web` (trang chính) + `admin` (khu quản trị — **ứng dụng
-riêng** trong `platform/admin`, chỉ đăng nhập + quên mật khẩu, không có đăng ký) + `edge` (Caddy nhận 80/443, tự xin và gia hạn
-chứng chỉ Let's Encrypt, `DOMAIN` → web, `ADMIN_DOMAIN` → admin). Máy chủ chỉ mở 80/443; api/web/admin gắn loopback. Cơ sở dữ liệu là **MongoDB**
+riêng** trong `platform/admin`, chỉ đăng nhập + quên mật khẩu, không có đăng ký) + `edge` (**nginx** nhận 80/443, `DOMAIN` → web,
+`ADMIN_DOMAIN` → admin) + `certbot` (tự xin/gia hạn chứng chỉ Let's Encrypt). Máy chủ chỉ mở 80/443; api/web/admin gắn loopback. Cơ sở dữ liệu là **MongoDB**
 (container `mongo`, hoặc Mongo sẵn có qua `MONGO_URL`). Máy chủ xác thực cũ (`server/`, SQLite) **không triển khai**.
 Không cần cài nginx/certbot trên máy chủ (nginx vẫn chạy *bên trong* ảnh web để phục vụ SPA và proxy `/api`).
 
@@ -33,7 +33,7 @@ sudo ufw allow OpenSSH && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sud
 ```
 
 Máy chủ **không được** có nginx/apache nào khác đang giữ cổng 80/443 (`sudo ss -ltnp | grep -E ':80 |:443 '` phải trống) —
-service `edge` cần hai cổng đó để nhận request và để Let's Encrypt kiểm chứng tên miền.
+service `edge` (nginx) cần hai cổng đó để nhận request và để `certbot` kiểm chứng tên miền qua webroot.
 
 Docker bind cổng qua iptables nên **có thể vượt qua ufw** — vì thế compose gắn api/web vào `127.0.0.1` (`BIND_IP`), không
 phải mở rồi chặn. Kiểm tra sau khi chạy: `ss -ltnp | grep -E '4789|4790'` phải thấy `127.0.0.1:` chứ không phải `0.0.0.0:`.
@@ -57,7 +57,7 @@ cd ~/zca-platform && cp .env.production.example .env && chmod 600 .env && nano .
 Điền: `JWT_SECRET` (**giữ nguyên giá trị đang dùng ở máy hiện tại** nếu chuyển dữ liệu — xem mục 6; máy mới hoàn toàn thì
 `openssl rand -base64 48`), `ADMIN_EMAILS`, `ACME_EMAIL` (email nhận cảnh báo chứng chỉ), `ALLOW_REGISTRATION`/`REGISTRATION_CODE`
 theo ý muốn, SMTP nếu có. Các dòng đã điền sẵn và **phải giữ**: `DOMAIN`, `ADMIN_DOMAIN` (cổng vào Caddy đọc hai dòng này
-để xin chứng chỉ và điều hướng — thiếu là nó chạy với `localhost`), `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS`,
+để nginx điều hướng và certbot xin chứng chỉ — thiếu là chạy với `localhost`), `PUBLIC_URL=https://volcanion.vn`, `CORS_ORIGINS`,
 `BIND_IP=127.0.0.1`. Dùng Mongo ngoài thì đổi `MONGO_URL`
 và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 
@@ -66,6 +66,14 @@ và chạy `docker compose up -d api web edge` (không kéo service `mongo`).
 ```bash
 cd ~/zca-platform
 docker compose up -d                    # lần đầu: dựng ảnh api + web tại chỗ (vài phút) rồi lên mongo → api → web → edge
+```
+
+**Cổng vào là nginx + Let's Encrypt (thay Caddy).** Nginx cần sẵn chứng chỉ mới khởi động được, nên **lần đầu** (hoặc khi chuyển từ Caddy) chạy MỘT LẦN script bootstrap — nó tạo cert tạm, bật nginx, rồi xin cert thật và nạp lại:
+```bash
+cd platform && bash deploy/nginx-edge/init-letsencrypt.sh    # cần DNS đã trỏ + cổng 80/443 mở + .env có DOMAIN/ADMIN_DOMAIN/ACME_EMAIL
+```
+Sau bước này, các lần sau chỉ cần `docker compose up -d`; `certbot` tự gia hạn mỗi 12h và nginx tự nạp lại cert mỗi 6h. Cấu hình routing ở `deploy/nginx-edge/templates/default.conf.template` (một cert phủ cả `DOMAIN`, `www.DOMAIN`, `ADMIN_DOMAIN`). File `deploy/caddy/Caddyfile` giữ lại chỉ để tham chiếu, không còn dùng.
+```bash
 docker compose ps                        # 5 container: zca-mongo, zca-api, zca-web, zca-admin (healthy), zca-edge — thiếu zca-edge là chưa có cổng vào
 docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên
 ```
