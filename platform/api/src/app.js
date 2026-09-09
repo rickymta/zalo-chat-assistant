@@ -14,6 +14,7 @@ import { releasesRouter } from './routes/releases.js';
 import { downloadsRouter } from './routes/downloads.js';
 import { postsRouter } from './routes/posts.js';
 import { siteRouter } from './routes/site.js';
+import { prerenderRouter } from './routes/prerender.js';
 import { adminRouter } from './routes/admin/index.js';
 
 export function createApp() {
@@ -56,6 +57,9 @@ export function createApp() {
   app.use('/api/site', siteRouter);
   app.use('/api/admin', adminRouter);
   app.use('/downloads', downloadsRouter);
+
+  // HTML xem-trước theo route cho bot mạng xã hội (nginx proxy các UA bot sang đây).
+  app.use('/__prerender', prerenderRouter);
 
   // Ảnh CMS phục vụ tĩnh; `index: false` để không lộ danh sách thư mục.
   app.use('/uploads', express.static(config.uploadsDir, { index: false, maxAge: '7d', fallthrough: true }));

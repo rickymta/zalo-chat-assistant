@@ -2,16 +2,50 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Biểu tượng & màu thanh trình duyệt -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#f4f7fc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+
     <meta
       name="description"
       content="Work Assistant — trợ lý công việc đa nguồn cho máy tính: gom Zalo, Telegram, Email và Lark Approval về một chỗ, mã hoá ngay trên máy, AI cục bộ tóm tắt và đọc thành bản tin giọng nói."
     />
-    <meta name="theme-color" content="#0a66ff" />
-    <meta property="og:title" content="Work Assistant" />
-    <meta property="og:description" content="Tổng hợp công việc từ Zalo, Telegram, Email và Lark — AI cục bộ, bản tin giọng nói, dữ liệu ở trên máy bạn." />
+
+    <!-- Xem trước khi dán link vào Zalo/Telegram/Lark/Facebook (Open Graph + Twitter Card) -->
+    <meta property="og:site_name" content="Work Assistant" />
+    <meta property="og:title" content="Work Assistant — Trợ lý công việc đa nguồn" />
+    <meta
+      property="og:description"
+      content="Gom Zalo, Telegram, Email và Lark về một chỗ. AI chạy trên máy bạn, gửi bản tin giọng nói mỗi sáng — chiều."
+    />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://volcanion.vn/" />
+    <meta property="og:image" content="https://volcanion.vn/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Work Assistant — Trợ lý công việc đa nguồn" />
+    <meta
+      name="twitter:description"
+      content="Gom Zalo, Telegram, Email và Lark về một chỗ. AI chạy trên máy bạn, gửi bản tin giọng nói mỗi sáng — chiều."
+    />
+    <meta name="twitter:image" content="https://volcanion.vn/og.png" />
+
+    <!-- Font có bộ dấu tiếng Việt đầy đủ; luôn có fallback hệ thống nếu không tải được -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     <title>Work Assistant</title>
     <script>
       // Áp giao diện sáng/tối đã chọn TRƯỚC khi vẽ để không chớp màu (đồng bộ với src/lib/theme.js).
