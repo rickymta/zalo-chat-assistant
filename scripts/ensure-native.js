@@ -42,6 +42,31 @@ function describe() {
 }
 function matches() { return fs.existsSync(binary) && expectedSignature(spec).test(describe()); }
 
+/**
+ * node-llama-cpp nạp binary từ gói tuỳ chọn @node-llama-cpp/<hệ-kiến trúc>; npm chỉ cài gói khớp máy này (mac-arm64-metal),
+ * nên bản Mac Intel / Windows đóng gói trên máy này sẽ THIẾU binary ⇒ AI cục bộ không chạy. Tải gói của đích bằng `npm pack`
+ * (không bị chặn bởi trường os/cpu) rồi giải nén vào node_modules — mọi gói đã có đều được đóng vào app (mỗi gói ~13 MB).
+ */
+const LLAMA_PKG = { 'darwin-arm64': 'mac-arm64-metal', 'darwin-x64': 'mac-x64', 'win32-x64': 'win-x64' };
+function ensureLlama({ platform, arch }) {
+  const name = LLAMA_PKG[`${platform}-${arch}`]; if (!name) return;
+  const dir = path.join(root, 'node_modules', '@node-llama-cpp', name);
+  if (fs.existsSync(path.join(dir, 'package.json'))) return;
+  const ver = JSON.parse(fs.readFileSync(path.join(root, 'node_modules', 'node-llama-cpp', 'package.json'), 'utf8')).version;
+  console.log(`[ensure-native] Tải @node-llama-cpp/${name}@${ver} cho ${platform}-${arch}…`);
+  const tmp = fs.mkdtempSync(path.join(root, 'node_modules', '.llama-'));
+  try {
+    execSync(`npm pack @node-llama-cpp/${name}@${ver} --pack-destination "${tmp}" --silent`, { cwd: root, stdio: 'inherit' });
+    const tgz = fs.readdirSync(tmp).find((f) => f.endsWith('.tgz'));
+    if (!tgz) throw new Error('npm pack không tạo tệp .tgz');
+    execSync(`tar -xzf "${path.join(tmp, tgz)}" -C "${tmp}"`, { stdio: 'inherit' });
+    fs.mkdirSync(path.dirname(dir), { recursive: true });
+    fs.renameSync(path.join(tmp, 'package'), dir);
+    console.log(`[ensure-native] OK: @node-llama-cpp/${name} (${fs.readdirSync(dir).length} mục)`);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+if (spec.runtime === 'electron') ensureLlama(spec);
+
 const current = fs.existsSync(marker) ? fs.readFileSync(marker, 'utf8').trim() : '';
 if (current === target && matches()) process.exit(0);
 
