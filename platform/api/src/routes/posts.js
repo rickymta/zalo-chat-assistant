@@ -33,7 +33,8 @@ postsRouter.get('/', wrap(async (req, res) => {
   const page = Math.max(Number(req.query.page ?? 1) || 1, 1);
   const limit = Math.min(Math.max(Number(req.query.limit ?? 12) || 12, 1), 100);
 
-  const filter = { publishedAt: { $ne: null, $lte: Date.now() } };
+  // Đã publish là hiện — KHÔNG chặn theo $lte Date.now() (app không có giao diện hẹn giờ đăng; mốc publishedAt lấy từ đồng hồ client có thể vượt đồng hồ server làm bài bị ẩn oan).
+  const filter = { publishedAt: { $ne: null } };
   if (kind) filter.kind = kind;
   if (tag) filter.tags = tag;
 
@@ -46,7 +47,7 @@ postsRouter.get('/', wrap(async (req, res) => {
 }));
 
 postsRouter.get('/:slug', wrap(async (req, res) => {
-  const post = await Post.findOne({ slug: req.params.slug, publishedAt: { $ne: null, $lte: Date.now() } }).lean();
+  const post = await Post.findOne({ slug: req.params.slug, publishedAt: { $ne: null } }).lean();
   if (!post) return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
   res.json({ post: postToPublic(post) });
 }));
