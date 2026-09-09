@@ -801,11 +801,15 @@ const server = http.createServer(async (req, res) => {
 
     /* ── Bài viết (công khai) ── */
     if (path === '/api/posts' && method === 'GET') {
-      const kind = q.get('kind') || 'post';
+      // `kind` nhận một loại hoặc danh sách ngăn cách bằng dấu phẩy — khớp API thật.
+      const kinds = String(q.get('kind') || 'post')
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
       const tag = q.get('tag');
       const page = Math.max(1, Number(q.get('page') || 1));
       const limit = Math.max(1, Number(q.get('limit') || 12));
-      let items = posts.filter((p) => p.publishedAt && p.kind === kind);
+      let items = posts.filter((p) => p.publishedAt && (kinds.length === 0 || kinds.includes(p.kind)));
       if (tag) items = items.filter((p) => (p.tags || []).includes(tag));
       items.sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.publishedAt - a.publishedAt);
       const total = items.length;

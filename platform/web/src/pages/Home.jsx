@@ -6,38 +6,38 @@ import { usePageTitle } from '../lib/usePageTitle.js';
 import { TargetCard } from '../components/ReleaseCard.jsx';
 import PostCard from '../components/PostCard.jsx';
 import { EmptyState, Loading } from '../components/ui.jsx';
-import { SOURCES, SourceChip, SourceIcon } from '../components/Brand.jsx';
+import { SOURCES, SourceIcon, FeatureIcon } from '../components/Brand.jsx';
 import { TARGETS, detectTarget } from '../lib/platform.js';
 
 /** Tính năng mặc định khi quản trị viên chưa cấu hình gì trong màn Trang chủ. */
 const DEFAULT_FEATURES = [
   {
-    icon: '🧠',
-    title: 'AI cục bộ, không gửi dữ liệu ra ngoài',
+    glyph: 'cpu',
+    title: 'AI chạy ngay trên máy bạn',
     text: 'Mô hình chạy ngay trên máy (tăng tốc Metal trên Apple Silicon) đọc hội thoại, thư và phiếu duyệt rồi gom việc cần làm theo từng người.',
   },
   {
-    icon: '🔊',
+    glyph: 'voice',
     title: 'Bản tin giọng nói theo giờ',
     text: 'Mỗi sáng 07:30 và chiều 17:30, một bản tin riêng cho từng kênh được đọc thành giọng nói và gửi qua bot Telegram kèm bản chữ.',
   },
   {
-    icon: '🔐',
+    glyph: 'lock',
     title: 'Mã hoá ngay trên máy bạn',
     text: 'Nội dung, tên, số điện thoại mã hoá AES-256-GCM bằng khoá riêng của tài khoản. Máy chủ không bao giờ nhận tin nhắn.',
   },
   {
-    icon: '📊',
+    glyph: 'report',
     title: 'Báo cáo ngày',
     text: 'Tổng hợp cả ngày: số tin đến/đi, khách chưa được trả lời, việc đã chốt và việc còn dang dở của bạn.',
   },
   {
-    icon: '💡',
+    glyph: 'reply',
     title: 'Gợi ý trả lời ngay cạnh hội thoại',
     text: 'Với Zalo, thẻ gợi ý hiện ngay trong khung chat — bấm Dùng gợi ý, sửa lại rồi Gửi. Không bao giờ tự gửi thay bạn.',
   },
   {
-    icon: '🔄',
+    glyph: 'refresh',
     title: 'Tự kiểm tra bản mới',
     text: 'Ứng dụng báo khi có phiên bản mới và dẫn thẳng tới trang tải về. Cài xong, tắt máy mở lại không phải đăng nhập lại.',
   },
@@ -48,7 +48,8 @@ const STEPS = [
     title: 'Cài ứng dụng',
     text: (
       <>
-        Tải bản cho máy của bạn, kéo vào Applications. Lần đầu trên macOS: <b>chuột phải → Mở</b>.
+        Tải bản cho máy của bạn, kéo vào Applications. Lần đầu trên macOS mở bằng{' '}
+        <b style={{ whiteSpace: 'nowrap' }}>chuột phải → Mở.</b>
       </>
     ),
   },
@@ -70,7 +71,8 @@ export default function Home() {
   usePageTitle('');
   const { site } = useSite();
   const [target, setTarget] = useState(null);
-  const { data: postsData } = useFetch('/api/posts?kind=post&limit=6', { auth: false });
+  // "Mới trên trang" gộp cả bài viết, hướng dẫn và ghi chú phát hành — máy chủ đã sắp ghim trước, mới trước.
+  const { data: postsData } = useFetch('/api/posts?kind=post,page,changelog&limit=3', { auth: false });
 
   useEffect(() => {
     detectTarget().then(setTarget);
@@ -78,9 +80,7 @@ export default function Home() {
 
   const features = site.features && site.features.length ? site.features : DEFAULT_FEATURES;
   const latest = site.latest || {};
-  const posts = postsData && postsData.items ? postsData.items : [];
-  // Bài ghim lên trước, tối đa 3 bài trên trang chủ.
-  const highlighted = [...posts].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned)).slice(0, 3);
+  const highlighted = (postsData && postsData.items) || [];
 
   const ctaLabel =
     target && target.supported
@@ -88,6 +88,10 @@ export default function Home() {
         ? 'Tải cho Windows'
         : 'Tải cho macOS'
       : 'Tải ứng dụng';
+  // Có sẵn tệp cho đúng máy đang xem ⇒ nút hero tải thẳng; nếu không thì dẫn sang trang Tải về.
+  const primaryRelease = target && target.supported ? latest[target.key] || null : null;
+  const downloadHref = primaryRelease && primaryRelease.downloadUrl ? primaryRelease.downloadUrl : null;
+  const linkTo = (p) => (p.kind === 'page' ? `/huong-dan/${p.slug}` : `/bai-viet/${p.slug}`);
 
   return (
     <>
@@ -105,29 +109,29 @@ export default function Home() {
               <h1>{(site.hero && site.hero.title) || site.appName}</h1>
               <p className="sub">{site.hero && site.hero.subtitle}</p>
 
-              <div className="source-chips" aria-label="Các nguồn được hỗ trợ">
-                {SOURCES.map((s) => (
-                  <SourceChip key={s.key} kind={s.key} label={s.label} />
-                ))}
-                <SourceChip kind="ai" label="AI cục bộ" />
-                <SourceChip kind="voice" label="Bản tin giọng nói" />
-              </div>
-
               <div className="cta">
-                <Link to="/tai-ve" className="btn primary xl">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 3v12M6 9l6 6 6-6M4 21h16" />
-                  </svg>
-                  {ctaLabel}
-                </Link>
+                {downloadHref ? (
+                  <a href={downloadHref} download className="btn primary xl">
+                    <DownloadGlyph />
+                    {ctaLabel}
+                  </a>
+                ) : (
+                  <Link to="/tai-ve" className="btn primary xl">
+                    <DownloadGlyph />
+                    {ctaLabel}
+                  </Link>
+                )}
                 <Link to="/huong-dan" className="btn xl">
                   Xem hướng dẫn
                 </Link>
               </div>
+              <p className="cta-note">
+                <Link to="/tai-ve">Bản khác &amp; hướng dẫn cài đặt →</Link>
+              </p>
               <div className="trust">
-                <span>🔒 Mã hoá AES-256 trên máy</span>
+                <span>🔒 Mã hoá trên máy</span>
                 <span>💻 macOS &amp; Windows</span>
-                <span>🛡️ Chỉ đọc Telegram · Email · Lark</span>
+                <span>🛡️ Chỉ đọc, không gửi thay bạn</span>
               </div>
             </div>
 
@@ -174,9 +178,7 @@ export default function Home() {
           <div className="features">
             {features.map((f, i) => (
               <div className="feature" key={`${f.title}-${i}`}>
-                <span className="ico" aria-hidden="true">
-                  {f.icon || '✦'}
-                </span>
+                <FeatureIcon glyph={f.glyph} fallback={f.icon || '✦'} />
                 <b>{f.title}</b>
                 <p>{f.text}</p>
               </div>
@@ -250,9 +252,15 @@ export default function Home() {
           ) : highlighted.length === 0 ? (
             <EmptyState icon="📝" title="Chưa có bài viết nào" hint="Bài viết mới sẽ hiện ở đây." />
           ) : (
-            <div className="post-grid">
-              {highlighted.map((p) => (
-                <PostCard key={p.id} post={p} />
+            <div className={`post-grid${highlighted.length === 2 ? ' two' : ''}`}>
+              {highlighted.map((p, i) => (
+                <PostCard
+                  key={p.id}
+                  post={p}
+                  to={linkTo(p)}
+                  showKind
+                  featured={highlighted.length === 1 && i === 0}
+                />
               ))}
             </div>
           )}
@@ -264,16 +272,22 @@ export default function Home() {
         <div className="wrap">
           <div className="cta-band">
             <div>
-              <h2>Sẵn sàng bớt một nửa thời gian đọc tin?</h2>
+              <h2>Sáng mở máy, việc cần làm đã gom sẵn</h2>
               <p>
                 Cài trong vài phút, kết nối nguồn một lần. Từ mai, việc cần làm tự đến với bạn lúc
-                07:30.
+                07:30. Cần tài khoản để mở khoá dữ liệu — tạo trước hoặc tạo ngay trong ứng dụng.
               </p>
             </div>
             <div className="row">
-              <Link to="/tai-ve" className="btn light xl">
-                {ctaLabel}
-              </Link>
+              {downloadHref ? (
+                <a href={downloadHref} download className="btn light xl">
+                  {ctaLabel}
+                </a>
+              ) : (
+                <Link to="/tai-ve" className="btn light xl">
+                  {ctaLabel}
+                </Link>
+              )}
               <Link to="/dang-ky" className="btn outline xl">
                 Tạo tài khoản
               </Link>
@@ -282,6 +296,15 @@ export default function Home() {
         </div>
       </section>
     </>
+  );
+}
+
+/** Mũi tên tải xuống dùng cho các nút CTA ở hero. */
+function DownloadGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12M6 9l6 6 6-6M4 21h16" />
+    </svg>
   );
 }
 

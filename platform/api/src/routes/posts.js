@@ -35,7 +35,14 @@ postsRouter.get('/', wrap(async (req, res) => {
 
   // Đã publish là hiện — KHÔNG chặn theo $lte Date.now() (app không có giao diện hẹn giờ đăng; mốc publishedAt lấy từ đồng hồ client có thể vượt đồng hồ server làm bài bị ẩn oan).
   const filter = { publishedAt: { $ne: null } };
-  if (kind) filter.kind = kind;
+  // `kind` nhận một loại ("post") hoặc danh sách ngăn cách bằng dấu phẩy ("post,page,changelog")
+  // để trang chủ/danh sách gộp nhiều loại vào một dòng tin.
+  const kinds = String(kind ?? '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+  if (kinds.length === 1) filter.kind = kinds[0];
+  else if (kinds.length > 1) filter.kind = { $in: kinds };
   if (tag) filter.tags = tag;
 
   const [items, total] = await Promise.all([

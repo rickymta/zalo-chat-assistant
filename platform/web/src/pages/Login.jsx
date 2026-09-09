@@ -42,7 +42,10 @@ export default function Login() {
             <b>{BRAND_NAME}</b>
           </div>
           <h1>Đăng nhập</h1>
-          <p className="form-sub">Dùng chính tài khoản bạn đăng nhập trong ứng dụng trên máy.</p>
+          <p className="form-sub">
+            Tài khoản này dùng để đăng nhập trong ứng dụng Work Assistant và giữ khoá mã hoá dữ liệu của
+            bạn. Trên web, bạn có thể đổi mật khẩu.
+          </p>
 
           <form className="form" onSubmit={submit}>
             <ErrorBox error={error} />

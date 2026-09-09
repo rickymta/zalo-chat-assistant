@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFetch } from '../lib/useFetch.js';
 import { usePageTitle } from '../lib/usePageTitle.js';
 import { EmptyState, ErrorBox, Loading, Prose } from '../components/ui.jsx';
@@ -51,8 +52,19 @@ export default function Updates() {
         ) : groups.length === 0 ? (
           <EmptyState
             icon="🗒️"
-            title="Chưa có bản phát hành nào trên kênh này"
-            hint="Khi có bản mới, ghi chú thay đổi sẽ hiện ở đây."
+            title={channel === 'beta' ? 'Chưa có bản thử nghiệm nào đang mở' : 'Chưa có bản phát hành nào'}
+            hint={
+              channel === 'beta'
+                ? 'Bản thử nghiệm chỉ mở khi được mời. Hãy dùng kênh Ổn định.'
+                : 'Khi có bản mới, ghi chú thay đổi sẽ hiện ở đây.'
+            }
+            action={
+              channel === 'beta' ? (
+                <button type="button" className="sm" onClick={() => setChannel('stable')}>
+                  Về kênh Ổn định
+                </button>
+              ) : null
+            }
           />
         ) : (
           <div className="timeline">
@@ -76,7 +88,11 @@ export default function Updates() {
                 {g.notesHtml ? (
                   <Prose html={g.notesHtml} />
                 ) : (
-                  <p className="muted">Bản này không kèm ghi chú thay đổi.</p>
+                  <p className="muted">
+                    Chưa có ghi chú chi tiết cho bản này. Xem{' '}
+                    <Link to="/bai-viet/gioi-thieu-work-assistant">Giới thiệu Work Assistant</Link> để biết
+                    ứng dụng làm được gì.
+                  </p>
                 )}
 
                 <div className="release-files">
@@ -90,8 +106,51 @@ export default function Updates() {
             ))}
           </div>
         )}
+
+        {!loading && <UpdateHelp />}
       </div>
     </div>
+  );
+}
+
+/** Hai khối giải thích cố định — trả lời "cập nhật thế nào?" và "kênh nào cho ai?". */
+function UpdateHelp() {
+  return (
+    <section className="update-help">
+      <div className="card">
+        <div className="card-head">
+          <span className="ico">🔄</span>
+          <h3>Cách cập nhật</h3>
+        </div>
+        <p className="muted">
+          Ứng dụng tự kiểm tra bản mới và báo ngay trong cửa sổ. Bạn cũng có thể vào{' '}
+          <b>Cài đặt → Kiểm tra bản mới</b> bất cứ lúc nào, rồi tải và cài đè bản mới — dữ liệu, tài khoản
+          và kết nối vẫn giữ nguyên.
+        </p>
+        <div className="row" style={{ marginTop: 12 }}>
+          <Link to="/tai-ve" className="btn sm">
+            Tải bản mới nhất
+          </Link>
+          <Link to="/huong-dan" className="btn sm ghost">
+            Hướng dẫn cài đặt
+          </Link>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head">
+          <span className="ico">🚦</span>
+          <h3>Kênh phát hành</h3>
+        </div>
+        <ul className="prose" style={{ margin: '10px 0 0', paddingLeft: 20 }}>
+          <li>
+            <b>Ổn định</b> — bản khuyến nghị cho mọi người, đã kiểm tra kỹ.
+          </li>
+          <li>
+            <b>Thử nghiệm</b> — bản có tính năng mới, có thể còn lỗi; chỉ dùng khi được mời.
+          </li>
+        </ul>
+      </div>
+    </section>
   );
 }
 

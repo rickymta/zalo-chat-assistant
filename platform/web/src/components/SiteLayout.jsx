@@ -19,8 +19,11 @@ export default function SiteLayout() {
   const flush = location.pathname === '/';
   return (
     <div className="page">
+      <a href="#main" className="skip-link">
+        Bỏ qua tới nội dung
+      </a>
       <Header />
-      <main className={`site-main${flush ? ' flush' : ''}`}>
+      <main id="main" className={`site-main${flush ? ' flush' : ''}`}>
         <Outlet />
       </main>
       <Footer />
@@ -37,6 +40,21 @@ function Header() {
 
   // Đổi trang thì đóng menu điện thoại.
   useEffect(() => setOpen(false), [location.pathname]);
+
+  // Menu điện thoại mở toàn màn ⇒ khoá cuộn nền và cho đóng bằng phím Esc.
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   // Rời trang cần đăng nhập TRƯỚC khi xoá phiên, nếu không RequireAuth sẽ đá sang
   // trang đăng nhập ngay lúc trạng thái đổi.
@@ -89,7 +107,7 @@ function Header() {
                   Đăng nhập
                 </Link>
                 <Link to="/tai-ve" className="btn sm primary">
-                  Tải ứng dụng
+                  Tải về
                 </Link>
               </>
             )}
@@ -105,6 +123,13 @@ function Header() {
           </div>
         </div>
 
+        <button
+          type="button"
+          className={`mobile-backdrop${open ? ' open' : ''}`}
+          aria-hidden="true"
+          tabIndex={-1}
+          onClick={() => setOpen(false)}
+        />
         <nav className={`mobile-nav${open ? ' open' : ''}`} aria-label="Điều hướng điện thoại">
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -123,9 +148,12 @@ function Header() {
           ) : (
             <>
               <NavLink to="/dang-nhap">Đăng nhập</NavLink>
-              <NavLink to="/dang-ky">Đăng ký tài khoản</NavLink>
+              <NavLink to="/dang-ky">Tạo tài khoản</NavLink>
             </>
           )}
+          <Link to="/tai-ve" className="btn primary wide mobile-nav-cta">
+            Tải về cho máy tính
+          </Link>
         </nav>
       </div>
     </header>
@@ -167,7 +195,7 @@ function Footer() {
             <h4>Sản phẩm</h4>
             <ul>
               <li>
-                <Link to="/tai-ve">Tải ứng dụng</Link>
+                <Link to="/tai-ve">Tải về</Link>
               </li>
               <li>
                 <Link to="/cap-nhat">Lịch sử phiên bản</Link>
@@ -203,8 +231,11 @@ function Footer() {
             </ul>
           </div>
           <div>
-            <h4>Liên hệ</h4>
+            <h4>Hỗ trợ</h4>
             <ul>
+              <li>
+                <Link to="/huong-dan">Hướng dẫn &amp; xử lý sự cố</Link>
+              </li>
               {contact.email && (
                 <li>
                   <a href={`mailto:${contact.email}`}>{contact.email}</a>
@@ -216,14 +247,26 @@ function Footer() {
                 </li>
               )}
               {contact.zalo && <li>Zalo: {contact.zalo}</li>}
+              {contact.website && (
+                <li>
+                  <a href={contact.website} target="_blank" rel="noreferrer">
+                    {contact.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </li>
+              )}
               {contact.address && <li>{contact.address}</li>}
-              {!hasContact && <li className="faint">Cần hỗ trợ? Liên hệ quản trị viên hệ thống.</li>}
+              {!hasContact && (
+                <li className="faint">
+                  Gặp lỗi cài đặt hoặc kết nối? Mở <Link to="/huong-dan">Hướng dẫn</Link>, hoặc nhắn
+                  quản trị viên hệ thống của công ty.
+                </li>
+              )}
             </ul>
           </div>
         </div>
         <div className="footer-bottom">
           <span>
-            © {year} {appName} — MedDental. Dùng nội bộ.
+            © {year} {appName} · Volcanion — nền tảng công cụ nội bộ của MedDental.
           </span>
           <span>macOS (Apple Silicon &amp; Intel) · Windows 64-bit</span>
         </div>

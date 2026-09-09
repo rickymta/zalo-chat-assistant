@@ -184,7 +184,9 @@ function MainDownload({ target, release, appName }) {
             <div>{formatDate(release.publishedAt)}</div>
             {release.sha256 && (
               <>
-                <div>SHA-256</div>
+                <div title="Mã kiểm tra tệp tải về không bị sửa đổi. So khớp giá trị này với tệp bạn tải xuống nếu cần chắc chắn.">
+                  SHA-256 <span className="faint" aria-hidden="true">ⓘ</span>
+                </div>
                 <div className="sha">
                   <code>{release.sha256}</code>
                   <CopyButton value={release.sha256} />
@@ -217,8 +219,10 @@ function MainDownload({ target, release, appName }) {
 
 /** Ghi chú cài đặt cho từng nền tảng — lấy từ README của sản phẩm. */
 function InstallNotes({ platform, appName }) {
-  const showMac = platform !== 'win32';
-  const showWin = platform !== 'darwin';
+  // Luôn hiện cả macOS và Windows (2 cột cân nhau) để người dùng nào cũng thấy phần của mình;
+  // đánh dấu nhẹ nền tảng đang xem thay vì ẩn nền tảng còn lại (tránh bố cục trống một nửa).
+  const mineMac = platform === 'darwin';
+  const mineWin = platform === 'win32';
   return (
     <section className="stack">
       <div className="section-head" style={{ marginBottom: 0 }}>
@@ -227,13 +231,12 @@ function InstallNotes({ platform, appName }) {
       </div>
 
       <div className="install-grid">
-        {showMac && (
-          <div className="card">
+        <div className="card">
             <div className="card-head">
               <span className="ico">
                 <OsIcon platform="darwin" />
               </span>
-              <h3>macOS</h3>
+              <h3>macOS{mineMac && <span className="pill info mine">Máy của bạn</span>}</h3>
             </div>
             <ol>
               <li>
@@ -257,16 +260,15 @@ function InstallNotes({ platform, appName }) {
               </li>
             </ol>
           </div>
-        )}
 
-        {showWin && (
-          <div className="card">
+        <div className="card">
             <div className="card-head">
               <span className="ico">
                 <OsIcon platform="win32" />
               </span>
               <h3>
                 Windows <span className="pill warn">thử nghiệm</span>
+                {mineWin && <span className="pill info mine">Máy của bạn</span>}
               </h3>
             </div>
             <ol>
@@ -293,9 +295,8 @@ function InstallNotes({ platform, appName }) {
               Gặp lỗi hãy báo quản trị viên.
             </div>
           </div>
-        )}
 
-        <div className="card" style={{ gridColumn: showMac && showWin ? 'auto' : '1 / -1' }}>
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
           <div className="card-head">
             <span className="ico">✅</span>
             <h3>Sau khi cài</h3>

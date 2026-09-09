@@ -129,6 +129,116 @@ export function SourceIcon({ kind, className = '' }) {
   );
 }
 
+/**
+ * Biểu tượng nét cho mục "Tính năng" — một bộ SVG đồng nhất thay cho emoji (emoji render
+ * khác nhau theo hệ điều hành nên trông như hai bộ thiết kế). `glyph`: cpu | voice | lock |
+ * report | reply | refresh | inbox.
+ */
+const FEATURE_GLYPHS = {
+  cpu: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="7" y="7" width="10" height="10" rx="2.2" />
+      <path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3" />
+    </svg>
+  ),
+  voice: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 10v4" />
+    </svg>
+  ),
+  lock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2.4" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      <circle cx="12" cy="15.5" r="1.4" />
+    </svg>
+  ),
+  report: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="3.5" width="14" height="17" rx="2.4" />
+      <path d="M9 8h6M9 12h6M9 16h4" />
+    </svg>
+  ),
+  reply: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16v10H9l-5 4z" />
+      <path d="M11 11h5" />
+    </svg>
+  ),
+  refresh: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 11a8 8 0 0 0-14-4.5L4 8m0-4v4h4M4 13a8 8 0 0 0 14 4.5L20 16m0 4v-4h-4" />
+    </svg>
+  ),
+  inbox: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7M4 13l2.6 0a2 2 0 0 1 1.8 1.2 2 2 0 0 0 1.8 1.1h3.6a2 2 0 0 0 1.8-1.1A2 2 0 0 1 17.4 13H20M4 13v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </svg>
+  ),
+  folder: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7a2 2 0 0 1 2-2h3.2l2 2H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+    </svg>
+  ),
+  link: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 15l6-6M10 6l1.5-1.5a4 4 0 0 1 5.7 5.7L15 12M14 18l-1.5 1.5a4 4 0 0 1-5.7-5.7L9 12" />
+    </svg>
+  ),
+};
+
+/** Suy ra glyph SVG từ emoji quản trị viên đặt trong CMS, để icon vẫn đồng nhất. */
+const EMOJI_TO_GLYPH = {
+  '🧠': 'cpu',
+  '🤖': 'cpu',
+  '💻': 'cpu',
+  '🔊': 'voice',
+  '🎙': 'voice',
+  '🗣': 'voice',
+  '🔐': 'lock',
+  '🔒': 'lock',
+  '🛡': 'lock',
+  '📊': 'report',
+  '📈': 'report',
+  '📋': 'report',
+  '📝': 'report',
+  '💡': 'reply',
+  '💬': 'reply',
+  '↩': 'reply',
+  '🔄': 'refresh',
+  '♻': 'refresh',
+  '📥': 'inbox',
+  '📨': 'inbox',
+  '📬': 'inbox',
+  '🗂': 'folder',
+  '📁': 'folder',
+  '📂': 'folder',
+  '📱': 'link',
+  '🔗': 'link',
+  '🔌': 'link',
+  '🌐': 'link',
+  '📶': 'link',
+};
+
+/**
+ * Ô biểu tượng tính năng. Ưu tiên SVG theo `glyph`; nếu chỉ có emoji (feature do quản trị viên
+ * tự thêm) thì suy ra glyph tương ứng để vẫn ra SVG; không nhận ra thì hiển thị emoji như cũ.
+ */
+export function FeatureIcon({ glyph, fallback = '✦', className = '' }) {
+  let key = glyph;
+  if (!key && fallback) {
+    // Cắt lấy ký tự đầu (bỏ biến thể màu ️) để tra bảng emoji → glyph.
+    const first = [...String(fallback)][0]?.replace('️', '') || '';
+    key = EMOJI_TO_GLYPH[first];
+  }
+  const svg = key ? FEATURE_GLYPHS[key] : null;
+  return (
+    <span className={`ico${svg ? ' svg' : ''} ${className}`.trim()} aria-hidden="true">
+      {svg || fallback}
+    </span>
+  );
+}
+
 /** Viên "Zalo · Telegram · Email · Lark" nhỏ gọn. */
 export function SourceChip({ kind, label }) {
   return (
