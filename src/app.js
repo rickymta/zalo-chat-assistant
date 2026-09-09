@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
   ensureDirs, loadSettings, saveSettings,
-  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
+  ROOT_DIR, DATA_DIR, SESSIONS_DIR, SENT_DIR, MODELS_DIR, DB_PATH, LOG_PATH, COWORK_DIR, WORKSPACE_DIR, UI_DIR, AUTH_FILE, DEFAULT_SERVER_URL, PORT, HOST,
 } from './config.js';
 import { createLogger } from './logger.js';
 import { openDb } from './db.js';
@@ -25,6 +25,8 @@ import { ensureWorkspace, updateWorkspaceData } from './workspace.js';
 import { presetParams } from './server.js';
 import { SuggestionStore } from './suggestions.js';
 import { createUpdater } from './updates.js';
+import { LocalEngine } from './ai/engine.js';
+import { createLocalPipeline } from './ai/pipeline.js';
 
 export async function startApp({ platform, port = PORT } = {}) {
   ensureDirs();
@@ -84,6 +86,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     lock() {
       automation.stop();
       suggestions.stop();
+      void aiEngine.unload('khoá dữ liệu');
       manager.stopAll();
       db.setCipher(null);
       cipher.clear();
@@ -168,6 +171,8 @@ export async function startApp({ platform, port = PORT } = {}) {
         const r = await updateWorkspaceData({ db, params: presetParams(s.defaultPreset ?? 'waiting', { includeExcel: !!s.includeExcel }, s), root: WORKSPACE_DIR, log, settings: s, gaps: power.recentGaps(48) });
         this.lastResult = r; this.lastRunAt = Date.now();
         log.info(`Tự cập nhật gói Claude (${reason}): ${r.ok ? `${r.conversations} hội thoại, ${r.messages} tin` : r.error}.`);
+        // Bộ máy AI cục bộ: tổng hợp ngay sau khi gói đổi (thay lịch Cowork). Chạy nền, tuần tự; đang chạy thì bỏ qua lượt này.
+        if (r.ok && (loadSettings().aiEngine ?? 'local') !== 'cowork') void aiPipeline.run({ reason });
       } catch (err) {
         this.lastResult = { ok: false, error: err?.message ?? String(err) }; this.lastRunAt = Date.now();
         log.error(`Tự cập nhật gói Claude thất bại: ${this.lastResult.error}`);
@@ -187,6 +192,11 @@ export async function startApp({ platform, port = PORT } = {}) {
 
   const suggestions = new SuggestionStore({ root: WORKSPACE_DIR, db, log });
   suggestions.on('changed', (s) => events.emit('suggestions', s));
+
+  /** Bộ máy AI cục bộ (node-llama-cpp) + pipeline ghi ket-qua/ y như Cowork. */
+  const aiEngine = new LocalEngine({ log, settings, modelsDir: MODELS_DIR });
+  const aiPipeline = createLocalPipeline({ engine: aiEngine, root: WORKSPACE_DIR, log, settings, events });
+  aiEngine.on('change', (s) => events.emit('ai', { ...s, pipeline: aiPipeline.status() }));
 
   /**
    * Máy ngủ / thức. Lúc máy ngủ Zalo mất kết nối; tin đến trong lúc đó chỉ lấy lại được nếu Zalo gửi bù khi nối lại.
@@ -243,7 +253,7 @@ export async function startApp({ platform, port = PORT } = {}) {
   // Phiên bản: Electron lấy từ Info.plist (app.getVersion()); chạy Node thì đọc package.json.
   const appVersion = platform?.appVersion || readPackageVersion();
   const updater = createUpdater({ auth, settings, platform, log, events, version: appVersion });
-  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater });
+  const server = buildServer({ db, manager, log, settings, paths, platform, auth, security, events, automation, suggestions, power, updater, ai: { engine: aiEngine, pipeline: aiPipeline } });
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
@@ -264,6 +274,7 @@ export async function startApp({ platform, port = PORT } = {}) {
     log.info('Đang dừng…');
     automation.stop();
     suggestions.stop();
+    void aiEngine.unload('thoát');
     power.stop();
     updater.stop();
     manager.stopAll();

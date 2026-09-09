@@ -99,6 +99,29 @@ cảnh báo "nhà phát triển không xác định" lúc cài lần đầu.
 bản `x.y.z` / lỗi kết nối), kèm nút **Kiểm tra cập nhật** để hỏi ngay, công tắc **Tự kiểm tra cập nhật** và ô **Máy chủ cập
 nhật** (để trống = dùng máy chủ tài khoản). Máy chủ không kết nối được thì lỗi chỉ hiện ở đó — ứng dụng vẫn chạy bình thường.
 
+### Bộ máy tổng hợp AI: chạy model ngay trong ứng dụng (từ 0.1.0)
+
+Mặc định ứng dụng **không cần Claude Cowork**: một model ngôn ngữ chạy ngay trong tiến trình ứng dụng (thư viện
+`node-llama-cpp`, tăng tốc Metal trên Apple Silicon) đọc gói `du-lieu/` rồi ghi `ket-qua/` **đúng định dạng cũ**
+(`de-xuat.json`, `bao-cao/YYYY-MM-DD.json` + `.md`, `YYYY-MM-DD-tong-hop.md`) — gợi ý trong hội thoại và hộp Báo cáo dùng
+nguyên. Dữ liệu không rời máy.
+
+- *Cài đặt → Bộ máy tổng hợp AI*: chọn **AI cục bộ** (mặc định) hoặc **Claude Cowork** (giữ lịch Cowork như trước; khi dùng
+  AI cục bộ hãy tạm dừng lịch Cowork để hai bên không ghi đè nhau). Chọn model rồi **Tải model** (tệp `.gguf` về
+  `data/models/`, có tiếp tục tải khi ngắt, đối chiếu SHA-256 do Hugging Face công bố). **Tổng hợp ngay** để chạy tay;
+  bình thường pipeline tự chạy ngay sau mỗi lần gói `du-lieu/` được cập nhật (sau tin cuối N phút, hoặc theo chu kỳ).
+- Model mặc định **Qwen3 4B Instruct 2507 Q4_K_M** (~2,5 GB, chiếm ~3 GB RAM khi chạy) — so sánh 09/09/2026 trên hội thoại thật
+  với Qwen2.5 3B, Gemma 3 4B, Gemma 4 E2B: chỉ Qwen3 phân loại đúng đồng nghiệp/khách, không bịa nội dung nha khoa, trả lời đúng
+  giọng; Gemma 4 E2B nhanh gấp 2,5 lần nhưng thi thoảng nhầm. Có sẵn các lựa chọn đó và Qwen2.5 7B (cần 16 GB), hoặc dán URL `.gguf`. Ngữ cảnh 8192 token; hội thoại dài được cắt giữ phần mới nhất.
+- Mỗi hội thoại đi qua **hai bước**: phân loại quan hệ/loại/ưu tiên bằng prompt trung tính, rồi tóm tắt + đề xuất bằng prompt riêng theo
+  quan hệ (đồng nghiệp/bạn bè không dính quy tắc chăm sóc khách hàng). Chạy **tuần tự**, đầu ra ép theo JSON schema (có giới hạn độ dài) nên luôn đúng mã (`relation`, `sentiment`, `kind`,
+  `priority`). Hội thoại không đổi (cùng số tin, cùng tin cuối) dùng lại kết quả lần trước (`ket-qua/.ai-cuc-bo.json`).
+  Model tự giải phóng khỏi RAM sau 10 phút rảnh (đổi `aiIdleUnloadMinutes`).
+- Tốc độ tham khảo với Qwen3 4B: Mac M3 ~40 giây/hội thoại; Mac mini M1 chậm hơn khoảng 2–3 lần. Hội thoại không đổi được dùng lại,
+  hội thoại ngắn không cần nhắn bỏ qua bước tóm tắt chi tiết. Chất lượng model 3B kém Claude ở
+  hội thoại dài nhiều người — xem thử vài ngày rồi quyết định có đổi model/nâng RAM không.
+- Chạy bằng Node cũng dùng được (`npm start`), cần Node ≥ 20; bản đóng gói đã kèm thư viện Metal (`asarUnpack`).
+
 ### Dùng thử trên máy khác không có Docker
 
 Máy thử không cần máy chủ xác thực. Trên màn đăng nhập bấm **Bắt đầu dùng thử**: ứng dụng tự tạo danh tính và chuỗi mã hoá

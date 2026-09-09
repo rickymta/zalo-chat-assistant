@@ -74,4 +74,23 @@ họ. Mọi bí mật (phiên Telegram, mật khẩu IMAP, app_secret Lark, bot 
 
 ## 5. Trạng thái
 
-- 09/09/2026: hợp đồng viết xong; chờ người dùng xác nhận D1 (engine trong app thay vì ứng dụng Python riêng) rồi bắt đầu F1.
+- 09/09/2026: hợp đồng viết xong; người dùng chốt D1 (chạy model trong app).
+- 09/09/2026 (F1, đang hoàn thiện): `src/ai/{models,engine,prompts,pipeline}.js`, route `/api/ai/*`, thẻ Cài đặt "Bộ máy tổng hợp AI",
+  settings `aiEngine/aiModelUrl/aiModelPath/aiContextSize/aiIdleUnloadMinutes`, `asarUnpack` cho node-llama-cpp. Thử trên bản sao
+  22 hội thoại thật (Mac M3): nạp model 2 giây, ~29 giây/hội thoại, 18/22 có gợi ý. Bài học từ lượt đầu và cách xử lý:
+  (1) model 3B gán đồng nghiệp thành khách hàng và viết trả lời kiểu CSKH ⇒ prompt đặt "xác định quan hệ" lên trước, mặc định
+  dong-nghiep khi nội dung là việc nội bộ, quy tắc MedDental chỉ áp cho khach-hang, cấm "Chúng tôi"/"người dùng";
+  (2) 4 lượt vỡ JSON vì model lặp vô hạn trong một chuỗi (kể cả hội thoại 2 tin chứa danh thiếp JSON) ⇒ grammar có
+  `maxLength`/`maxItems`, sửa JSON bị cắt (`repairTruncatedJson`), thử lại với giới hạn cao hơn, danh thiếp JSON đổi thành một câu;
+  (3) tóm tắt ngắn ⇒ nén dòng tin "HH:MM Tên: nội dung" (bỏ URL) để vừa nhiều tin hơn, nâng giới hạn token đầu ra;
+  (4) Qwen2.5 3B vẫn sao chép ví dụ mẫu và gán đồng nghiệp thành khách ⇒ tách HAI BƯỚC (phân loại trung tính → tóm tắt theo quan hệ)
+  và so sánh 4 model trên 3 hội thoại đồng nghiệp (Văn Phương, Hoan Pham danh thiếp, Đinh Việt Hùng CRM), Mac M3:
+
+  | Model | Thời gian 3 hội thoại | Quan hệ | Bịa | Câu trả lời |
+  |---|---|---|---|---|
+  | Qwen2.5 3B Instruct Q4 | 47–58 s | sai (khách hàng) | nặng, chép ví dụ | kém, spam emoji |
+  | Gemma 3 4B it Q4 | 44 s | khac/ban-be, nhầm vai "Bạn" | không, nhưng timeline rỗng | chung chung |
+  | Gemma 4 E2B it Q4 | 46 s | 2/3 đúng, danh thiếp → khách | chào "em là trợ lý MedDental" | lẫn |
+  | **Qwen3 4B Instruct 2507 Q4** | 121 s | 3/3 hợp lý, có bằng chứng | không | tự nhiên, đúng giọng |
+
+  ⇒ **Mặc định Qwen3 4B Instruct 2507** (D1 cập nhật); Gemma 4 E2B giữ làm lựa chọn nhanh. Người dùng chốt "chọn model tốt nhất".

@@ -11,6 +11,7 @@ import { spawn } from 'node:child_process';
 import Fastify from 'fastify';
 import { updateWorkspaceData, clearWorkspaceData, workspaceInfo } from './workspace.js';
 import { listReportDates, loadReport, dayKeyVn, claudeEntryFor } from './reports.js';
+import { KNOWN_MODELS, listLocalModels } from './ai/models.js';
 
 const defaultPlatform = {
   name: 'node',
@@ -51,7 +52,7 @@ export function presetParams(preset, body = {}, settings = {}) {
   return p;
 }
 
-export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater }) {
+export function buildServer({ db, manager, log, settings, paths, platform = defaultPlatform, auth, security, events, automation, suggestions, power, updater, ai }) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024, forceCloseConnections: true });
   const sseClients = new Set();
 
@@ -75,6 +76,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
   events.on('suggestions', (d) => broadcast('suggestions', d));
   events.on('power', (d) => broadcast('power', d));
   events.on('update', (d) => broadcast('update', d));
+  events.on('ai', (d) => broadcast('ai', d));
   app.addHook('onClose', async () => { for (const res of sseClients) { try { res.end(); } catch { /* bỏ qua */ } } sseClients.clear(); });
 
   // ── Gác khoá: chưa mở khoá thì chỉ cho các đường công khai ─────────────────────
@@ -124,6 +126,7 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
       automation: automation?.status() ?? null,
       power: power?.status() ?? null,
       update: updater?.status() ?? null,
+      ai: ai ? { ...ai.engine.status(), pipeline: ai.pipeline.status() } : null,
       suggestions: unlocked ? (suggestions?.summary() ?? null) : null,
       now: Date.now(),
     };
@@ -335,6 +338,22 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     return updater.install();
   }));
 
+  // ── Bộ máy AI cục bộ (model chạy trong ứng dụng) ─────────────────────────────
+  const aiStatus = () => ({ ...ai.engine.status(), pipeline: ai.pipeline.status() });
+  const needAi = () => { if (!ai) throw Object.assign(new Error('Bộ máy AI chưa sẵn sàng.'), { status: 501 }); };
+  app.get('/api/ai/status', withUi(async () => { needAi(); return aiStatus(); }));
+  app.get('/api/ai/models', withUi(async () => { needAi(); return { items: KNOWN_MODELS, local: listLocalModels(ai.engine.modelsDir) }; }));
+  app.post('/api/ai/model/download', withUi(async (req) => {
+    needAi();
+    const url = String(req.body?.url || settings.load().aiModelUrl || '').trim();
+    if (!/^https:\/\/[^\s]+\.gguf$/i.test(url)) throw Object.assign(new Error('URL model không hợp lệ.'), { status: 400 });
+    void ai.engine.download({ url });
+    return aiStatus();
+  }));
+  app.post('/api/ai/model/cancel', withUi(async () => { needAi(); ai.engine.cancelDownload(); return aiStatus(); }));
+  app.post('/api/ai/run', withUi(async (req) => { needAi(); void ai.pipeline.run({ reason: 'người dùng bấm', force: !!req.body?.force }); return aiStatus(); }));
+  app.post('/api/ai/unload', withUi(async () => { needAi(); await ai.engine.unload('người dùng bấm'); return aiStatus(); }));
+
   // Sao chép vào clipboard hệ thống: trình duyệt nhúng có thể chặn navigator.clipboard → giao diện gọi về đây.
   app.post('/api/clipboard', async (req, reply) => {
     const text = String(req.body?.text ?? '');
@@ -384,6 +403,15 @@ export function buildServer({ db, manager, log, settings, paths, platform = defa
     if (Number.isFinite(Number(body.groupHistoryCount))) patch.groupHistoryCount = Math.min(Math.max(Number(body.groupHistoryCount), 20), 2000);
     if (typeof body.defaultPreset === 'string' && ['waiting', 'today', 'week', 'groups', 'all'].includes(body.defaultPreset)) patch.defaultPreset = body.defaultPreset;
     if (Number.isFinite(Number(body.autoUpdateMinutes))) patch.autoUpdateMinutes = Math.min(Math.max(Math.round(Number(body.autoUpdateMinutes)), 0), 1440);
+    if (typeof body.aiEngine === 'string' && ['local', 'cowork'].includes(body.aiEngine)) patch.aiEngine = body.aiEngine;
+    if (typeof body.aiModelUrl === 'string') {
+      const u = body.aiModelUrl.trim();
+      if (u && !/^https:\/\/[^\s]+\.gguf$/i.test(u)) return reply.code(400).send({ error: 'URL model phải là https:// và kết thúc bằng .gguf.' });
+      if (u) patch.aiModelUrl = u;
+    }
+    if (typeof body.aiModelPath === 'string') patch.aiModelPath = body.aiModelPath.trim();
+    if (Number.isFinite(Number(body.aiContextSize))) patch.aiContextSize = Math.min(Math.max(Math.round(Number(body.aiContextSize)), 2048), 32768);
+    if (Number.isFinite(Number(body.aiIdleUnloadMinutes))) patch.aiIdleUnloadMinutes = Math.min(Math.max(Math.round(Number(body.aiIdleUnloadMinutes)), 0), 1440);
     if (Number.isFinite(Number(body.quietMinutes))) patch.quietMinutes = Math.min(Math.max(Math.round(Number(body.quietMinutes)), 0), 120);
     const saved = settings.save(patch);
     automation?.schedule();

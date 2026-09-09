@@ -126,6 +126,9 @@ export function loadReport(root, db, date) {
     date,
     hasClaude: !!claude,
     claudeAt,
+    // Bộ máy đã viết báo cáo: 'local' (model trong ứng dụng, kèm tên model) hay Cowork — để giao diện ghi đúng nguồn.
+    engine: claude?.engine === 'local' ? 'local' : (claude ? 'cowork' : null),
+    model: claude?.model ?? null,
     mdPath: fs.existsSync(mdPath) ? mdPath : null,
     overview: {
       conversations: activity.rows.length,

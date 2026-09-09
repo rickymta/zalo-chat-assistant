@@ -16,6 +16,8 @@ export const DATA_DIR = process.env.ZCA_DATA_DIR
   : path.join(ROOT_DIR, 'data');
 export const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
 /** Ảnh/GIF/tệp người dùng gửi đi từ máy — bản sao để hiển thị lại trong ứng dụng (phục vụ qua /files/sent/). */
+/** Model GGUF cho bộ máy AI cục bộ (tải về lần đầu ~2 GB). */
+export const MODELS_DIR = path.join(DATA_DIR, 'models');
 export const SENT_DIR = path.join(DATA_DIR, 'sent');
 export const EXPORTS_DIR = process.env.ZCA_EXPORTS_DIR
   ? path.resolve(process.env.ZCA_EXPORTS_DIR)
@@ -66,6 +68,16 @@ const DEFAULT_SETTINGS = Object.freeze({
   skippedVersion: '',
   /** Tự kiểm tra bản cập nhật lúc khởi động (sau 20 giây) và mỗi 6 giờ. */
   autoCheckUpdates: true,
+  /** Bộ máy tổng hợp: 'local' = model chạy ngay trong ứng dụng (node-llama-cpp); 'cowork' = Claude Cowork đọc thư mục làm việc. */
+  aiEngine: 'local',
+  /** URL tệp .gguf (mặc định Qwen3 4B Instruct 2507 Q4_K_M ~2,5 GB — tốt nhất trong tầm máy 8 GB). Tệp tải về data/models/. */
+  aiModelUrl: 'https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+  /** Đường dẫn tệp .gguf sẵn có trên máy (ưu tiên hơn URL nếu tồn tại). */
+  aiModelPath: '',
+  /** Ngữ cảnh model (token). 8192 đủ cho hội thoại dài sau khi cắt; máy 8 GB không nên vượt 8192. */
+  aiContextSize: 8192,
+  /** Giải phóng model khỏi RAM sau N phút rảnh (0 = giữ luôn). */
+  aiIdleUnloadMinutes: 10,
 });
 
 export function ensureDirs() {

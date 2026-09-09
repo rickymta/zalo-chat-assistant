@@ -118,6 +118,17 @@
     </div>
 
     <div class="card">
+      <h2>Bộ máy tổng hợp AI</h2>
+      <p class="desc"><b>AI cục bộ</b>: model chạy ngay trong ứng dụng, không cần Claude, dữ liệu không rời máy; lần đầu cần tải model (~2 GB), máy 8 GB dùng model 3B. <b>Claude Cowork</b>: dùng lịch Cowork như trước (khi chọn AI cục bộ hãy tạm dừng lịch Cowork để hai bên không ghi đè nhau).</p>
+      <div class="setting"><div class="txt"><b>Bộ máy</b></div><select id="setAiEngine"><option value="local">AI cục bộ (trong ứng dụng)</option><option value="cowork">Claude Cowork</option></select></div>
+      <div class="setting"><div class="txt"><b>Model</b><span>Đổi model xong bấm "Lưu tuỳ chọn" rồi "Tải model".</span></div><select id="setAiModel" style="max-width:380px"></select></div>
+      <div class="setting" id="setAiModelUrlRow" hidden><div class="txt"><b>URL tệp .gguf</b></div><input type="text" id="setAiModelUrl" placeholder="https://huggingface.co/…/ten-model.gguf" style="width:340px"></div>
+      <div class="kv" id="aiKv" style="margin-top:10px"></div>
+      <div class="upd-prog" id="aiProg" hidden style="display:block;width:100%;height:8px;margin:10px 0 0"><i></i></div>
+      <div class="row" style="margin-top:12px"><button class="primary" id="btnAiDownload">⬇️ Tải model</button><button id="btnAiRun">▶️ Tổng hợp ngay</button><button class="sm" id="btnAiUnload">Giải phóng bộ nhớ</button><span class="small muted" id="aiMsg"></span></div>
+    </div>
+
+    <div class="card">
       <h2>Thư mục làm việc với Claude Cowork</h2>
       <p class="desc">Trỏ Claude Cowork vào đúng thư mục này một lần. Ứng dụng giữ hướng dẫn trong <code>huong-dan/</code>, ghi dữ liệu đã giải mã vào <code>du-lieu/</code>, Claude ghi kết quả vào <code>ket-qua/</code>.</p>
       <div class="kv" id="wsKv"></div>

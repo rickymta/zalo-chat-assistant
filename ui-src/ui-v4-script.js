@@ -61,7 +61,7 @@
   // ── Trạng thái chung ──────────────────────────────────────────────────────
   async function refreshState() {
     const s = await api('/api/state');
-    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update });
+    Object.assign(state, { locked: s.locked, auth: s.auth, security: s.security, accounts: s.accounts, stats: s.stats || {}, settings: s.settings, paths: s.paths, platform: s.platform, workspace: s.workspace, automation: s.automation, suggestionsSummary: s.suggestions, power: s.power, update: s.update, ai: s.ai });
     if (s.locked) { showLogin(); return; }
     const justUnlocked = $('#appView').hidden;
     showApp();
@@ -700,7 +700,7 @@
     $('#setGifKey').value = s.gifApiKey || '';
     const pw = state.power; $('#setKeepAwakeRow').hidden = !pw?.supported; $('#setKeepAwake').checked = !!s.keepAwake;
     $('#keepAwakeState').textContent = pw?.supported ? (pw.active ? '· Đang hoạt động.' : (s.keepAwake ? '· Chưa kích hoạt — lưu tuỳ chọn để bật.' : '· Đang tắt.')) : '';
-    renderUpdateSettings();
+    renderUpdateSettings(); renderAiSettings();
     $('#pathData').textContent = state.paths.dataDir || '';
     $('#verText').textContent = state.platform?.version ? '· phiên bản ' + state.platform.version : '';
   }
@@ -733,7 +733,57 @@
     });
   };
   $('#btnUpdNotes').onclick = openUpdateDialog;
-  function openSettings() { renderSettings(); $('#dlgSettings').showModal(); }
+  // ── Bộ máy tổng hợp AI (model trong ứng dụng) ───────────────────────────────
+  let aiModels = null; let aiPoll = null;
+  function aiModelUrlValue() { const sel = $('#setAiModel').value; return sel === 'custom' ? $('#setAiModelUrl').value.trim() : sel; }
+  async function ensureAiModels() { if (aiModels) return aiModels; try { aiModels = (await api('/api/ai/models')).items || []; } catch { aiModels = []; } return aiModels; }
+  function renderAiSettings() {
+    const s = state.settings || {}; const a = state.ai || {}; const p = a.pipeline || {}; const d = a.download || {};
+    $('#setAiEngine').value = s.aiEngine === 'cowork' ? 'cowork' : 'local';
+    const sel = $('#setAiModel'); const known = aiModels || [];
+    const cur = s.aiModelUrl || '';
+    const isKnown = known.some((m) => m.url === cur);
+    sel.innerHTML = known.map((m) => '<option value="' + esc(m.url) + '">' + esc(m.label) + '</option>').join('') + '<option value="custom">Tệp .gguf khác (nhập URL)…</option>';
+    sel.value = isKnown ? cur : 'custom';
+    $('#setAiModelUrlRow').hidden = sel.value !== 'custom';
+    if (!isKnown) $('#setAiModelUrl').value = cur;
+    let modelLine;
+    if (d.phase === 'downloading') modelLine = '⬇️ Đang tải ' + (d.total ? Math.round((d.progress || 0) * 100) + '% · ' + fmtBytes(d.received || 0) + ' / ' + fmtBytes(d.total) : fmtBytes(d.received || 0));
+    else if (d.phase === 'error') modelLine = '⚠️ Tải lỗi: ' + esc(d.error || '');
+    else if (a.modelFile) modelLine = '✅ Đã có trên máy: <code>' + esc(a.modelFile.split('/').pop()) + '</code>';
+    else modelLine = '⚠️ Chưa có trên máy — bấm "Tải model".';
+    const run = p.running ? ('⏳ ' + (p.phase === 'loading' ? 'Đang nạp model…' : p.phase === 'overview' ? 'Đang viết tổng quan ngày…' : p.phase === 'writing' ? 'Đang ghi kết quả…' : (p.current ? 'Hội thoại ' + p.current.index + '/' + p.current.total + ': ' + esc(p.current.name) : 'Đang chạy…')))
+      : (p.lastError ? '⚠️ ' + esc(p.lastError) : (p.lastRunAt ? '✅ ' + fmtTime(p.lastRunAt) + (p.lastResult ? ' · ' + p.lastResult.conversations + ' hội thoại (' + p.lastResult.reused + ' dùng lại), ' + p.lastResult.withReply + ' gợi ý' : '') + (p.lastDurationMs ? ' · ' + Math.round(p.lastDurationMs / 1000) + 's' : '') : 'chưa chạy'));
+    const st = a.stats || {};
+    $('#aiKv').innerHTML = '<div>Model</div><div>' + modelLine + '</div>'
+      + '<div>Trạng thái model</div><div>' + (a.loading ? '⏳ đang nạp' : a.loaded ? '🟢 đang trong bộ nhớ (' + esc(a.gpu || '') + ', ngữ cảnh ' + (a.contextSize || '') + ')' : '⚪ chưa nạp (tự nạp khi cần, giải phóng sau ' + (s.aiIdleUnloadMinutes ?? 10) + ' phút rảnh)') + (a.lastError && !p.running ? ' <span class="muted small">· ' + esc(a.lastError) + '</span>' : '') + '</div>'
+      + '<div>Lần tổng hợp gần nhất</div><div>' + run + '</div>'
+      + (st.runs ? '<div>Hiệu năng</div><div>' + st.runs + ' lượt · ' + (st.ms ? Math.round(st.tokens / (st.ms / 1000)) : 0) + ' token/giây</div>' : '');
+    const prog = $('#aiProg'); const showProg = d.phase === 'downloading' || (p.running && p.total);
+    prog.hidden = !showProg; if (showProg) prog.querySelector('i').style.width = Math.round(100 * (d.phase === 'downloading' ? (d.progress || 0) : (p.done / Math.max(1, p.total)))) + '%';
+    $('#btnAiDownload').textContent = d.phase === 'downloading' ? '⏹ Dừng tải' : (a.modelFile ? '⬇️ Tải lại model' : '⬇️ Tải model');
+    $('#btnAiRun').disabled = !!p.running || d.phase === 'downloading';
+    $('#btnAiUnload').disabled = !a.loaded;
+    clearTimeout(aiPoll);
+    if (d.phase === 'downloading' || p.running || a.loading) aiPoll = setTimeout(async () => { try { state.ai = await api('/api/ai/status'); renderAiSettings(); } catch { /* bỏ qua */ } }, 800);
+  }
+  $('#setAiModel').addEventListener('change', () => { $('#setAiModelUrlRow').hidden = $('#setAiModel').value !== 'custom'; });
+  $('#btnAiDownload').onclick = async () => {
+    $('#aiMsg').textContent = '';
+    try {
+      if (state.ai?.download?.phase === 'downloading') { state.ai = await api('/api/ai/model/cancel', { method: 'POST' }); renderAiSettings(); return; }
+      const url = aiModelUrlValue(); if (!url) { toast('Chưa có URL model.'); return; }
+      if (url !== state.settings.aiModelUrl) { await api('/api/settings', { method: 'POST', body: { aiModelUrl: url } }); await refreshState(); }
+      state.ai = await api('/api/ai/model/download', { method: 'POST', body: { url } }); renderAiSettings();
+    } catch (err) { toast(err.message); }
+  };
+  $('#btnAiRun').onclick = async () => {
+    $('#aiMsg').textContent = '';
+    try { state.ai = await api('/api/ai/run', { method: 'POST', body: {} }); renderAiSettings(); toast('Đang tổng hợp bằng AI cục bộ — chạy nền, xem tiến độ ở đây.'); }
+    catch (err) { toast(err.message); }
+  };
+  $('#btnAiUnload').onclick = async () => { try { state.ai = await api('/api/ai/unload', { method: 'POST' }); renderAiSettings(); } catch (err) { toast(err.message); } };
+  function openSettings() { void ensureAiModels().then(() => renderAiSettings()); renderSettings(); $('#dlgSettings').showModal(); }
   $('#btnSettings').onclick = openSettings;
   $('#accountRows').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
@@ -752,7 +802,7 @@
   $('#btnAddAccount').onclick = openQr;
   $('#btnSettingsSave').onclick = async () => {
     try {
-      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, gifApiKey: $('#setGifKey').value.trim(), autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim() };
+      const body = { includeGroups: $('#setGroups').checked, syncOldOnConnect: $('#setSyncOld').checked, waitingHours: Number($('#setWaitingHours').value), groupHistoryCount: Number($('#setGroupCount').value), includeExcel: $('#setExcel').checked, defaultPreset: $('#setPreset').value, autoUpdateMinutes: Number($('#setAutoMinutes').value), quietMinutes: Number($('#setQuietMinutes').value), keepAwake: $('#setKeepAwake').checked, gifApiKey: $('#setGifKey').value.trim(), autoCheckUpdates: $('#setAutoCheckUpdates').checked, updateServerUrl: $('#setUpdateServerUrl').value.trim(), aiEngine: $('#setAiEngine').value, aiModelUrl: aiModelUrlValue() };
       if (!$('#setAutoStartRow').hidden) body.autoStart = $('#setAutoStart').checked;
       await api('/api/settings', { method: 'POST', body }); toast('Đã lưu tuỳ chọn.'); await refreshState();
     } catch (err) { toast(err.message); }
@@ -795,7 +845,8 @@
   }
   async function loadReport() {
     const r = await api('/api/report?date=' + encodeURIComponent(report.date)); report.data = r;
-    const srcText = r.hasClaude ? 'Tổng hợp bởi Claude lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp của Claude cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
+    const engineName = r.engine === 'local' ? 'AI cục bộ' + (r.model ? ' (' + esc(String(r.model).replace(/\.gguf$/i, '')) + ')' : '') : 'Claude';
+    const srcText = r.hasClaude ? 'Tổng hợp bởi ' + engineName + ' lúc ' + fmtTime(r.claudeAt) : 'Chưa có bản tổng hợp cho ngày này — đang hiện số liệu từ ứng dụng' + (r.conversations.some((c) => c.claude) ? ' + tóm tắt từ gợi ý gần nhất' : '');
     $('#rpSource').textContent = srcText; $('#rpSource').title = srcText;
     $('#rpOpenMd').hidden = !r.mdPath; $('#rpOpenMd').onclick = () => api('/api/open', { method: 'POST', body: { path: r.mdPath } }).catch((e) => toast(e.message));
     renderLevelSeg(); renderReportBody(r);
@@ -890,7 +941,7 @@
   function connectEvents() {
     const es = new EventSource('/api/events');
     es.onopen = () => { esRetry = 3000; };
-    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
+    ['message', 'status', 'progress', 'auth', 'security', 'workspace', 'suggestions', 'power', 'update', 'ai'].forEach((ev) => es.addEventListener(ev, () => scheduleReload(ev)));
     es.addEventListener('qr', (e) => { try { const d = JSON.parse(e.data); if (d.key === state.qrKey) showQr(d); } catch { /* bỏ qua */ } });
     es.onerror = () => { es.close(); setTimeout(connectEvents, esRetry); esRetry = Math.min(esRetry * 2, 30000); };
   }
