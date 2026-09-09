@@ -20,7 +20,7 @@ ONLY=${4:-all}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 DIST="$ROOT/dist"
 # Tên sản phẩm lấy từ package.json (đổi tên app là script tự theo).
-PROD=$(node -e 'console.log(require("'"$ROOT"'/package.json").productName)')
+PROD=$(node -e 'const p=require("'"$ROOT"'/package.json"); console.log((p.build&&p.build.productName)||p.productName)')
 ARM="$DIST/$PROD-$VER-arm64.dmg"
 X64="$DIST/$PROD-$VER-x64.dmg"
 WIN="$DIST/$PROD-Setup-$VER-x64.exe"
