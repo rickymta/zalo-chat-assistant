@@ -129,7 +129,9 @@ services:
       - certbot-www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
     # Nạp lại cert đã gia hạn mỗi 6h; nginx chạy nền chính.
-    command: sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g 'daemon off;'"
+    # ⚠️ PHẢI exec qua /docker-entrypoint.sh: entrypoint của ảnh chỉ render templates/*.template → conf.d khi $1 là `nginx`;
+    #    `exec nginx` trực tiếp làm nginx chạy default.conf gốc (server_name localhost) → ACME 404, không cert nào xin được.
+    command: sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g 'daemon off;'"
 
   # Xin và tự gia hạn chứng chỉ Let's Encrypt (webroot). Thử mỗi 12h (không tới hạn thì bỏ qua).
   certbot:

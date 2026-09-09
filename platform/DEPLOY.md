@@ -73,6 +73,13 @@ docker compose up -d                    # lần đầu: dựng ảnh api + web t
 cd platform && bash deploy/nginx-edge/init-letsencrypt.sh    # cần DNS đã trỏ + cổng 80/443 mở + .env có DOMAIN/ADMIN_DOMAIN/ACME_EMAIL
 ```
 Sau bước này, các lần sau chỉ cần `docker compose up -d`; `certbot` tự gia hạn mỗi 12h và nginx tự nạp lại cert mỗi 6h. Cấu hình routing ở `deploy/nginx-edge/templates/default.conf.template` (một cert phủ cả `DOMAIN`, `www.DOMAIN`, `ADMIN_DOMAIN`). File `deploy/caddy/Caddyfile` giữ lại chỉ để tham chiếu, không còn dùng.
+
+**Tên miền mail (`MAIL_DOMAIN`, mặc định `mail.<DOMAIN>`)** do `deploy/nginx-edge/templates/mail.conf.template` điều hướng tới webmail
+Roundcube của stack mail riêng (`/opt/mail` trên server, container `roundcube` tham gia mạng `platform_default`). Tên này dùng
+**chứng chỉ riêng** (`/etc/letsencrypt/live/<MAIL_DOMAIN>/`, chung volume `letsencrypt` với mailserver): bootstrap tạo cert tạm để
+nginx boot được, cert thật xin bằng `bash deploy/nginx-edge/issue-mail-cert.sh` sau khi DNS A của tên mail đã trỏ về máy (KHÔNG bật
+proxy Cloudflare cho tên này — SMTP/IMAP không đi qua Cloudflare được). Gia hạn về sau cũng do `certbot` lo. Lưu ý: service
+`certbot` có entrypoint là vòng lặp renew, nên mọi lệnh certbot chạy một lần phải kèm `--entrypoint certbot`.
 ```bash
 docker compose ps                        # 5 container: zca-mongo, zca-api, zca-web, zca-admin (healthy), zca-edge — thiếu zca-edge là chưa có cổng vào
 docker compose logs -f edge              # xem Caddy xin chứng chỉ: "certificate obtained successfully" cho 3 tên

@@ -1,23 +1,47 @@
-# ── Tên miền phụ để TEST email: mail.volcanion.vn -> dịch vụ ở 8090.
-# LƯU Ý: nginx chạy TRONG container, nên KHÔNG dùng 127.0.0.1 (đó là chính container). Chọn một trong hai:
-#   • Dịch vụ 8090 chạy TRỰC TIẾP trên máy chủ  -> dùng host.docker.internal (đã mở qua extra_hosts của service edge).
-#   • Dịch vụ 8090 là một CONTAINER cùng compose -> đổi thành tên service, ví dụ proxy_pass http://mail:8090;
+# ── Tên miền mail ${MAIL_DOMAIN} (mặc định mail.<DOMAIN>) → webmail Roundcube.
+#   Roundcube là container `roundcube` của stack mail (/opt/mail trên server), tham gia mạng platform_default
+#   nên nginx gọi thẳng theo tên — KHÔNG đi qua host.docker.internal.
+#   Chứng chỉ RIÊNG cho tên này ở /etc/letsencrypt/live/${MAIL_DOMAIN}/ — xin bằng:
+#       bash deploy/nginx-edge/issue-mail-cert.sh
+#   (init-letsencrypt.sh tạo cert tạm để nginx boot được khi chưa xin; service certbot gia hạn chung;
+#    mailserver ở /opt/mail đọc chung volume letsencrypt.)
+
+# HTTP: cho ACME kiểm chứng + đẩy sang HTTPS
 server {
     listen 80;
     listen [::]:80;
     server_name ${MAIL_DOMAIN};
-
-    # Cho certbot kiểm chứng nếu sau này muốn bật HTTPS cho tên miền này.
     location /.well-known/acme-challenge/ { root /var/www/certbot; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+# Webmail
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${MAIL_DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${MAIL_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${MAIL_DOMAIN}/privkey.pem;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    server_tokens off;
 
     client_max_body_size 50m;
 
     location / {
-        proxy_pass         http://host.docker.internal:8090;
+        # Phân giải tên container lúc có request — edge vẫn khởi động được khi stack mail chưa chạy
+        resolver 127.0.0.11 valid=30s;
+        set $roundcube http://roundcube:80;
+        proxy_pass         $roundcube;
         proxy_http_version 1.1;
+        proxy_set_header   Connection        "";
         proxy_set_header   Host              $host;
         proxy_set_header   X-Real-IP         $remote_addr;
         proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   X-Forwarded-Proto https;
     }
 }

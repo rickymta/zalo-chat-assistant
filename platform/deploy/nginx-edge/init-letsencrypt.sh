@@ -11,6 +11,7 @@ DOMAIN="${DOMAIN:?Cần DOMAIN trong .env}"
 ADMIN_DOMAIN="${ADMIN_DOMAIN:-admin.$DOMAIN}"
 EMAIL="${ACME_EMAIL:-admin@$DOMAIN}"
 DC="docker compose"
+# Service certbot có entrypoint là vòng lặp renew → lệnh certbot một lần phải ghi đè --entrypoint certbot.
 
 echo "→ Domain: $DOMAIN, $ADMIN_DOMAIN  · email: $EMAIL"
 
@@ -23,6 +24,17 @@ $DC run --rm --entrypoint "sh -c '\
     -out    /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
     -subj /CN=$DOMAIN'" certbot
 
+# 1b) Tên miền mail (mail.conf.template cần cert riêng /live/$MAIL_DOMAIN). Chưa có thì tạo tạm để nginx boot;
+#     cert thật xin sau bằng: bash deploy/nginx-edge/issue-mail-cert.sh
+MAIL_DOMAIN="${MAIL_DOMAIN:-mail.$DOMAIN}"
+$DC run --rm --entrypoint "sh -c '\
+  [ -f /etc/letsencrypt/live/$MAIL_DOMAIN/fullchain.pem ] && exit 0; \
+  mkdir -p /etc/letsencrypt/live/$MAIL_DOMAIN && \
+  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+    -keyout /etc/letsencrypt/live/$MAIL_DOMAIN/privkey.pem \
+    -out    /etc/letsencrypt/live/$MAIL_DOMAIN/fullchain.pem \
+    -subj /CN=$MAIL_DOMAIN'" certbot
+
 # 2) Bật nginx (đọc cert tạm).
 echo "→ Khởi động web, admin, api, edge…"
 $DC up -d api web admin edge
@@ -34,7 +46,7 @@ if [ "$DOMAIN" = "localhost" ]; then
 else
   echo "→ Xoá cert tạm rồi xin Let's Encrypt…"
   $DC run --rm --entrypoint "sh -c 'rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf'" certbot || true
-  $DC run --rm certbot certonly --webroot -w /var/www/certbot \
+  $DC run --rm --entrypoint certbot certbot certonly --webroot -w /var/www/certbot \
     --email "$EMAIL" --agree-tos --no-eff-email --non-interactive --keep-until-expiring \
     -d "$DOMAIN" -d "www.$DOMAIN" -d "$ADMIN_DOMAIN"
   echo "→ Nạp lại nginx với cert thật…"
