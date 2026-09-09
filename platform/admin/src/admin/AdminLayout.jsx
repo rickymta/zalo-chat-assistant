@@ -28,7 +28,7 @@ export default function AdminLayout() {
           </span>
           <span>
             <b>Quản trị</b>
-            <span>Zalo Chat Assistant</span>
+            <span>Chat Assistant</span>
           </span>
         </Link>
 

@@ -32,7 +32,7 @@ const DEFAULT_FEATURES = [
   {
     icon: '🗂️',
     title: 'Thư mục làm việc gọn gàng',
-    text: 'Hội thoại xuất ra Markdown/CSV/Excel trong ~/Documents/Zalo Chat Assistant để Claude đọc.',
+    text: 'Hội thoại xuất ra Markdown/CSV/Excel trong ~/Documents/Chat Assistant để Claude đọc.',
   },
   {
     icon: '🔄',
@@ -183,7 +183,7 @@ export default function Home() {
               <span className="n">4</span>
               <b>Trỏ Claude Cowork</b>
               <p>
-                Trỏ Cowork vào <code>~/Documents/Zalo Chat Assistant</code> một lần, rồi bấm 📁 Cập
+                Trỏ Cowork vào <code>~/Documents/Chat Assistant</code> một lần, rồi bấm 📁 Cập
                 nhật dữ liệu cho Claude.
               </p>
             </div>

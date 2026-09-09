@@ -21,7 +21,7 @@ import crypto from 'node:crypto';
 
 const PORT = Number(process.env.PORT ?? 4796);
 const HOST = '127.0.0.1';
-const FILE_BODY = Buffer.from('Zalo Chat Assistant — file .dmg GIẢ dùng để thử luồng cập nhật.\n');
+const FILE_BODY = Buffer.from('Chat Assistant — file .dmg GIẢ dùng để thử luồng cập nhật.\n');
 
 const mode = {
   version: process.env.MOCK_VERSION || '9.9.9',

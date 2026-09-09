@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 const schema = new mongoose.Schema(
   {
     _id: { type: String, default: 'site' },
-    appName: { type: String, default: 'Zalo Chat Assistant' },
+    appName: { type: String, default: 'Chat Assistant' },
     tagline: { type: String, default: '' },
     hero: {
       title: { type: String, default: '' },

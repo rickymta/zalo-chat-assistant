@@ -1,5 +1,5 @@
 /**
- * Điểm khởi động API nền tảng Zalo Chat Assistant.
+ * Điểm khởi động API nền tảng Chat Assistant.
  * Thứ tự bắt buộc: nạp cấu hình (fail-fast) → tạo thư mục dữ liệu → nối MongoDB → mới mở cổng.
  * Mở cổng trước khi có DB sẽ trả 500 hàng loạt trong vài giây đầu và làm health check hiểu nhầm là "sống".
  */

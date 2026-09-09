@@ -264,7 +264,7 @@ export async function startApp({ platform, port = PORT } = {}) {
 
   await server.listen({ port, host: HOST });
   const url = `http://${HOST}:${port}/`;
-  log.info(`Zalo Chat Assistant đang chạy tại ${url} — dữ liệu ở ${DATA_DIR} — thư mục Claude: ${WORKSPACE_DIR}`);
+  log.info(`Chat Assistant đang chạy tại ${url} — dữ liệu ở ${DATA_DIR} — thư mục Claude: ${WORKSPACE_DIR}`);
 
   power.applyKeepAwake();
   // Kiểm tra bản cập nhật không cần đăng nhập/mở khoá: 20 giây sau khi khởi động rồi mỗi 6 giờ.

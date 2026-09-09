@@ -145,7 +145,7 @@ export default function SiteAdmin() {
                 type="text"
                 value={form.appName}
                 onChange={(e) => setField(['appName'], e.target.value)}
-                placeholder="Zalo Chat Assistant"
+                placeholder="Chat Assistant"
               />
             </div>
             <div className="fld">
@@ -172,7 +172,7 @@ export default function SiteAdmin() {
                 type="text"
                 value={form.hero.title}
                 onChange={(e) => setField(['hero', 'title'], e.target.value)}
-                placeholder="Zalo Chat Assistant"
+                placeholder="Chat Assistant"
               />
             </div>
             <div className="fld">

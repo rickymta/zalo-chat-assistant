@@ -9,10 +9,10 @@ import { get } from './api.js';
 const SiteCtx = createContext(null);
 
 const FALLBACK = {
-  appName: 'Zalo Chat Assistant',
+  appName: 'Chat Assistant',
   tagline: 'Trợ lý hội thoại Zalo cho tư vấn viên',
   hero: {
-    title: 'Zalo Chat Assistant',
+    title: 'Chat Assistant',
     subtitle:
       'Kết nối Zalo cá nhân bằng mã QR, lưu mọi tin nhắn vào máy ở dạng mã hoá, để Claude Cowork tổng hợp hội thoại và đề xuất câu trả lời.',
   },

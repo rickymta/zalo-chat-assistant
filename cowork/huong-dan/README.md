@@ -1,6 +1,6 @@
 # Thư mục `huong-dan/` — bộ chỉ dẫn cho Claude Cowork
 
-Bộ tài liệu này được ứng dụng **tự chép** vào thư mục làm việc `~/Documents/Zalo Chat Assistant/huong-dan/` mỗi lần
+Bộ tài liệu này được ứng dụng **tự chép** vào thư mục làm việc `~/Documents/Chat Assistant/huong-dan/` mỗi lần
 khởi động: người dùng trỏ Claude Cowork vào thư mục làm việc một lần và nhắn *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp các hội thoại đang chờ
 trả lời và đề xuất phản hồi."*
 

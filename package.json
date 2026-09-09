@@ -1,8 +1,8 @@
 {
   "name": "zalo-chat-assistant",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.3",
   "private": true,
-  "description": "Đăng nhập Zalo cá nhân bằng QR, lưu tin nhắn vào SQLite, xuất gói Markdown/Excel để Claude Cowork tổng hợp và đề xuất phản hồi",
+  "description": "Chat Assistant — lưu tin nhắn Zalo và Telegram (mã hoá) trên máy, tổng hợp bằng AI cục bộ, gợi ý trả lời, bản tin giọng nói.",
   "type": "module",
   "main": "electron/main.js",
   "author": "MedDental",
@@ -30,8 +30,8 @@
     "zca-js": "^2.1.2"
   },
   "build": {
-    "appId": "vn.meddental.zalo-chat-assistant",
-    "productName": "Zalo Chat Assistant",
+    "appId": "vn.meddental.chat-assistant",
+    "productName": "Chat Assistant",
     "copyright": "MedDental",
     "asar": true,
     "npmRebuild": false,
@@ -96,7 +96,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "Zalo Chat Assistant",
+      "shortcutName": "Chat Assistant",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "asarUnpack": [

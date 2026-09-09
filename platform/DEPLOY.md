@@ -134,7 +134,7 @@ curl -s https://volcanion.vn/api/site | head -c 200                # nginx trong
 docker compose exec api wget -qO- http://127.0.0.1:4789/health   # health của api xem từ trong máy chủ
 curl -s "https://volcanion.vn/api/releases/latest?platform=darwin&arch=arm64" | head -c 300
 curl -sI https://volcanion.vn/admin | head -1              # 404 — khu quản trị không phục vụ ở tên miền chính
-curl -sI https://admin.volcanion.vn/ | head -1              # 200 — app quản trị (tiêu đề "Quản trị · Zalo Chat Assistant")
+curl -sI https://admin.volcanion.vn/ | head -1              # 200 — app quản trị (tiêu đề "Quản trị · Chat Assistant")
 curl -sI https://admin.volcanion.vn/dang-ky | head -1       # 302 → /dang-nhap (không đăng ký ở khu quản trị)
 curl -sI http://volcanion.vn/ | head -1                     # 308 → https
 ss -ltnp | grep -E '4789|4790|4792'                         # phải là 127.0.0.1:… (không lộ ra ngoài)

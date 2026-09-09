@@ -2,9 +2,9 @@
 
 ## 1. Thư mục làm việc là gì
 
-Ứng dụng **Zalo Chat Assistant** chạy trên máy Mac của tư vấn viên, đăng nhập Zalo cá nhân (quét QR) và lưu mọi tin nhắn
+Ứng dụng **Chat Assistant** chạy trên máy Mac của tư vấn viên, đăng nhập Zalo cá nhân (quét QR) và lưu mọi tin nhắn
 đến/đi vào một cơ sở dữ liệu SQLite **đã mã hoá**. Ứng dụng tạo và duy trì MỘT thư mục làm việc cố định
-(`~/Documents/Zalo Chat Assistant/`) — người dùng trỏ Claude Cowork vào đó một lần là đủ:
+(`~/Documents/Chat Assistant/`) — người dùng trỏ Claude Cowork vào đó một lần là đủ:
 
 | Đường dẫn | Nội dung | Bạn dùng để |
 |---|---|---|

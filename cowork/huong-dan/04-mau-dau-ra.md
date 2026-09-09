@@ -100,7 +100,7 @@ Nhóm không có việc của mình và không có câu hỏi hướng tới mì
 
 ## E. BẮT BUỘC kèm file máy đọc `ket-qua/de-xuat.json`
 
-Ứng dụng Zalo Chat Assistant đọc file này để hiện gợi ý **ngay trong màn Hội thoại** (tư vấn viên bấm là điền sẵn vào ô
+Ứng dụng Chat Assistant đọc file này để hiện gợi ý **ngay trong màn Hội thoại** (tư vấn viên bấm là điền sẵn vào ô
 soạn tin). Mỗi lần bàn giao, ngoài file `.md` ở mục A–D, **ghi đè** `ket-qua/de-xuat.json` với cấu trúc:
 
 ```json

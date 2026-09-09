@@ -46,7 +46,7 @@ export default function Download() {
     <div className="wrap">
       <div className="stack">
         <div>
-          <h1>Tải Zalo Chat Assistant</h1>
+          <h1>Tải Chat Assistant</h1>
           <p className="muted" style={{ marginTop: 8 }}>
             Ứng dụng chạy trên máy của bạn. Cài xong, đăng nhập tài khoản rồi quét mã QR Zalo là dùng
             được.
@@ -96,7 +96,7 @@ function MainDownload({ target, release }) {
         <div className="warnbox">
           <b>Máy bạn đang dùng không cài được ứng dụng.</b>
           <p style={{ marginTop: 6 }}>
-            Zalo Chat Assistant là ứng dụng cho máy tính (macOS hoặc Windows). Bạn đang mở trang này
+            Chat Assistant là ứng dụng cho máy tính (macOS hoặc Windows). Bạn đang mở trang này
             trên {target.label || 'thiết bị di động'}. Hãy mở lại trang này trên máy tính, hoặc chọn
             bản cài bên dưới rồi chép sang máy tính.
           </p>
@@ -195,7 +195,7 @@ function InstallNotes({ platform }) {
           <h3>🍎 macOS</h3>
           <ol className="prose" style={{ paddingLeft: 22, marginTop: 10 }}>
             <li>
-              Mở file <code>.dmg</code> vừa tải, kéo <b>Zalo Chat Assistant</b> vào thư mục{' '}
+              Mở file <code>.dmg</code> vừa tải, kéo <b>Chat Assistant</b> vào thư mục{' '}
               <b>Applications</b>.
             </li>
             <li>
@@ -205,8 +205,8 @@ function InstallNotes({ platform }) {
             <li>
               Vẫn bị chặn? Mở Terminal và chạy:
               <div className="row" style={{ marginTop: 8 }}>
-                <code>xattr -dr com.apple.quarantine "/Applications/Zalo Chat Assistant.app"</code>
-                <CopyButton value={'xattr -dr com.apple.quarantine "/Applications/Zalo Chat Assistant.app"'} />
+                <code>xattr -dr com.apple.quarantine "/Applications/Chat Assistant.app"</code>
+                <CopyButton value={'xattr -dr com.apple.quarantine "/Applications/Chat Assistant.app"'} />
               </div>
             </li>
             <li>
@@ -237,8 +237,8 @@ function InstallNotes({ platform }) {
               <b>Thông tin thêm</b> (More info) → <b>Vẫn chạy</b> (Run anyway).
             </li>
             <li>
-              Thư mục dữ liệu của ứng dụng: <code>%APPDATA%\Zalo Chat Assistant\data</code>. Thư mục
-              làm việc cho Claude: <code>C:\Users\&lt;tên&gt;\Documents\Zalo Chat Assistant</code>.
+              Thư mục dữ liệu của ứng dụng: <code>%APPDATA%\Chat Assistant\data</code>. Thư mục
+              làm việc cho Claude: <code>C:\Users\&lt;tên&gt;\Documents\Chat Assistant</code>.
             </li>
           </ol>
           <div className="warnbox" style={{ marginTop: 12 }}>
@@ -264,7 +264,7 @@ function InstallNotes({ platform }) {
             tin nhắn.
           </li>
           <li>
-            Trỏ Claude Cowork vào thư mục <code>~/Documents/Zalo Chat Assistant</code> rồi bấm{' '}
+            Trỏ Claude Cowork vào thư mục <code>~/Documents/Chat Assistant</code> rồi bấm{' '}
             <b>📁 Cập nhật dữ liệu cho Claude</b>.
           </li>
         </ol>

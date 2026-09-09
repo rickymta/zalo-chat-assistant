@@ -29,7 +29,7 @@ export default function Guide() {
               bằng Zalo trên điện thoại.
             </li>
             <li>
-              Trỏ Claude Cowork vào thư mục <code>~/Documents/Zalo Chat Assistant</code>, bấm{' '}
+              Trỏ Claude Cowork vào thư mục <code>~/Documents/Chat Assistant</code>, bấm{' '}
               <b>📁 Cập nhật dữ liệu cho Claude</b>, rồi nhờ Claude tổng hợp hội thoại.
             </li>
             <li>

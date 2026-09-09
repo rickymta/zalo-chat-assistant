@@ -31,7 +31,7 @@ export default function Posts() {
         <div>
           <h1>Bài viết</h1>
           <p className="muted" style={{ marginTop: 8 }}>
-            Thông báo, ghi chú phát hành và mẹo dùng Zalo Chat Assistant.
+            Thông báo, ghi chú phát hành và mẹo dùng Chat Assistant.
           </p>
         </div>
 

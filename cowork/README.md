@@ -1,6 +1,6 @@
-# Thư mục làm việc với Claude Cowork — Zalo Chat Assistant
+# Thư mục làm việc với Claude Cowork — Chat Assistant
 
-Trỏ Claude Cowork vào **đúng thư mục này** một lần. Ứng dụng Zalo Chat Assistant tự duy trì nội dung bên trong:
+Trỏ Claude Cowork vào **đúng thư mục này** một lần. Ứng dụng Chat Assistant tự duy trì nội dung bên trong:
 
 | Thư mục / file | Ai ghi | Nội dung |
 |---|---|---|

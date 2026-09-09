@@ -1,4 +1,4 @@
-# Hợp đồng API — nền tảng web Zalo Chat Assistant (MERN)
+# Hợp đồng API — nền tảng web Chat Assistant (MERN)
 
 > Nguồn sự thật cho ba nhóm làm song song: **api/** (Express + MongoDB), **web/** (React + Vite), **ứng dụng desktop** (Electron,
 > `src/`). Đổi hợp đồng ⇒ sửa file này trước. Tiếng Việt có dấu ở mọi thông báo lỗi và giao diện.
@@ -108,7 +108,7 @@ coverImageUrl?, tags: [string], kind: "post"|"page"|"changelog", pinned: bool, p
 `PORT=4789`, `MONGO_URL=mongodb://mongo:27017/zca`, `JWT_SECRET` (bắt buộc, fail-fast), `ACCESS_TTL_SEC=900`, `REFRESH_TTL_DAYS=30`,
 `RESET_TTL_MIN=30`, `ALLOW_REGISTRATION=true`, `REGISTRATION_CODE=`, `ADMIN_EMAILS=`, `PUBLIC_URL=http://localhost:4790`
 (gốc để dựng `downloadUrl`), `RELEASES_DIR=/data/releases`, `UPLOADS_DIR=/data/uploads`, `CORS_ORIGINS=http://localhost:4790,http://localhost:5174`,
-`SMTP_HOST/PORT/SECURE/USER/PASS/FROM`, `APP_NAME=Zalo Chat Assistant`.
+`SMTP_HOST/PORT/SECURE/USER/PASS/FROM`, `APP_NAME=Chat Assistant`.
 
 ## 6. Ứng dụng desktop — kiểm tra cập nhật
 

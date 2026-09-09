@@ -36,7 +36,7 @@ export default function Login() {
       <div className="auth-wrap">
         <div className="auth-card">
           <h1>Đăng nhập quản trị</h1>
-          <p className="form-sub">Chỉ dành cho tài khoản quản trị viên của Zalo Chat Assistant.</p>
+          <p className="form-sub">Chỉ dành cho tài khoản quản trị viên của Chat Assistant.</p>
 
           <form className="form" onSubmit={submit}>
             <ErrorBox error={error} />

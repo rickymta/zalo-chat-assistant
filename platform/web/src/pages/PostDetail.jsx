@@ -16,9 +16,9 @@ export default function PostDetail({ backTo = '/bai-viet' }) {
 
   // Đổi tiêu đề tab cho dễ nhận ra khi mở nhiều bài.
   useEffect(() => {
-    if (post && post.title) document.title = `${post.title} — Zalo Chat Assistant`;
+    if (post && post.title) document.title = `${post.title} — Chat Assistant`;
     return () => {
-      document.title = 'Zalo Chat Assistant';
+      document.title = 'Chat Assistant';
     };
   }, [post]);
 

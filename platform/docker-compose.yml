@@ -1,4 +1,4 @@
-# Nền tảng web Zalo Chat Assistant — MỘT lệnh cho cả máy chủ:  docker compose up -d
+# Nền tảng web Chat Assistant — MỘT lệnh cho cả máy chủ:  docker compose up -d
 #
 #   mongo  ── cơ sở dữ liệu (không mở cổng ra ngoài)
 #   api    ── Express + Mongoose, cổng 4789 (chỉ loopback: BIND_IP)
@@ -66,7 +66,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
-      APP_NAME: ${APP_NAME:-Zalo Chat Assistant}
+      APP_NAME: ${APP_NAME:-Chat Assistant}
     volumes:
       - zca-data:/data
     # HEALTHCHECK khai trong api/Dockerfile (wget /health) — web chờ api khoẻ rồi mới lên.

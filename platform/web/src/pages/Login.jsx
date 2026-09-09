@@ -36,7 +36,7 @@ export default function Login() {
         <div className="auth-card">
           <h1>Đăng nhập</h1>
           <p className="form-sub">
-            Dùng chính tài khoản bạn đăng nhập trong ứng dụng Zalo Chat Assistant.
+            Dùng chính tài khoản bạn đăng nhập trong ứng dụng Chat Assistant.
           </p>
 
           <form className="form" onSubmit={submit}>

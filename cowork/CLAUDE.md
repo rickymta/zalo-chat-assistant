@@ -1,6 +1,6 @@
 # 00 · Chỉ dẫn cho Claude (Claude Cowork) — tổng hợp tin nhắn Zalo và đề xuất phản hồi
 
-> File này dành cho **trợ lý AI**. Người dùng: mở Claude Cowork tại thư mục làm việc `Zalo Chat Assistant` (thư mục có
+> File này dành cho **trợ lý AI**. Người dùng: mở Claude Cowork tại thư mục làm việc `Chat Assistant` (thư mục có
 > `CLAUDE.md`, do ứng dụng tạo trong Documents), rồi nhắn: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội
 > thoại trong `du-lieu/` và đề xuất phản hồi cho từng hội thoại."* Trong thư mục cũng có bản sao tên `CLAUDE.md` để công cụ của Claude tự nạp.
 

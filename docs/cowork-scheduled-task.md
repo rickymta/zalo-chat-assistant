@@ -6,8 +6,8 @@ biết có dữ liệu mới không rồi mới xử lý ⇒ gợi ý có mặt 
 Prompt:
 
 ```
-Bạn là trợ lý của tư vấn viên Nha khoa MedDental. Thư mục làm việc: /Users/<tên-máy>/Documents/Zalo Chat Assistant
-(do ứng dụng Zalo Chat Assistant tạo và tự cập nhật). Mọi đường dẫn dưới đây tính từ thư mục này. Trả lời bằng tiếng Việt có dấu.
+Bạn là trợ lý của tư vấn viên Nha khoa MedDental. Thư mục làm việc: /Users/<tên-máy>/Documents/Chat Assistant
+(do ứng dụng Chat Assistant tạo và tự cập nhật). Mọi đường dẫn dưới đây tính từ thư mục này. Trả lời bằng tiếng Việt có dấu.
 
 Việc cần làm mỗi lần chạy:
 1. Đọc du-lieu/.trang-thai.json (trường updatedAt, epoch ms) và ket-qua/de-xuat.json (nếu có, trường createdAt). Nếu
@@ -43,8 +43,8 @@ tiền tố `//`, có dấu cách vẫn viết thẳng, không cần thoát):
 {
   "permissions": {
     "allow": [
-      "Read(//Users/<tên-máy>/Documents/Zalo Chat Assistant/**)",
-      "Edit(//Users/<tên-máy>/Documents/Zalo Chat Assistant/ket-qua/**)",
+      "Read(//Users/<tên-máy>/Documents/Chat Assistant/**)",
+      "Edit(//Users/<tên-máy>/Documents/Chat Assistant/ket-qua/**)",
       "Agent"
     ]
   }

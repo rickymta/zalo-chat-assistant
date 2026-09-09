@@ -23,12 +23,12 @@ export const TELEGRAM_FILE = path.join(DATA_DIR, 'telegram.json');
 export const SENT_DIR = path.join(DATA_DIR, 'sent');
 export const EXPORTS_DIR = process.env.ZCA_EXPORTS_DIR
   ? path.resolve(process.env.ZCA_EXPORTS_DIR)
-  : path.join(DATA_DIR, 'exports');   // Electron đặt vào ~/Documents/Zalo Chat Assistant
+  : path.join(DATA_DIR, 'exports');   // Electron đặt vào ~/Documents/Chat Assistant
 export const DB_PATH = path.join(DATA_DIR, 'zalo.db');
 export const LOG_PATH = path.join(DATA_DIR, 'app.log');
 export const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 export const COWORK_DIR = path.join(ROOT_DIR, 'cowork');
-/** Thư mục làm việc với Claude Cowork — người dùng trỏ Cowork vào đây MỘT lần. Node: chính cowork/ của nguồn; .app: ~/Documents/Zalo Chat Assistant. */
+/** Thư mục làm việc với Claude Cowork — người dùng trỏ Cowork vào đây MỘT lần. Node: chính cowork/ của nguồn; .app: ~/Documents/Chat Assistant. */
 export const WORKSPACE_DIR = process.env.ZCA_WORKSPACE_DIR ? path.resolve(process.env.ZCA_WORKSPACE_DIR) : COWORK_DIR;
 /** Phiên đăng nhập máy chủ xác thực + chuỗi mã hoá (quyền 600). */
 export const AUTH_FILE = path.join(DATA_DIR, 'auth.json');

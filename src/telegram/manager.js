@@ -110,7 +110,7 @@ export class TelegramManager extends EventEmitter {
     const session = new StringSession(this.sessionString());
     const client = new TelegramClient(session, Number(this.data.apiId), String(this.data.apiHash), {
       connectionRetries: 5, retryDelay: 2000, autoReconnect: true, useWSS: false,
-      deviceModel: 'Zalo Chat Assistant', appVersion: '0.1', systemVersion: process.platform === 'darwin' ? 'macOS' : process.platform,
+      deviceModel: 'Chat Assistant', appVersion: '0.1', systemVersion: process.platform === 'darwin' ? 'macOS' : process.platform,
     });
     client.setLogLevel?.('error');
     return client;

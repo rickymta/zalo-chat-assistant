@@ -49,7 +49,7 @@ function Header() {
               Z
             </span>
             <span>
-              <b>{site.appName || 'Zalo Chat Assistant'}</b>
+              <b>{site.appName || 'Chat Assistant'}</b>
               <span>{site.tagline}</span>
             </span>
           </Link>
@@ -134,7 +134,7 @@ function Footer() {
       <div className="wrap">
         <div className="footer-grid">
           <div>
-            <h4>{site.appName || 'Zalo Chat Assistant'}</h4>
+            <h4>{site.appName || 'Chat Assistant'}</h4>
             <p>
               {site.tagline ||
                 'Lưu hội thoại Zalo vào máy ở dạng mã hoá, để Claude Cowork tổng hợp và đề xuất câu trả lời.'}
@@ -183,7 +183,7 @@ function Footer() {
         </div>
         <div className="footer-bottom">
           <span>
-            © {year} {site.appName || 'Zalo Chat Assistant'} — MedDental. Dùng nội bộ.
+            © {year} {site.appName || 'Chat Assistant'} — MedDental. Dùng nội bộ.
           </span>
           <span>Cần hỗ trợ? Liên hệ quản trị viên hệ thống.</span>
         </div>

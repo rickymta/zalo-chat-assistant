@@ -1,4 +1,8 @@
-# Zalo Chat Assistant
+# Chat Assistant
+
+> Tên cũ tới 0.1.0-beta.3: *Zalo Chat Assistant*. Từ 0.1.0 ứng dụng đọc cả Telegram (và sắp tới email, Lark) nên đổi tên; lần đầu
+> mở bản mới, thư mục dữ liệu `~/Library/Application Support/Zalo Chat Assistant` và thư mục làm việc `~/Documents/Zalo Chat Assistant`
+> được **tự đổi tên** sang tên mới, không mất gì. Lịch Cowork (nếu còn dùng) cần trỏ lại thư mục mới.
 
 Ứng dụng macOS cho tư vấn viên MedDental: **đăng nhập tài khoản ứng dụng** (máy chủ xác thực riêng), **kết nối Zalo cá
 nhân bằng mã QR**, **tự lưu mọi tin nhắn đến/đi vào máy ở dạng mã hoá**, **duy trì một thư mục làm việc** để
@@ -19,26 +23,26 @@ của repo `mdt-re-construct-research`), nhưng chạy độc lập trên máy c
 │ cấp / lưu / đổi CHUỖI MÃ HOÁ theo phiên bản cho từng tài khoản. KHÔNG nhận tin nhắn │
 └────────────────────────────────────────────────────────────────────────────────────┘
                  ▲ HTTPS (chỉ bridge gọi)
-┌─ Máy Mac của tư vấn viên: Zalo Chat Assistant.app ────────────────────────────────┐
+┌─ Máy Mac của tư vấn viên: Chat Assistant.app ────────────────────────────────┐
 │ electron/main.js  cửa sổ + chạy nền + tự mở khi bật máy                            │
 │ src/app.js        BRIDGE Node cục bộ (127.0.0.1:3789): giữ phiên máy chủ trong      │
 │                   data/auth.json ⇒ tắt máy mở lại KHÔNG phải đăng nhập lại           │
 │ src/zalo/*        zca-js: QR, listener, ghi tin (chỉ khi đã mở khoá)                │
 │ src/db.js         SQLite: nội dung mã hoá AES-256-GCM từng trường, khoá theo phiên bản│
-│ src/workspace.js  ~/Documents/Zalo Chat Assistant/ = thư mục Claude Cowork trỏ vào  │
+│ src/workspace.js  ~/Documents/Chat Assistant/ = thư mục Claude Cowork trỏ vào  │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Dành cho người dùng
 
-1. **Cài**: mở `Zalo Chat Assistant-<phiên bản>-arm64.dmg`, kéo vào **Applications**. Lần đầu macOS có thể hỏi — **chuột
-   phải → Mở**. Nếu vẫn bị chặn: `xattr -dr com.apple.quarantine "/Applications/Zalo Chat Assistant.app"`.
+1. **Cài**: mở `Chat Assistant-<phiên bản>-arm64.dmg`, kéo vào **Applications**. Lần đầu macOS có thể hỏi — **chuột
+   phải → Mở**. Nếu vẫn bị chặn: `xattr -dr com.apple.quarantine "/Applications/Chat Assistant.app"`.
 2. **Đăng ký / đăng nhập** tài khoản ứng dụng (email + mật khẩu; có mã đăng ký nếu công ty yêu cầu). Quên mật khẩu → nhận mã
    8 ký tự qua email (hoặc quản trị viên đọc mã trong log máy chủ) → đặt mật khẩu mới. Đăng nhập một lần; các lần mở sau
    ứng dụng tự mở khoá.
 3. **Kết nối Zalo**: ở thanh trên màn Hội thoại bấm *Đăng nhập Zalo (QR)* → Zalo trên điện thoại → biểu tượng QR → quét →
    Đồng ý. Để ứng dụng chạy (đóng cửa sổ vẫn chạy nền; thoát hẳn ⌘Q). Bật *Cài đặt → Tự mở ứng dụng khi bật máy*.
-4. **Claude Cowork**: trỏ Cowork vào `~/Documents/Zalo Chat Assistant/` **một lần**. Mỗi khi muốn Claude làm việc, bấm
+4. **Claude Cowork**: trỏ Cowork vào `~/Documents/Chat Assistant/` **một lần**. Mỗi khi muốn Claude làm việc, bấm
    **📁 Cập nhật dữ liệu cho Claude** (chọn kiểu: khách đang chờ trả lời / hôm nay / 7 ngày / nhóm / tất cả), rồi nhắn
    Cowork: *"Đọc `huong-dan/00-chi-dan-cho-claude.md` rồi tổng hợp tất cả hội thoại trong du-lieu/ và đề xuất phản hồi cho từng hội thoại."*
    Claude ghi kết quả vào `ket-qua/` (bản `.md` cho người đọc **và** `de-xuat.json` cho máy đọc). Ứng dụng theo dõi thư mục
@@ -149,15 +153,15 @@ Các bước trên máy thử (macOS):
 1. Chép file `.dmg` sang, kéo vào Applications, lần đầu **chuột phải → Mở** (hoặc `xattr -dr com.apple.quarantine`). Bản
    `arm64` cho Mac chip Apple; Mac Intel cần bản `x64` (`npm run dist:x64`).
 2. Mở ứng dụng → **Bắt đầu dùng thử** → thanh trên **Đăng nhập Zalo (QR)**. Để *Cài đặt → Giữ máy không ngủ* và *Tự mở khi bật máy* bật.
-3. Cài Claude desktop, trỏ Cowork vào `~/Documents/Zalo Chat Assistant`. Thêm vào `~/.claude/settings.json` của máy đó
+3. Cài Claude desktop, trỏ Cowork vào `~/Documents/Chat Assistant`. Thêm vào `~/.claude/settings.json` của máy đó
    `permissions.allow` với đường dẫn tương ứng (xem `docs/cowork-scheduled-task.md`), rồi tạo scheduled task bằng mẫu prompt
    trong cùng file — đổi `/Users/<tên-máy>`.
 4. Kết thúc thử: Cài đặt → Đăng xuất (xoá dữ liệu thử) hoặc đăng ký tài khoản thật.
 
-**Windows (thử nghiệm):** dùng file `Zalo Chat Assistant-Setup-<phiên bản>-x64.exe` (dựng bằng `npm run dist:win` ngay trên macOS).
+**Windows (thử nghiệm):** dùng file `Chat Assistant-Setup-<phiên bản>-x64.exe` (dựng bằng `npm run dist:win` ngay trên macOS).
 Bản chưa ký nên SmartScreen chặn lần đầu: bấm *More info → Run anyway*. Trình cài cho chọn thư mục, tạo shortcut. Sau đó
 các bước giống macOS: **Bắt đầu dùng thử** (không cần Docker) → quét QR Zalo → Claude desktop cho Windows trỏ Cowork vào
-`C:\Users\<tên>\Documents\Zalo Chat Assistant`. Dữ liệu ứng dụng ở `%APPDATA%\Zalo Chat Assistant\data`. Chống ngủ dùng
+`C:\Users\<tên>\Documents\Chat Assistant`. Dữ liệu ứng dụng ở `%APPDATA%\Chat Assistant\data`. Chống ngủ dùng
 powerSaveBlocker của Electron (không có `caffeinate`); sao chép dùng clipboard Electron. Chưa kiểm tra trên máy Windows thật —
 cần một lượt thử: cài, dùng thử, QR, nhận tin, cột trợ lý, báo cáo, cập nhật gói cho Claude, khoá/mở màn hình.
 
@@ -247,13 +251,13 @@ npm run export -- --preset week    # cập nhật du-lieu/ bằng dòng lệnh (
 ```
 
 Biến môi trường: `ZCA_DATA_DIR` (mặc định `./data`), `ZCA_WORKSPACE_DIR` (mặc định `./cowork`; bản .app dùng
-`~/Documents/Zalo Chat Assistant`), `ZCA_SERVER_URL` (mặc định `https://volcanion.vn`; máy dev đặt `http://127.0.0.1:4789`), `PORT` (3789), `OPEN_BROWSER=false`.
+`~/Documents/Chat Assistant`), `ZCA_SERVER_URL` (mặc định `https://volcanion.vn`; máy dev đặt `http://127.0.0.1:4789`), `PORT` (3789), `OPEN_BROWSER=false`.
 
 ### Đóng gói bản Electron
 
 ```bash
 npm run app        # chạy cửa sổ Electron (tự dựng lại better-sqlite3 cho Electron)
-npm run dist       # dist/Zalo Chat Assistant-<ver>-arm64.dmg
+npm run dist       # dist/Chat Assistant-<ver>-arm64.dmg
 npm run dist:all   # thêm bản x64
 ```
 
