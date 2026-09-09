@@ -11,7 +11,7 @@ const SECRET_FIELDS = { email: ['password'], lark: ['appSecret'], digest: ['botT
 const DEFAULTS = {
   email: { enabled: false, host: '', port: 993, secure: true, user: '', password: '', folder: 'INBOX', days: 7 },
   lark: { enabled: false, domain: 'larksuite', appId: '', appSecret: '', approvalCodes: [], days: 7, userId: '' },
-  digest: { enabled: false, botToken: '', chatId: '', voice: 'vi-VN-HoaiMyNeural', times: ['07:30', '17:30'], sendText: true },
+  digest: { enabled: false, botToken: '', chatId: '', voice: 'google:vi-bac', times: ['07:30', '17:30'], sendText: true },
 };
 export const KINDS = Object.keys(DEFAULTS);
 
@@ -83,7 +83,7 @@ export class IntegrationStore {
       if (typeof patch.appSecret === 'string' && patch.appSecret) next.appSecret = this.enc(patch.appSecret);
     } else if (kind === 'digest') {
       if (patch.chatId !== undefined) next.chatId = str(patch.chatId, 64);
-      if (patch.voice !== undefined) next.voice = str(patch.voice, 64) || 'vi-VN-HoaiMyNeural';
+      if (patch.voice !== undefined) next.voice = str(patch.voice, 64) || 'google:vi-bac';
       if (patch.times !== undefined) {
         const t = (Array.isArray(patch.times) ? patch.times : String(patch.times).split(/[\s,;]+/)).map((x) => String(x).trim()).filter(Boolean);
         for (const x of t) if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(x)) throw Object.assign(new Error(`Giờ bản tin "${x}" không hợp lệ (dạng HH:MM).`), { status: 400 });

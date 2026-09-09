@@ -75,10 +75,26 @@ function normalizeEntry(raw, meta) {
 
 const PRIO_ORDER = { P1: 0, P2: 1, P3: 2 };
 
+/** Gom việc theo người/nhóm cho báo cáo (ưu tiên cao nhất của nhóm, sắp theo ưu tiên). */
+function groupActionItems(items) {
+  const order = []; const map = new Map();
+  for (const a of items) {
+    if (!a?.task) continue;
+    const key = a.name || '(không rõ)';
+    if (!map.has(key)) { map.set(key, { name: key, priority: a.priority ?? 'P3', tasks: [] }); order.push(key); }
+    const g = map.get(key); g.tasks.push(a.task);
+    if ((PRIO_ORDER[a.priority] ?? 9) < (PRIO_ORDER[g.priority] ?? 9)) g.priority = a.priority;
+  }
+  return order.map((k) => map.get(k)).sort((x, y) => (PRIO_ORDER[x.priority] ?? 9) - (PRIO_ORDER[y.priority] ?? 9));
+}
+
 function renderReportMd(report) {
   const L = [`# Báo cáo ngày ${report.date}`, '', `*Tổng hợp bởi AI cục bộ lúc ${report.generatedAt}.*`, '', '## Tổng quan', '', report.overview.brief, '', report.overview.summary, ''];
   if (report.overview.highlights?.length) { L.push('## Điểm nổi bật', ''); for (const h of report.overview.highlights) L.push(`- ${h}`); L.push(''); }
-  if (report.actionItems?.length) { L.push('## Việc cần làm', ''); for (const a of report.actionItems) L.push(`- ${a.priority ? `[${a.priority}] ` : ''}${a.name}: ${a.task}`); L.push(''); }
+  if (report.actionItems?.length) {
+    L.push('## Việc cần làm (gom theo người/nhóm)', '');
+    for (const g of groupActionItems(report.actionItems)) { L.push(`### ${g.name}${g.priority ? ` (${g.priority})` : ''}`); for (const t of g.tasks) L.push(`- ${t}`); L.push(''); }
+  }
   L.push('## Từng hội thoại', '');
   for (const c of report.conversations) {
     L.push(`### ${c.name} — ${c.relation}${c.kind ? ` · ${c.kind}` : ''}`, '', c.brief || c.summary, '');

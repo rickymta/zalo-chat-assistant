@@ -9,13 +9,82 @@ import { EventEmitter } from 'node:events';
 import { loadReport, dayKeyVn } from '../reports.js';
 
 const VN_TZ = 'Asia/Ho_Chi_Minh';
+export const DEFAULT_VOICE = 'google:vi-bac';   // giọng nữ miền Bắc (Google) — mặc định
+export const isGoogleVoice = (v) => String(v ?? '').startsWith('google');
+/** Danh sách giọng cho giao diện. */
+export const VOICES = [
+  { id: 'google:vi-bac', label: 'Nữ miền Bắc (Google)', provider: 'google' },
+  { id: 'vi-VN-HoaiMyNeural', label: 'Nữ miền Nam — Hoài My (Microsoft)', provider: 'edge' },
+  { id: 'vi-VN-NamMinhNeural', label: 'Nam — Nam Minh (Microsoft)', provider: 'edge' },
+];
+
+/** Cắt văn bản thành đoạn ≤ maxLen ký tự theo ranh giới câu/từ (Google Translate TTS giới hạn ~200 ký tự/lần). */
+export function chunkText(text, maxLen = 190) {
+  const clean = String(text ?? '').replace(/\s+/g, ' ').trim();
+  const sentences = clean.match(/[^.!?…]+[.!?…]*\s*/g) || [clean];
+  const out = []; let cur = '';
+  const push = () => { if (cur.trim()) out.push(cur.trim()); cur = ''; };
+  for (let part of sentences) {
+    if (part.length > maxLen) {                       // câu quá dài ⇒ cắt tiếp theo từ
+      for (const w of part.split(' ')) { if ((cur + ' ' + w).trim().length > maxLen) push(); cur = (cur ? cur + ' ' : '') + w; }
+      continue;
+    }
+    if ((cur + part).length > maxLen) push();
+    cur += part;
+  }
+  push();
+  return out;
+}
+
+async function googleTtsToFile(text, dest) {
+  const parts = chunkText(text, 190);
+  const buffers = [];
+  for (let i = 0; i < parts.length; i++) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=vi&idx=${i}&total=${parts.length}&textlen=${parts[i].length}&q=${encodeURIComponent(parts[i])}`;
+    let ok = false;
+    for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+      try {
+        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', Referer: 'https://translate.google.com/' }, signal: AbortSignal.timeout(20000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length < 200) throw new Error('đoạn rỗng');
+        buffers.push(buf); ok = true;
+      } catch (err) { if (attempt === 2) throw new Error(`Google TTS lỗi ở đoạn ${i + 1}/${parts.length}: ${err?.message ?? err}`); await new Promise((r) => setTimeout(r, 400 * (attempt + 1))); }
+    }
+    await new Promise((r) => setTimeout(r, 120));   // nhẹ tay để không bị chặn tần suất
+  }
+  fs.writeFileSync(dest, Buffer.concat(buffers));
+}
+
+async function edgeTtsToFile(text, voice, dir, dest) {
+  const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
+  const tts = new MsEdgeTTS();
+  await tts.setMetadata(voice || 'vi-VN-HoaiMyNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+  const tmp = fs.mkdtempSync(path.join(dir, 'tts-'));
+  const { audioFilePath } = await tts.toFile(tmp, text, { rate: '+5%' });
+  fs.renameSync(audioFilePath, dest); try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* bỏ qua */ }
+  try { tts.close?.(); } catch { /* bỏ qua */ }
+}
 const hhmmVn = (ms) => new Intl.DateTimeFormat('en-GB', { timeZone: VN_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
 const dateVnText = (key) => key.split('-').reverse().join('/');
-const MAX_SPOKEN = 2600;      // ~3–4 phút đọc
-const MAX_TG_TEXT = 3900;
+const MAX_SPOKEN = 3600;      // ~5 phút đọc (người dùng: báo cáo có thể dài, không quá vắn tắt)
+const MAX_TG_TEXT = 4050;
 const KEEP_DAYS = 7;
 const PRIO = { P1: 0, P2: 1, P3: 2, none: 3 };
 const short = (s, n) => { s = String(s ?? '').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+/** Gom danh sách việc [{name, task, priority}] theo NGƯỜI/NHÓM: giữ thứ tự xuất hiện, ưu tiên cao nhất của nhóm; sắp nhóm theo ưu tiên. */
+export function groupTasks(tasks) {
+  const order = []; const map = new Map();
+  for (const t of tasks) {
+    if (!t?.task) continue;
+    const key = t.name || '(không rõ)';
+    if (!map.has(key)) { map.set(key, { name: key, priority: t.priority ?? 'P3', tasks: [] }); order.push(key); }
+    const g = map.get(key); g.tasks.push(t.task);
+    if ((PRIO[t.priority] ?? 9) < (PRIO[g.priority] ?? 9)) g.priority = t.priority;
+  }
+  return order.map((k) => map.get(k)).sort((a, b) => (PRIO[a.priority] ?? 9) - (PRIO[b.priority] ?? 9));
+}
 
 /** Bỏ ký hiệu markdown/emoji để đọc cho tự nhiên. */
 export function spokenClean(s) {
@@ -36,6 +105,7 @@ export function composeDigest(report, { now = Date.now(), label = '' } = {}) {
     ? report.actionItems.map((a) => ({ name: a.name, task: a.task, priority: a.priority ?? 'P3' }))
     : convs.flatMap((c) => (c.claude?.tasksForYou ?? []).map((t) => ({ name: c.name, task: t, priority: c.claude?.priority ?? 'P3' })))
   ).filter((t) => t.task).sort((a, b) => (PRIO[a.priority] ?? 9) - (PRIO[b.priority] ?? 9));
+  const taskGroups = groupTasks(tasks);
   const waiting = convs.filter((c) => !c.isGroup && c.lastOutbound === false && c.inbound > 0);
   const hot = withAi.filter((c) => ['P1', 'P2'].includes(c.claude?.priority)).slice(0, 5);
 
@@ -46,7 +116,11 @@ export function composeDigest(report, { now = Date.now(), label = '' } = {}) {
   if (overviewText) sp.push(short(overviewText, 900));
   if (claude?.highlights?.length) sp.push('Điểm nổi bật: ' + claude.highlights.slice(0, 5).map((h, i) => `${i + 1}, ${spokenClean(h)}`).join('. ') + '.');
   else if (hot.length) sp.push('Cần chú ý: ' + hot.map((c) => `${c.name}: ${spokenClean(c.claude.brief || c.claude.summary)}`).join('. ') + '.');
-  if (tasks.length) sp.push(`Việc cần bạn xử lý, ${tasks.length} việc: ` + tasks.slice(0, 6).map((t, i) => `${i + 1}, ${t.name}: ${spokenClean(t.task)}`).join('. ') + (tasks.length > 6 ? `. Và ${tasks.length - 6} việc khác trong ứng dụng.` : '.'));
+  if (taskGroups.length) {
+    const stt = ['một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám'];
+    const say = (g) => `Với ${g.name}: ` + g.tasks.map((t, i) => (g.tasks.length > 1 ? `${stt[i] || (i + 1)}, ` : '') + spokenClean(t)).join('; ') + '.';
+    sp.push(`Việc cần bạn xử lý, ${tasks.length} việc cho ${taskGroups.length} người. ` + taskGroups.map(say).join(' '));
+  }
   if (waiting.length) sp.push(`Đang chờ trả lời: ${waiting.slice(0, 5).map((c) => c.name).join(', ')}${waiting.length > 5 ? ` và ${waiting.length - 5} hội thoại khác` : ''}.`);
   if (!overviewText && !tasks.length && !waiting.length) sp.push('Chưa có nội dung tổng hợp mới. Hết bản tin.'); else sp.push('Hết bản tin.');
   let spoken = sp.join(' ');
@@ -57,7 +131,10 @@ export function composeDigest(report, { now = Date.now(), label = '' } = {}) {
   if (ov.conversations != null) tx.push(`${ov.conversations} hội thoại · ${ov.messages ?? 0} tin · ${ov.needReply ?? waiting.length} đang chờ trả lời`);
   if (overviewText) tx.push('', short(overviewText, 1200));
   if (claude?.highlights?.length) tx.push('', '✨ Nổi bật:', ...claude.highlights.slice(0, 6).map((h) => `• ${spokenClean(h)}`));
-  if (tasks.length) tx.push('', `✅ Việc của bạn (${tasks.length}):`, ...tasks.slice(0, 8).map((t) => `• [${t.priority}] ${t.name}: ${spokenClean(t.task)}`));
+  if (taskGroups.length) {
+    tx.push('', `✅ Việc của bạn (${tasks.length} việc · ${taskGroups.length} người/nhóm):`);
+    for (const g of taskGroups) { tx.push(`👤 ${g.name}${g.priority ? ` [${g.priority}]` : ''}:`, ...g.tasks.map((t) => `   • ${spokenClean(t)}`)); }
+  }
   if (waiting.length) tx.push('', `⏳ Chờ trả lời (${waiting.length}): ` + waiting.slice(0, 8).map((c) => c.name).join(', '));
   let text = tx.join('\n');
   if (text.length > MAX_TG_TEXT) text = text.slice(0, MAX_TG_TEXT - 2) + '…';
@@ -149,20 +226,14 @@ export class DigestManager extends EventEmitter {
     return this.status();
   }
 
-  /** Đọc văn bản bằng Edge TTS → MP3 trong data/digest/. */
-  async synthesize(text, voice = 'vi-VN-HoaiMyNeural') {
-    const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
+  /** Đọc văn bản → MP3 trong data/digest/. Giọng "google" = giọng nữ MIỀN BẮC của Google (không cần khoá); còn lại là giọng Edge. */
+  async synthesize(text, voice = DEFAULT_VOICE) {
     fs.mkdirSync(this.dir, { recursive: true });
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(voice || 'vi-VN-HoaiMyNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-    const tmp = fs.mkdtempSync(path.join(this.dir, 'tts-'));
-    const { audioFilePath } = await tts.toFile(tmp, text, { rate: '+5%' });
-    const name = `ban-tin-${dayKeyVn(Date.now())}-${hhmmVn(Date.now()).replace(':', '')}.mp3`;
-    const dest = path.join(this.dir, name);
-    fs.renameSync(audioFilePath, dest); try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* bỏ qua */ }
-    try { tts.close?.(); } catch { /* bỏ qua */ }
+    const dest = path.join(this.dir, `ban-tin-${dayKeyVn(Date.now())}-${hhmmVn(Date.now()).replace(':', '')}.mp3`);
+    if (isGoogleVoice(voice)) await googleTtsToFile(text, dest);
+    else await edgeTtsToFile(text, voice, this.dir, dest);
     const bytes = fs.statSync(dest).size;
-    if (bytes < 2000) throw new Error('Edge TTS trả về tệp rỗng (mạng hoặc dịch vụ đọc gặp lỗi).');
+    if (bytes < 2000) throw new Error('Dịch vụ đọc trả về tệp rỗng (mạng hoặc dịch vụ đọc gặp lỗi).');
     return { file: dest, bytes };
   }
   cleanup() {

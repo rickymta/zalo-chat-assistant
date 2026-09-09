@@ -853,7 +853,7 @@
       + '<div>Đồng bộ phiếu</div><div>' + (syncLine(ls) || 'chưa chạy') + (ls.tracked ? ' <span class="muted small">· theo dõi ' + num(ls.tracked) + ' phiếu, ' + num(ls.pending) + ' chờ duyệt</span>' : '') + '</div>';
     $('#digestKv').innerHTML = '<div>Trạng thái</div><div>' + (g.configured ? (g.enabled ? '✅ đã cấu hình, đang bật' : '✅ đã cấu hình, đang tắt') : '⚠️ chưa có bot token / chat ID') + '</div>'
       + '<div>Bot token</div><div>' + (g.hasBotToken ? 'đã lưu (mã hoá)' + (g.botTokenHint ? ' · <code>' + esc(g.botTokenHint) + '</code>' : '') : 'chưa có — dán token và chat ID rồi bấm <b>Kiểm tra bot</b> (kết nối được sẽ tự lưu)') + (g.lastTest?.ok && g.lastTest.bot ? ' · <b>' + esc(g.lastTest.bot) + '</b>' : '') + '</div>'
-      + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(g.voice || '') + '</div>'
+      + '<div>Lịch gửi</div><div>' + (g.times?.length ? g.times.join(', ') : 'chưa đặt') + ' · giọng ' + esc(VOICE_LABEL[g.voice] || g.voice || '') + '</div>'
       + '<div>Kiểm tra gần nhất</div><div>' + fmtTest(g.lastTest) + (g.lastTest?.ok && g.lastTest.sent ? ' <span class="muted small">· đã gửi tin thử</span>' : '') + '</div>'
       + '<div>Bản tin</div><div>' + (ds.sending ? '⏳ đang ' + ({ refresh: 'cập nhật dữ liệu và chạy AI', compose: 'dựng nội dung', tts: 'đọc thành giọng nói', send: 'gửi vào Telegram' }[ds.phase] || 'chạy') + '…' : (ds.history?.[0] ? (ds.history[0].ok ? '✅ gửi lúc ' + fmtTime(ds.history[0].at) : '<span class="bad">❌ ' + esc(ds.history[0].error || 'lỗi') + ' · ' + fmtTime(ds.history[0].at) + '</span>') : 'chưa gửi lần nào')) + (ds.nextAt ? ' <span class="muted small">· kế tiếp ' + fmtTime(ds.nextAt) + '</span>' : (g.enabled ? '' : ' <span class="muted small">· đang tắt</span>')) + '</div>';
     clearTimeout(intPoll);
@@ -863,6 +863,7 @@
     if (!INT_FILLED.digest) fillIntegration('digest', g);
   }
   let intPoll = null;
+  const VOICE_LABEL = { 'google:vi-bac': 'Nữ miền Bắc (Google)', 'vi-VN-HoaiMyNeural': 'Nữ miền Nam — Hoài My', 'vi-VN-NamMinhNeural': 'Nam — Nam Minh' };
   const INT_MSG = { email: '#emailMsg', lark: '#larkMsg', digest: '#digestMsg' };
   async function intSave(kind, btn) {
     const msg = $(INT_MSG[kind]); msg.textContent = '';
