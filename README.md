@@ -117,7 +117,7 @@ nguyên. Dữ liệu không rời máy.
   quan hệ (đồng nghiệp/bạn bè không dính quy tắc chăm sóc khách hàng). Chạy **tuần tự**, đầu ra ép theo JSON schema (có giới hạn độ dài) nên luôn đúng mã (`relation`, `sentiment`, `kind`,
   `priority`). Hội thoại không đổi (cùng số tin, cùng tin cuối) dùng lại kết quả lần trước (`ket-qua/.ai-cuc-bo.json`).
   Model tự giải phóng khỏi RAM sau 10 phút rảnh (đổi `aiIdleUnloadMinutes`).
-- Tốc độ tham khảo với Qwen3 4B: Mac M3 ~40 giây/hội thoại; Mac mini M1 chậm hơn khoảng 2–3 lần. Hội thoại không đổi được dùng lại,
+- Tốc độ tham khảo với Qwen3 4B (đo 22 hội thoại thật, 842 giây): Mac M3 ~38 giây/hội thoại; Mac mini M1 chậm hơn khoảng 2–3 lần. Hội thoại không đổi được dùng lại,
   hội thoại ngắn không cần nhắn bỏ qua bước tóm tắt chi tiết. Chất lượng model 3B kém Claude ở
   hội thoại dài nhiều người — xem thử vài ngày rồi quyết định có đổi model/nâng RAM không.
 - Chạy bằng Node cũng dùng được (`npm start`), cần Node ≥ 20; bản đóng gói đã kèm thư viện Metal (`asarUnpack`).

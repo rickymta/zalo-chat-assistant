@@ -13,7 +13,7 @@ import { dayKeyVn } from '../reports.js';
 import { CLASSIFY_SCHEMA, SUMMARY_SCHEMA, OVERVIEW_SCHEMA, SYSTEM_CLASSIFY, SYSTEM_SUMMARY_INTERNAL, SYSTEM_SUMMARY_CUSTOMER, SYSTEM_OVERVIEW, conversationPrompt, summaryPrompt, overviewPrompt, RELATIONS, SENTIMENTS, KINDS } from './prompts.js';
 
 const OUTPUT_TOKENS = 1800;
-const RETRY_TOKENS = 2600;
+const RETRY_TOKENS = 3200;
 const MARGIN_TOKENS = 220;
 
 function isoVn(ms = Date.now()) {
@@ -214,13 +214,15 @@ export function createLocalPipeline({ engine, root, log, settings, events }) {
       const rows = entries.map((e) => { const m = metas.find((x) => x.threadId === e.threadId); return { name: e.name, relation: e.relation, kind: e.kind, priority: e.priority, brief: e.brief, tasksForYou: e.tasksForYou, openQuestions: e.openQuestions, waiting: !!m?.waiting }; });
       let overview;
       try {
-        const o = await generateWithRetry({ system: SYSTEM_OVERVIEW, user: overviewPrompt({ dateText, rows, gaps }), schema: OVERVIEW_SCHEMA, maxTokens: 1600, temperature: 0.3 });
+        const o = await generateWithRetry({ system: SYSTEM_OVERVIEW, user: overviewPrompt({ dateText, rows, gaps }), schema: OVERVIEW_SCHEMA, maxTokens: 2600, temperature: 0.3 });
         overview = { brief: clean(o.brief), summary: clean(o.summary), highlights: cleanList(o.highlights, 8) };
+        if (!overview.summary) throw new Error('tổng quan thiếu summary (đầu ra bị cắt)');
       } catch (err) {
         log?.warn(`AI cục bộ: tổng quan lỗi: ${err?.message ?? err}`);
         overview = { brief: `Ngày ${dateText} có ${entries.length} hội thoại có tin.`, summary: entries.map((e) => `${e.name}: ${e.brief}`).join('\n\n'), highlights: entries.filter((e) => e.priority === 'P1' || e.priority === 'P2').slice(0, 6).map((e) => `${e.name}: ${e.brief}`) };
       }
       if (!overview.brief) overview.brief = `Ngày ${dateText} có ${entries.length} hội thoại có tin.`;
+      if (!overview.highlights.length) overview.highlights = entries.filter((e) => e.priority === 'P1' || e.priority === 'P2').slice(0, 6).map((e) => `${e.name}: ${e.brief}`);
       const actionItems = entries.flatMap((e) => e.tasksForYou.map((task) => ({ threadId: e.threadId, accountId: e.accountId, name: e.name, task, priority: e.priority ?? 'P3' }))).sort((a, b) => (PRIO_ORDER[a.priority] ?? 9) - (PRIO_ORDER[b.priority] ?? 9));
 
       // Ghi kết quả — đúng định dạng Cowork

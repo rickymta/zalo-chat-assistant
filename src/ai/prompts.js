@@ -48,7 +48,7 @@ export const CONV_SCHEMA = { type: 'object', properties: { ...CLASSIFY_SCHEMA.pr
 
 export const OVERVIEW_SCHEMA = {
   type: 'object',
-  properties: { brief: text(500), summary: text(2200), highlights: list(7, 120) },
+  properties: { brief: text(450), summary: text(1800), highlights: list(7, 110) },
 };
 
 export const SYSTEM_CONV = `Bạn là trợ lý riêng của chủ tài khoản Zalo (gọi là "Bạn" — trong tin nhắn, dòng bắt đầu bằng "Bạn:" là do chủ tài khoản gửi). Bạn đọc MỘT hội thoại và trả về ĐÚNG MỘT JSON theo schema, toàn bộ bằng tiếng Việt có dấu, không bịa điều không có trong tin nhắn. Không dùng từ "người dùng"; người đối thoại gọi theo tên; chủ tài khoản gọi là "Bạn".
@@ -85,7 +85,7 @@ relation — quan hệ giữa chủ tài khoản và người kia, chọn MỘT:
 - nhom: nhóm chat hỗn hợp/cộng đồng.  khac: không đủ dữ liệu.
 relationNote ≤ 1 câu nêu bằng chứng từ tin nhắn.
 
-kind: tra-loi (1-1, người kia nhắn cuối và có câu hỏi/yêu cầu cần Bạn trả lời) · theo-doi (Bạn nhắn cuối nhưng nên nhắn tiếp: nhắc hạn, hỏi kết quả, lời hứa chưa làm, Bạn hỏi mà >24 giờ chưa được đáp) · nhom (nhóm chat có câu hỏi hướng tới Bạn hoặc việc của Bạn) · khong-can (chỉ cảm ơn/ok/sticker/đùa, đang chờ người kia làm, nhóm không liên quan tới Bạn, tin thông báo, danh thiếp gửi để lưu).
+kind — chọn khong-can TRƯỚC nếu đúng: tin cuối chỉ là danh thiếp/số điện thoại gửi để lưu, sticker, ảnh không chú thích, "ok"/cảm ơn/đùa kết, thông báo chung, hoặc người kia đang tự làm việc — KHÔNG đề xuất nhắn chỉ để lịch sự. Còn lại: tra-loi (1-1, người kia nhắn cuối và có câu hỏi/yêu cầu cần Bạn trả lời) · theo-doi (Bạn nhắn cuối nhưng nên nhắn tiếp: nhắc hạn, hỏi kết quả, lời hứa chưa làm, Bạn hỏi mà >24 giờ chưa được đáp) · nhom (nhóm chat có câu hỏi hướng tới Bạn hoặc việc của Bạn) · khong-can (chỉ cảm ơn/ok/sticker/đùa, đang chờ người kia làm, nhóm không liên quan tới Bạn, tin thông báo, danh thiếp gửi để lưu).
 priority: P1 (sự cố, khiếu nại, đau/chảy máu/sưng/sốt, việc có hạn trong ngày, câu hỏi rõ chờ quá 4 giờ) · P2 (câu hỏi/yêu cầu công việc, hỏi giá/lịch; chờ 1–4 giờ; việc đã hứa) · P3 (xã giao, vừa nhắn dưới 1 giờ) · none khi khong-can.
 sentiment: binh-thuong · tich-cuc · lo-lang · khong-hai-long · khan.
 brief: 1–2 câu tóm tắt đúng nội dung, gọi người theo tên, gọi chủ tài khoản là "Bạn", KHÔNG dùng chữ "khách hàng" trừ khi relation là khach-hang.
@@ -94,7 +94,7 @@ Chỉ dựa vào tin nhắn của ĐÚNG hội thoại này; không suy ra từ 
 
 const SUMMARY_COMMON = `Bạn là trợ lý riêng của chủ tài khoản Zalo — trong tin nhắn, dòng "Bạn:" là do chủ tài khoản gửi; gọi chủ tài khoản là "Bạn", gọi người kia theo tên, không dùng chữ "người dùng". Đọc một hội thoại (đã được phân loại sẵn ở đầu đề bài) và trả về ĐÚNG MỘT JSON theo schema, bằng tiếng Việt có dấu. Chỉ dùng thông tin có trong tin nhắn; không bịa.
 summary: 5–8 câu tường thuật DIỄN BIẾN theo thời gian — ai nói gì, Bạn phản hồi thế nào, số liệu, tên tài liệu/đường link, mốc giờ, hạn, kết quả, còn gì treo; hội thoại chỉ 1–3 tin xã giao thì 2 câu là đủ. timeline: 3–8 mốc {time "HH:MM" lấy đúng giờ trong tin, what}. keyFacts: 2–8 dòng — mọi con số, tên riêng, hạn, quyết định. topics 2–6 mục. decisions: điều đã chốt. tasksForYou: việc Bạn phải làm hoặc đã hứa (rỗng nếu không có). openQuestions: câu hỏi hướng tới Bạn chưa được trả lời (rỗng nếu không có).
-reply: nếu đề bài ghi "không cần nhắn" thì để rỗng và ghi reason 1 câu; ngược lại là văn bản dán thẳng vào Zalo, viết như chính Bạn sẽ gõ, 1–5 câu, xuống dòng bằng \\n, KHÔNG markdown, KHÔNG gạch đầu dòng, KHÔNG lặp câu, KHÔNG liệt kê link/hotline trừ khi được yêu cầu, tối đa 1 emoji. notes: lưu ý ngắn cho Bạn (có thể rỗng). nextAction: 1 câu việc Bạn nên làm tiếp.`;
+reply: nếu đề bài ghi "không cần nhắn" thì để rỗng và ghi reason 1 câu; ngược lại là văn bản dán thẳng vào Zalo, viết như chính Bạn sẽ gõ, 1–5 câu, xuống dòng bằng \\n, KHÔNG markdown, KHÔNG gạch đầu dòng, KHÔNG lặp câu, KHÔNG "P.S."/tái bút, KHÔNG ký tên, KHÔNG câu cảm ơn thừa, KHÔNG liệt kê link/hotline trừ khi được yêu cầu, tối đa 1 emoji. notes: lưu ý ngắn cho Bạn (có thể rỗng). nextAction: 1 câu việc Bạn nên làm tiếp.`;
 
 /** Bước B cho đồng nghiệp / bạn bè / đối tác / nhóm / khác — KHÔNG có nội dung chăm sóc khách hàng. */
 export const SYSTEM_SUMMARY_INTERNAL = SUMMARY_COMMON + `
