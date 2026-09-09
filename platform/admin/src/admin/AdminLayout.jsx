@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { publicSiteUrl } from '../lib/site-url.js';
+import { BRAND_NAME, BrandMark } from '../components/Brand.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 const MENU = [
   { to: '/', end: true, icon: '📊', label: 'Tổng quan' },
@@ -22,17 +24,15 @@ export default function AdminLayout() {
   return (
     <div className="admin">
       <aside className="admin-side">
-        <Link to="/" className="brand">
-          <span className="logo" aria-hidden="true">
-            Z
-          </span>
+        <Link to="/" className="brand" aria-label={`Quản trị ${BRAND_NAME}`}>
+          <BrandMark size={38} />
           <span>
             <b>Quản trị</b>
-            <span>Chat Assistant</span>
+            <span>{BRAND_NAME}</span>
           </span>
         </Link>
 
-        <nav>
+        <nav aria-label="Khu quản trị">
           {MENU.map((m) => (
             <NavLink key={m.to} to={m.to} end={m.end} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ico" aria-hidden="true">
@@ -56,6 +56,7 @@ export default function AdminLayout() {
             <button type="button" className="sm" onClick={doLogout}>
               Đăng xuất
             </button>
+            <ThemeToggle />
           </div>
         </div>
       </aside>

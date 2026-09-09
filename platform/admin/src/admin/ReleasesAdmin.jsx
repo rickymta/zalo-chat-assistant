@@ -389,7 +389,7 @@ function CreateRelease({ onClose, onSaved }) {
             type="url"
             value={form.externalUrl}
             onChange={set('externalUrl')}
-            placeholder="https://…/Chat Assistant-1.2.0-arm64.dmg"
+            placeholder="https://…/Work Assistant-1.2.0-arm64.dmg"
           />
         </div>
 

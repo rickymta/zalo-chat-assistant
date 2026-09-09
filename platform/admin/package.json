@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Khu quản trị (CMS) của nền tảng Zalo Chat Assistant — ứng dụng riêng, phục vụ ở admin.<domain> (React 19 + Vite)",
+  "description": "Khu quản trị (CMS) của nền tảng Work Assistant — ứng dụng riêng, phục vụ ở admin.<domain> (React 19 + Vite)",
   "engines": { "node": ">=20" },
   "scripts": {
     "dev": "vite --port 5175 --strictPort",

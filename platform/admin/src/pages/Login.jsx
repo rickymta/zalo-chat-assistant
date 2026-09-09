@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { ErrorBox, PasswordInput } from '../components/ui.jsx';
+import { BRAND_NAME, BrandMark } from '../components/Brand.jsx';
 
 /** Đăng nhập khu quản trị — không có đăng ký; quên mật khẩu dùng chung quy trình mã 8 ký tự qua email. */
 export default function Login() {
@@ -33,10 +34,14 @@ export default function Login() {
 
   return (
     <div className="wrap">
-      <div className="auth-wrap">
+      <div className="auth-wrap" style={{ minHeight: '100vh', alignContent: 'center' }}>
         <div className="auth-card">
+          <div className="auth-brand">
+            <BrandMark size={56} />
+            <b>Quản trị {BRAND_NAME}</b>
+          </div>
           <h1>Đăng nhập quản trị</h1>
-          <p className="form-sub">Chỉ dành cho tài khoản quản trị viên của Chat Assistant.</p>
+          <p className="form-sub">Chỉ dành cho tài khoản quản trị viên của {BRAND_NAME}.</p>
 
           <form className="form" onSubmit={submit}>
             <ErrorBox error={error} />

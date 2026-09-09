@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#0a66ff" />
-    <title>Quản trị · Chat Assistant</title>
+    <title>Quản trị · Work Assistant</title>
+    <script>
+      // Áp giao diện sáng/tối đã chọn TRƯỚC khi vẽ để không chớp màu (đồng bộ với src/lib/theme.js).
+      try {
+        var t = localStorage.getItem('wa-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

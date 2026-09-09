@@ -145,7 +145,7 @@ export default function SiteAdmin() {
                 type="text"
                 value={form.appName}
                 onChange={(e) => setField(['appName'], e.target.value)}
-                placeholder="Chat Assistant"
+                placeholder="Work Assistant"
               />
             </div>
             <div className="fld">
@@ -155,7 +155,7 @@ export default function SiteAdmin() {
                 type="text"
                 value={form.tagline}
                 onChange={(e) => setField(['tagline'], e.target.value)}
-                placeholder="Trợ lý hội thoại Zalo cho tư vấn viên"
+                placeholder="Trợ lý công việc đa nguồn"
               />
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function SiteAdmin() {
                 type="text"
                 value={form.hero.title}
                 onChange={(e) => setField(['hero', 'title'], e.target.value)}
-                placeholder="Chat Assistant"
+                placeholder="Tổng hợp công việc từ Zalo, Telegram, Email và Lark"
               />
             </div>
             <div className="fld">
@@ -182,7 +182,7 @@ export default function SiteAdmin() {
                 rows={3}
                 value={form.hero.subtitle}
                 onChange={(e) => setField(['hero', 'subtitle'], e.target.value)}
-                placeholder="Kết nối Zalo cá nhân bằng mã QR, lưu tin nhắn mã hoá trên máy…"
+                placeholder="Gom tin nhắn, thư và phiếu duyệt về một chỗ trên máy bạn, AI cục bộ tóm tắt và đọc thành bản tin giọng nói…"
               />
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function SiteAdmin() {
           ) : (
             <div className="col">
               {form.features.map((f, i) => (
-                <div className="card tight" key={i} style={{ boxShadow: 'none', background: '#fbfcfe' }}>
+                <div className="card tight flat" key={i}>
                   <div className="row" style={{ alignItems: 'flex-start' }}>
                     <div className="fld" style={{ width: 90, flex: 'none' }}>
                       <label>Biểu tượng</label>
